@@ -38,10 +38,16 @@ const handleCart = () => {
 
 <style scoped>
 .main-header {
-  background-color: #1a1a1a;
+  background-color: #991a1a1a;
   color: #fff;
   padding: 15px 0;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+
+  position: fixed; /* 将元素固定在视口中 */
+  top: 0;          /* 距离视口顶部 0px */
+  left: 0;         /* 距离视口左侧 0px */
+  width: 100%;     /* 宽度占满整个视口 */
+  z-index: 1000;   /* 确保它位于其他内容之上 */
 }
 
 .container {
@@ -54,26 +60,49 @@ const handleCart = () => {
 }
 
 .logo img {
-  height: 40px; /* Adjust logo size */
+  height: 32px; /* Adjust logo size */
 }
 
 .main-nav ul {
   list-style: none;
   display: flex;
-  gap: 30px;
+  gap: 50px;
   margin: 0;
   padding: 0;
+  align-items: center;
 }
 
 .main-nav a {
   color: #fff;
   text-decoration: none;
   font-weight: bold;
+  font-size: 1.1em;
   transition: color 0.3s;
+  padding: 10px 10px;
+  display: block;
 }
 
 .main-nav a:hover {
-  color: #ff9900; /* Example hover color */
+  color: #fff; 
+  background-color: #ff9900;
+}
+
+.main-nav .router-link-exact-active {
+  color: #ff9900; /* 文字变为 ff9900 */
+  /* 如果你不希望当前页面有 hover 效果，可以添加以下样式 */
+  background-color: transparent;
+  border-bottom: none;
+}
+
+/* 确保当前页面的 hover 效果不会覆盖其激活状态的颜色 */
+.main-nav .router-link-exact-active:hover {
+  background-color: transparent;
+  color: #ff9900;
+}
+
+.main-nav .router-link-exact-active {
+  color: #ff9900;
+  border-bottom: 2px solid #ff9900;
 }
 
 .user-actions {
@@ -91,6 +120,6 @@ const handleCart = () => {
 }
 
 .cart-icon {
-  font-size: 24px;
+  font-size: 32px;
 }
 </style>
