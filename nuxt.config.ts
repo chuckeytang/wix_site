@@ -4,13 +4,10 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   modules: [
-    '@nuxt/content',
     '@nuxt/image',
     '@nuxt/scripts',
-    '@nuxt/ui',
     '@vueuse/nuxt',
     '@element-plus/nuxt',
-    '@nuxt/fonts',
   ],
   build: {
     transpile: ['element-plus'], // 确保 Element Plus 可以被正确编译
@@ -26,8 +23,5 @@ export default defineNuxtConfig({
   },
   elementPlus: {
     importStyle: 'scss', // 使用 scss 样式
-  },
-  fonts: {
-    provider: 'bunny'
   }
 })
