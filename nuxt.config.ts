@@ -1,16 +1,17 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: '2025-07-15',
+  compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
 
   modules: [
-    '@nuxt/image',
-    '@nuxt/scripts',
-    '@vueuse/nuxt',
-    '@element-plus/nuxt',
+    "@nuxt/image",
+    "@nuxt/scripts",
+    "@vueuse/nuxt",
+    "@element-plus/nuxt",
+    "@pinia/nuxt",
   ],
   build: {
-    transpile: ['element-plus'], // 确保 Element Plus 可以被正确编译
+    transpile: ["element-plus"], // 确保 Element Plus 可以被正确编译
   },
   vite: {
     css: {
@@ -22,6 +23,6 @@ export default defineNuxtConfig({
     },
   },
   elementPlus: {
-    importStyle: 'scss', // 使用 scss 样式
-  }
-})
+    importStyle: "scss", // 使用 scss 样式
+  },
+});

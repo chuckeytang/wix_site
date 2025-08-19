@@ -8,35 +8,54 @@
 
     <div class="main-content">
       <div>
-        <section class = "hero-section"></section>
+        <section class="hero-section"></section>
         <SearchBar />
-        <section class = "title-section">
-          <div class = "container">
-            <div class = "right-aligned-header">
-              <a href = "/all-playlists" class = "view-all-button">View All Playlists</a>
+        <section class="title-section">
+          <div class="container">
+            <div class="right-aligned-header">
+              <a href="/all-playlists" class="view-all-button"
+                >View All Playlists</a
+              >
             </div>
-            <div class = "title-flex-wrapper">
-              <div class = "left-side-content">
-                <h2 class = "main-title">Create Freely with Royalty-Free & Public Domain Music</h2>
-                <p class = "description">
-                  Access a growing library of handpicked tracks from CC0 and public domain sources — no fees, no limits. Search by mood, genre, or BPM, then preview and license instantly for your videos, games, and creative projects. Your perfect soundtrack is just one click away.
+            <div class="title-flex-wrapper">
+              <div class="left-side-content">
+                <h2 class="main-title">
+                  Create Freely with Royalty-Free & Public Domain Music
+                </h2>
+                <p class="description">
+                  Access a growing library of handpicked tracks from CC0 and
+                  public domain sources — no fees, no limits. Search by mood,
+                  genre, or BPM, then preview and license instantly for your
+                  videos, games, and creative projects. Your perfect soundtrack
+                  is just one click away.
                 </p>
               </div>
-              <div class = "right-side-content">
+              <div class="right-side-content">
                 <PlaylistCard
-                v-for="playlist in playlists"
-                :key="playlist.ID"
-                :playlist="playlist"
+                  v-for="playlist in playlists"
+                  :key="playlist.ID"
+                  :playlist="playlist"
                 />
               </div>
             </div>
           </div>
         </section>
-        <section class = "filters-and-sorts-section">
-          <div class = "container">
-            <div class = "header-content-wrapper">
+        <section class="filters-and-sorts-section">
+          <div class="container">
+            <div class="header-content-wrapper">
               <button class="filter-button" @click="toggleSidebar">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sliders">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="feather feather-sliders"
+                >
                   <line x1="4" y1="21" x2="4" y2="14"></line>
                   <line x1="4" y1="10" x2="4" y2="3"></line>
                   <line x1="12" y1="21" x2="12" y2="12"></line>
@@ -47,30 +66,57 @@
                   <line x1="9" y1="8" x2="15" y2="8"></line>
                   <line x1="17" y1="16" x2="23" y2="16"></line>
                 </svg>
-                {{ isSidebarOpen ? 'Hide Filters' : 'Show Filters' }}
+                {{ isSidebarOpen ? "Hide Filters" : "Show Filters" }}
               </button>
-              <div class = "sort-and-view-options">
-                <div class = "sort-dropdown">
-                  <div class = "dropdown-header" @click = "toggleSortDropdown">
-                    <span class = "current-sort">{{ currentSort.label }}</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down">
+              <div class="sort-and-view-options">
+                <div class="sort-dropdown">
+                  <div class="dropdown-header" @click="toggleSortDropdown">
+                    <span class="current-sort">{{ currentSort.label }}</span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="feather feather-chevron-down"
+                    >
                       <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
                   </div>
-                  <ul class = "dropdown-options" v-if = "isDropdownOpen">
+                  <ul class="dropdown-options" v-if="isDropdownOpen">
                     <li
-                    v-for = "option in sortOptions"
-                    :key = "option.value"
-                    @click = "selectSortOption(option)"
-                    :class = "{'is-active': currentSort.value === option.value}"
+                      v-for="option in sortOptions"
+                      :key="option.value"
+                      @click="selectSortOption(option)"
+                      :class="{
+                        'is-active': currentSort.value === option.value,
+                      }"
                     >
-                    {{ option.label }}
+                      {{ option.label }}
                     </li>
                   </ul>
                 </div>
-                <div class = "view-toggle">
-                  <button class = "view-list" @click = "setView('list')" :class="{ 'active': currentView === 'list' }">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="view-toggle">
+                  <button
+                    class="view-list"
+                    @click="setView('list')"
+                    :class="{ active: currentView === 'list' }"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
                       <line x1="8" y1="6" x2="21" y2="6"></line>
                       <line x1="8" y1="12" x2="21" y2="12"></line>
                       <line x1="8" y1="18" x2="21" y2="18"></line>
@@ -79,8 +125,19 @@
                       <line x1="3" y1="18" x2="3.01" y2="18"></line>
                     </svg>
                   </button>
-                  <button class="view-grid" @click="setView('grid')" :class="{ 'active': currentView === 'grid' }">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                  <button
+                    class="view-grid"
+                    @click="setView('grid')"
+                    :class="{ active: currentView === 'grid' }"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      stroke="none"
+                    >
                       <rect x="3" y="3" width="7" height="7"></rect>
                       <rect x="14" y="3" width="7" height="7"></rect>
                       <rect x="14" y="14" width="7" height="7"></rect>
@@ -92,111 +149,121 @@
             </div>
           </div>
         </section>
-        <section class = "music-list-section" v-if = "currentView === 'list'">
-            <MusicCard
-              v-for="(track, index) in tracks"
-              :key="index"
-              :track="track"
-            />
+        <section class="music-list-section" v-if="currentView === 'list'">
+          <MusicCard
+            v-for="(track, index) in tracks"
+            :key="index"
+            :track="track"
+          />
         </section>
       </div>
     </div>
   </div>
 </template>
-  
+
 <script setup>
-  import SearchBar from '~/components/SearchBar.vue';
-  import PlaylistCard from '~/components/PlaylistCard.vue';
+import SearchBar from "~/components/SearchBar.vue";
+import PlaylistCard from "~/components/PlaylistCard.vue";
 
-  const isSidebarOpen = ref(false);
-  const isDropdownOpen = ref(false);
-  const currentView = ref('list');
+const isSidebarOpen = ref(false);
+const isDropdownOpen = ref(false);
+const currentView = ref("list");
 
-  const toggleSidebar = () => {
-    isSidebarOpen.value = !isSidebarOpen.value;
-  };
+const toggleSidebar = () => {
+  isSidebarOpen.value = !isSidebarOpen.value;
+};
 
-  const setView = (viewType) => {
-    currentView.value = viewType;
-    console.log('当前视图模式:', currentView.value);
-  };
+const setView = (viewType) => {
+  currentView.value = viewType;
+  console.log("当前视图模式:", currentView.value);
+};
 
-  const sortOptions = [
-    {value: 'popular', label: 'popular'},
-    {value: 'newest', label: 'newest'},
-    {value: 'oldest', label: 'oldest'},
-  ];
-    
-  const currentSort = ref(sortOptions[0]);
+const sortOptions = [
+  { value: "popular", label: "popular" },
+  { value: "newest", label: "newest" },
+  { value: "oldest", label: "oldest" },
+];
 
-  const toggleSortDropdown = () => {
-    isDropdownOpen.value = !isDropdownOpen.value;
-  };
+const currentSort = ref(sortOptions[0]);
 
-  const selectSortOption = (option) => {
-    currentSort.value = option;
-    isDropdownOpen.value = false;
-  };
+const toggleSortDropdown = () => {
+  isDropdownOpen.value = !isDropdownOpen.value;
+};
 
-  const playlists = [
+const selectSortOption = (option) => {
+  currentSort.value = option;
+  isDropdownOpen.value = false;
+};
+
+const playlists = [
   {
-    Title: 'Dynamic Beats',
-    Description: 'High-energy songs to get you moving.',
-    Image: 'https://static.wixstatic.com/media/49d671_1f25c1d366fe4f5085fcbcc5d3170990~mv2.png',
-    ID: '62fa014c-4731-4033-82e4-4bed757eddf5',
-    Tracks_playlists: '15'
+    Title: "Dynamic Beats",
+    Description: "High-energy songs to get you moving.",
+    Image:
+      "https://static.wixstatic.com/media/49d671_1f25c1d366fe4f5085fcbcc5d3170990~mv2.png",
+    ID: "62fa014c-4731-4033-82e4-4bed757eddf5",
+    Tracks_playlists: "15",
   },
   {
-    Title: 'Trending Now',
-    Description: 'The sounds that are currently shaping the music world.',
-    Image: 'https://static.wixstatic.com/media/49d671_b6178c0bc4ae46ea84b96db29ea99328~mv2.png',
-    ID: '6c9e4e34-4c74-4805-81ea-4cafcec4539b',
-    Tracks_playlists: '15'
+    Title: "Trending Now",
+    Description: "The sounds that are currently shaping the music world.",
+    Image:
+      "https://static.wixstatic.com/media/49d671_b6178c0bc4ae46ea84b96db29ea99328~mv2.png",
+    ID: "6c9e4e34-4c74-4805-81ea-4cafcec4539b",
+    Tracks_playlists: "15",
   },
   {
-    Title: 'Deep Cuts',
-    Description: 'Forgotten gems and hidden finds from the archives.',
-    Image: 'https://static.wixstatic.com/media/49d671_d4d2a5131128447197f3a0d735fc9a30~mv2.png',
-    ID: '9d5bab62-dc02-41f6-894c-a3c8b047d0a1',
-    Tracks_playlists: '15'
+    Title: "Deep Cuts",
+    Description: "Forgotten gems and hidden finds from the archives.",
+    Image:
+      "https://static.wixstatic.com/media/49d671_d4d2a5131128447197f3a0d735fc9a30~mv2.png",
+    ID: "9d5bab62-dc02-41f6-894c-a3c8b047d0a1",
+    Tracks_playlists: "15",
   },
   {
-    Title: 'Weekly Top 50',
-    Description: 'The most popular tracks, curated by our editors.',
-    Image: 'https://static.wixstatic.com/media/49d671_af26ba40aff54a0bb135b03bcb883c1f~mv2.png',
-    ID: 'b1634484-83ca-44b5-8ef1-b6b15bcdfc95',
-    Tracks_playlists: '50'
+    Title: "Weekly Top 50",
+    Description: "The most popular tracks, curated by our editors.",
+    Image:
+      "https://static.wixstatic.com/media/49d671_af26ba40aff54a0bb135b03bcb883c1f~mv2.png",
+    ID: "b1634484-83ca-44b5-8ef1-b6b15bcdfc95",
+    Tracks_playlists: "50",
   },
 ];
 
-  const tracks = [
+const tracks = [
   {
-    Title: 'Clean Success',
-    Artist: 'Boomers',
-    Duration: '2:24',
+    ID: 1,
+    Title: "Clean Success",
+    Artist: "Boomers",
+    Duration: "2:24",
     BPM: 115,
-    Categories: ['企业音乐', '时尚音乐'],
-    WaveformImage: 'https://cdn-static.wixmp.com/images/a8b577e98a3c4f92be430c2c31e670d8/v/2.0.0/waveform.svg?url=https%3A%2F%2Ftracks.sound.wixstatic.com%2Fshira%2F8a3c4f92-be43-41c0-82a5-4e08285511b8.mp3', // 替换为真实的波形图链接
+    Categories: ["企业音乐", "时尚音乐"],
+    WaveformImage:
+      "https://wix-musicwave-bucket1.s3.ca-central-1.amazonaws.com/music_waveforms/Wavecont-Inspire-2-Full-Lenght_waveform.svg",
   },
   {
-    Title: 'With the Greatest Will',
-    Artist: 'Koto Audio',
-    Duration: '2:24',
+    ID: 2,
+    Title: "With the Greatest Will",
+    Artist: "Koto Audio",
+    Duration: "2:24",
     BPM: 128,
-    Categories: ['企业音乐', '营销/生活', '积极/鼓舞'],
-    WaveformImage: 'https://cdn-static.wixmp.com/images/a8b577e98a3c4f92be430c2c31e670d8/v/2.0.0/waveform.svg?url=https%3A%2F%2Ftracks.sound.wixstatic.com%2Fshira%2F47385f94-9844-4860-9ae2-2c5e533c3ed6.mp3',
+    Categories: ["企业音乐", "营销/生活", "积极/鼓舞"],
+    WaveformImage:
+      "https://wix-musicwave-bucket1.s3.ca-central-1.amazonaws.com/music_waveforms/Inspiring Dreams_waveform.svg",
   },
   {
-    Title: 'Adventurous Life',
-    Artist: 'L-Razy Music',
-    Duration: '2:35',
+    ID: 3,
+    Title: "Adventurous Life",
+    Artist: "L-Razy Music",
+    Duration: "2:35",
     BPM: 108,
-    Categories: ['企业音乐', '营销/轻柔'],
-    WaveformImage: 'https://cdn-static.wixmp.com/images/a8b577e98a3c4f92be430c2c31e670d8/v/2.0.0/waveform.svg?url=https%3A%2F%2Ftracks.sound.wixstatic.com%2Fshira%2F8c276326-17b5-4b44-9c04-517b165b6c31.mp3',
+    Categories: ["企业音乐", "营销/轻柔"],
+    WaveformImage:
+      "https://wix-musicwave-bucket1.s3.ca-central-1.amazonaws.com/music_waveforms/In Dreams_waveform.svg",
   },
-  ];
+];
 </script>
-  
+
 <style scoped>
 .container {
   max-width: 1400px;
@@ -290,8 +357,10 @@
   border-radius: 50px;
   border: none;
   cursor: pointer;
-  transition: background-color 0.3s, transform 0.3s;
-  min-width: 170px; 
+  transition:
+    background-color 0.3s,
+    transform 0.3s;
+  min-width: 170px;
   text-align: center;
 }
 
@@ -364,7 +433,9 @@
   color: #888;
   padding: 8px 12px;
   cursor: pointer;
-  transition: color 0.3s, background-color 0.3s;
+  transition:
+    color 0.3s,
+    background-color 0.3s;
 }
 
 .view-toggle button.active {
@@ -445,7 +516,9 @@
   padding: 8px 12px;
   color: #ccc;
   cursor: pointer;
-  transition: background-color 0.3s, color 0.3s;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
 }
 
 .dropdown-options li:hover {

@@ -1,5 +1,5 @@
 <template>
-  <header class="main-header">
+  <header class="main-header" :class="{ 'is-hidden': isHidden }">
     <div class="container">
       <div class="logo">
         <img src="/images/logo.png" alt="Verscape Logo" />
@@ -25,14 +25,51 @@
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted } from "vue";
+
+const isHidden = ref(false);
+let lastScrollY = 0;
+
+const handleScroll = () => {
+  const currentScrollY = window.scrollY;
+
+  // 如果页面在顶部，始终显示 Header
+  if (currentScrollY <= 0) {
+    isHidden.value = false;
+    return;
+  }
+
+  // 向下滚动，隐藏 Header
+  if (currentScrollY > lastScrollY) {
+    isHidden.value = true;
+  }
+  // 向上滚动，显示 Header
+  else if (currentScrollY < lastScrollY) {
+    isHidden.value = false;
+  }
+
+  // 更新上一次的滚动位置
+  lastScrollY = currentScrollY;
+};
+
+// 在组件挂载时添加滚动事件监听
+onMounted(() => {
+  window.addEventListener("scroll", handleScroll);
+});
+
+// 在组件卸载时移除事件监听，防止内存泄漏
+onUnmounted(() => {
+  window.removeEventListener("scroll", handleScroll);
+});
+
 const handleLogin = () => {
   // Redirect to Wix login URL
-  console.log('Redirecting to Wix login...');
+  console.log("Redirecting to Wix login...");
 };
 
 const handleCart = () => {
   // Redirect to Wix cart/checkout page
-  console.log('Redirecting to Wix cart...');
+  console.log("Redirecting to Wix cart...");
 };
 </script>
 
@@ -41,13 +78,19 @@ const handleCart = () => {
   background-color: #991a1a1a;
   color: #fff;
   padding: 15px 0;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 
   position: fixed; /* 将元素固定在视口中 */
-  top: 0;          /* 距离视口顶部 0px */
-  left: 0;         /* 距离视口左侧 0px */
-  width: 100%;     /* 宽度占满整个视口 */
-  z-index: 1000;   /* 确保它位于其他内容之上 */
+  top: 0; /* 距离视口顶部 0px */
+  left: 0; /* 距离视口左侧 0px */
+  width: 100%; /* 宽度占满整个视口 */
+  z-index: 1000; /* 确保它位于其他内容之上 */
+
+  transition: transform 0.3s ease-in-out;
+}
+
+.main-header.is-hidden {
+  transform: translateY(-100%);
 }
 
 .container {
@@ -83,7 +126,7 @@ const handleCart = () => {
 }
 
 .main-nav a:hover {
-  color: #fff; 
+  color: #fff;
   background-color: #ff9900;
 }
 
