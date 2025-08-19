@@ -41,7 +41,7 @@
           </div>
         </section>
         <section class="filters-and-sorts-section">
-          <div class="container">
+          <div class = "container_2">
             <div class="header-content-wrapper">
               <button class="filter-button" @click="toggleSidebar">
                 <svg
@@ -156,6 +156,15 @@
             :track="track"
           />
         </section>
+        <section class = "music-grid-section" v-else>
+          <div class = "music-grid-container">
+            <MusicGridCard
+              v-for="track in mockTracksForGrid"
+              :key="track.id"
+              :track="track"
+            />
+          </div>
+        </section>
       </div>
     </div>
   </div>
@@ -164,6 +173,7 @@
 <script setup>
 import SearchBar from "~/components/SearchBar.vue";
 import PlaylistCard from "~/components/PlaylistCard.vue";
+  import MusicGridCard from '~/components/MusicGridCard.vue'
 
 const isSidebarOpen = ref(false);
 const isDropdownOpen = ref(false);
@@ -266,7 +276,13 @@ const tracks = [
 
 <style scoped>
 .container {
-  max-width: 1400px;
+  max-width: 80%;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.container_2{
+  max-width: 95%;
   margin: 0 auto;
   padding: 0 20px;
 }
@@ -514,7 +530,7 @@ const tracks = [
 
 .dropdown-options li {
   padding: 8px 12px;
-  color: #ccc;
+  color: #1c1b1b;
   cursor: pointer;
   transition:
     background-color 0.3s,
@@ -530,5 +546,20 @@ const tracks = [
   background-color: #ff8c62;
   color: #0d0d1a;
   font-weight: bold;
+}
+
+.music-grid-container {
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+}
+
+.music-list-section,
+.music-grid-section {
+  background-color: #0d0d1a;
+  padding: 20px 0;
 }
 </style>

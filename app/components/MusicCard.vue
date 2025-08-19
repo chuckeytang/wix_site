@@ -554,7 +554,7 @@ watch(
 }
 
 .play-button svg:not(.circular-progress-bar) {
-  color: #1a1a1a;
+  color: #888;
   transition: color 0.3s ease;
 }
 
