@@ -1,19 +1,29 @@
 <template>
     <div class = "music-grid-card">
         <div class = "card-header">
-            <h3 class = "track-title">{{ track.title }}</h3>
-            <p class = "track-artist">{{ track.artist }}</p>
+            <h3 class = "track-title">{{ track.Title }}</h3>
+            <p class = "track-artist">{{ track.Artist }}</p>
         </div>
 
         <div class = "player-section">
-            <button class = "play-button">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <button class = "play-button" @click = "togglePlay">
+                <svg v-if = "!isPlaying" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none">
                     <polygon points="5 3 19 12 5 21 5 3"></polygon>
                 </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                  <rect x="6" y="4" width="4" height="16"></rect>
+                  <rect x="14" y="4" width="4" height="16"></rect>
+                </svg>
             </button>
-            <div class = "waveform-container">
-                <img v-if="track.waveformUrl" :src="track.waveformUrl" alt="Waveform" class="waveform-image" />
-                <div v-else class="placeholder-text">Waveform</div>
+            <div class = "waveform-wrapper">
+              <WaveformPlayer
+                :audio-url="mockAudioUrl"
+                :is-playing="isPlaying"
+                @play="handlePlay"
+                @pause="handlePause"
+                @update-progress="handleUpdateProgress"
+                ref="waveformPlayerRef"
+              />
             </div>
         </div>
 
@@ -36,7 +46,9 @@
 </template>
 
 <script setup>
-import {defineProps} from 'vue';
+import { ref, defineProps, watch } from "vue";
+import WaveformPlayer from "./WaveformPlayer.vue";
+import { useMusicPlayerStore } from "~/stores/musicPlayer.js";
 
 const props = defineProps({
     track: {
@@ -44,6 +56,55 @@ const props = defineProps({
     required: true,
   },
 });
+
+const musicPlayerStore = useMusicPlayerStore();
+const isPlaying = ref(false);
+const progress = ref(0);
+const waveformPlayerRef = ref(null);
+
+const mockAudioUrl =
+  "https://music.wixstatic.com/mp3/69f695_c5c7728f296849e19848b540ebd81491.mp3";
+
+// 播放/暂停的逻辑现在调用子组件的方法
+const togglePlay = () => {
+  if (isPlaying.value) {
+    waveformPlayerRef.value?.pause();
+  } else {
+    // 设置全局正在播放的曲目 ID
+    musicPlayerStore.setCurrentPlayingId(props.track.ID);
+    console.log(props.track.ID);
+    waveformPlayerRef.value?.play();
+  }
+};
+
+// 监听 WaveformPlayer 发出的事件
+const handlePlay = () => {
+  isPlaying.value = true;
+  musicPlayerStore.setCurrentPlayingId(props.track.ID);
+};
+
+const handlePause = () => {
+  isPlaying.value = false;
+  if (musicPlayerStore.currentPlayingId === props.track.ID) {
+    musicPlayerStore.setCurrentPlayingId(null);
+  }
+};
+
+const handleUpdateProgress = (newProgress) => {
+  progress.value = newProgress;
+};
+
+// 监听 Pinia Store 中的全局状态，以暂停其他卡片的播放
+watch(
+  () => musicPlayerStore.currentPlayingId,
+  (newId) => {
+    if (newId !== null && newId !== props.track.ID) {
+      if (isPlaying.value) {
+        waveformPlayerRef.value?.pause();
+      }
+    }
+  }
+);
 </script>
 
 <style scoped>
@@ -158,5 +219,10 @@ const props = defineProps({
   background-color: #fff;
   border-color: #fff;
   color: #0d0d1a;
+}
+
+.waveform-wrapper {
+  flex-grow: 1; /* 让它占据所有可用空间 */
+  height: 50px; /* 保持与播放按钮一致的高度 */
 }
 </style>

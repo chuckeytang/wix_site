@@ -2,7 +2,7 @@
   <div class="page-wrapper" :class="{ 'sidebar-open': isSidebarOpen }">
     <aside class="sidebar" :class="{ 'is-open': isSidebarOpen }">
       <div class="sidebar-content">
-        <h3 class="sidebar-title">类型</h3>
+        <h3 class="sidebar-title">type</h3>
       </div>
     </aside>
 
@@ -159,8 +159,8 @@
         <section class = "music-grid-section" v-else>
           <div class = "music-grid-container">
             <MusicGridCard
-              v-for="track in mockTracksForGrid"
-              :key="track.id"
+            v-for="(track, index) in tracks"
+              :key="index"
               :track="track"
             />
           </div>
@@ -173,7 +173,7 @@
 <script setup>
 import SearchBar from "~/components/SearchBar.vue";
 import PlaylistCard from "~/components/PlaylistCard.vue";
-  import MusicGridCard from '~/components/MusicGridCard.vue'
+import MusicGridCard from '~/components/MusicGridCard.vue'
 
 const isSidebarOpen = ref(false);
 const isDropdownOpen = ref(false);

@@ -49,20 +49,14 @@
       </div>
     </div>
 
-    <div
-      class="waveform-placeholder"
-      @mousemove="handleHover"
-      @mouseenter="handleHoverEnter"
-      @mouseleave="handleHoverLeave"
-      @click="handleWaveformClick"
-    >
-      <div class="wavesurfer-container" ref="waveformRef"></div>
-      <div
-        class="hover-progress-overlay"
-        :style="{ width: hoverProgress + '%' }"
-      ></div>
-      <div class="hover-playhead" :style="{ left: hoverProgress + '%' }"></div>
-    </div>
+    <WaveformPlayer
+      :audio-url="mockAudioUrl"
+      :is-playing="isPlaying"
+      @play="handlePlay"
+      @pause="handlePause"
+      @update-progress="handleUpdateProgress"
+      ref="waveformPlayerRef"
+    />
 
     <div class="track-meta-info">
       <div class="duration-bpm">
@@ -125,9 +119,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, defineProps } from "vue";
-import WaveSurfer from "wavesurfer.js";
+import { ref, defineProps, watch } from "vue";
 import { useMusicPlayerStore } from "~/stores/musicPlayer.js";
+import WaveformPlayer from "./WaveformPlayer.vue"; // 确保路径正确
 
 const props = defineProps({
   track: {
@@ -138,150 +132,46 @@ const props = defineProps({
 
 const musicPlayerStore = useMusicPlayerStore();
 const isPlaying = ref(false);
-const progress = ref(0); // 0-100 的播放进度
-const waveformRef = ref(null); // 波形图 DOM 引用
-const wavesurfer = ref(null);
-const hoverProgress = ref(0);
-const isHovering = ref(false);
+const progress = ref(0);
+const waveformPlayerRef = ref(null);
 
-// 模拟的音频文件URL，之后需要替换为真实数据
 const mockAudioUrl =
   "https://music.wixstatic.com/mp3/69f695_c5c7728f296849e19848b540ebd81491.mp3";
 
-// 切换播放/暂停
+// 播放/暂停的逻辑现在调用子组件的方法
 const togglePlay = () => {
-  if (wavesurfer.value) {
-    if (wavesurfer.value.isPlaying()) {
-      wavesurfer.value.pause();
-    } else {
-      musicPlayerStore.setCurrentPlayingId(props.track.ID);
-      wavesurfer.value.play();
-    }
-  }
-};
-
-onMounted(() => {
-  if (!waveformRef.value) return;
-
-  // 获取容器的宽度，用于创建渐变
-  const containerWidth = waveformRef.value.offsetWidth;
-
-  // 创建一个临时的 canvas 元素来获取其 2D 渲染上下文
-  // 注意：这里的 canvas 不会渲染到页面，仅用于创建渐变对象
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-
-  // 创建一个从左到右的线性渐变，宽度等于波形图容器的宽度
-  const gradient = ctx.createLinearGradient(0, 0, containerWidth, 0);
-
-  // 添加渐变色标
-  gradient.addColorStop(0, "#ff7857"); // 渐变起始色，左侧
-  gradient.addColorStop(0.5, "#ffb38a"); // 渐变中间色，更浅的橙色
-  gradient.addColorStop(1, "#ffd08a"); // 渐变结束色，右侧
-
-  // 实例化 Wavesurfer
-  wavesurfer.value = WaveSurfer.create({
-    container: waveformRef.value,
-    waveColor: "#666", // 未播放部分的颜色
-    progressColor: gradient, // 使用我们创建的渐变对象
-    cursorColor: "#ffe178",
-    cursorWidth: 2,
-    barWidth: 2,
-    barGap: 1,
-    height: 50,
-    responsive: true,
-    hideScrollbar: true,
-    // backend: 'MediaElement', // 移除或保留，取决于你的需求
-  });
-
-  // 加载音频文件
-  wavesurfer.value.load(mockAudioUrl);
-
-  // 监听 Wavesurfer 事件...
-  wavesurfer.value.on("play", () => {
-    isPlaying.value = true;
+  if (isPlaying.value) {
+    waveformPlayerRef.value?.pause();
+  } else {
     musicPlayerStore.setCurrentPlayingId(props.track.ID);
-  });
-
-  wavesurfer.value.on("pause", () => {
-    isPlaying.value = false;
-    if (musicPlayerStore.currentPlayingId === props.track.ID) {
-      musicPlayerStore.setCurrentPlayingId(null);
-    }
-  });
-
-  wavesurfer.value.on("finish", () => {
-    isPlaying.value = false;
-    progress.value = 0;
-  });
-
-  wavesurfer.value.on("audioprocess", () => {
-    progress.value =
-      (wavesurfer.value.getCurrentTime() / wavesurfer.value.getDuration()) *
-      100;
-  });
-
-  // 监听 ready 事件，确保渐变已加载
-  wavesurfer.value.on("ready", () => {
-    console.log(
-      "Wavesurfer is ready! Waveform should be rendered with gradient."
-    );
-  });
-});
-
-// 处理鼠标移动事件
-const handleHover = (event) => {
-  if (!waveformRef.value) return;
-  const rect = waveformRef.value.getBoundingClientRect();
-  const x = event.clientX - rect.left; // 鼠标在容器内的相对 X 位置
-  hoverProgress.value = (x / rect.width) * 100;
-};
-
-// 鼠标进入容器
-const handleHoverEnter = () => {
-  isHovering.value = true;
-};
-
-// 鼠标离开容器
-const handleHoverLeave = () => {
-  isHovering.value = false;
-  hoverProgress.value = 0; // 鼠标离开时将进度重置
-};
-
-// 在组件卸载前销毁 Wavesurfer 实例
-onUnmounted(() => {
-  if (wavesurfer.value) {
-    wavesurfer.value.destroy();
+    waveformPlayerRef.value?.play();
   }
-});
-
-// 处理波形图点击和拖动
-const handleWaveformClick = (event) => {
-  // 确保 wavesurfer 实例和容器都存在
-  if (!wavesurfer.value || !waveformRef.value) return;
-
-  // 获取容器的边界信息
-  const rect = waveformRef.value.getBoundingClientRect();
-  // 计算鼠标点击位置相对于容器左侧的百分比
-  const relativeX = (event.clientX - rect.left) / rect.width;
-
-  // 使用 Wavesurfer 的 seekTo 方法将播放位置移动到点击处
-  wavesurfer.value.seekTo(relativeX);
-
-  // 在 seekTo 后立即调用 play() 方法，开始播放
-  // play() 会从当前设置的播放位置开始播放
-  wavesurfer.value.play();
-
-  // 可以在这里额外设置 isPlaying 状态，但 Wavesurfer 的 play 事件会处理
 };
 
-// 监听 Pinia Store 中的 state
+// 监听子组件发出的事件
+const handlePlay = () => {
+  isPlaying.value = true;
+  musicPlayerStore.setCurrentPlayingId(props.track.ID);
+};
+
+const handlePause = () => {
+  isPlaying.value = false;
+  if (musicPlayerStore.currentPlayingId === props.track.ID) {
+    musicPlayerStore.setCurrentPlayingId(null);
+  }
+};
+
+const handleUpdateProgress = (newProgress) => {
+  progress.value = newProgress;
+};
+
+// 监听全局状态变化，控制波形图暂停
 watch(
   () => musicPlayerStore.currentPlayingId,
   (newId) => {
     if (newId !== null && newId !== props.track.ID) {
-      if (wavesurfer.value && wavesurfer.value.isPlaying()) {
-        wavesurfer.value.pause();
+      if (isPlaying.value) {
+        waveformPlayerRef.value?.pause();
       }
     }
   }
@@ -289,11 +179,6 @@ watch(
 </script>
 
 <style scoped>
-/* 父容器：使用 Grid 布局，定义三列
-  1. 左侧内容，固定宽度 250px
-  2. 波形图，占据所有剩余空间 (1fr)
-  3. 右侧所有元素，宽度由内容决定 (auto)
-*/
 .music-card-list {
   display: grid;
   grid-template-columns: 250px 750px 100px 220px auto;
@@ -310,10 +195,6 @@ watch(
   background-color: #1a1a1a;
 }
 
-/* 左侧部分
-  - 移除 flex-basis/flex-grow，因为 Grid 布局已经控制了它的宽度
-  - 内部使用 Flexbox 来对齐播放按钮和歌曲信息
-*/
 .left-section {
   display: flex;
   align-items: center;
@@ -329,11 +210,12 @@ watch(
 .track-title {
   font-weight: bold;
   font-size: 1.1em;
+  color: #edebeb;
 }
 
 .track-artist {
   font-size: 0.9em;
-  color: #aaa;
+  color: #edebeb;
 }
 
 /* 波形图占位符
@@ -515,9 +397,10 @@ watch(
 .action-btn {
   background-color: transparent;
   border: none;
-  color: #0a0a0a;
+  color: #ccc;
   cursor: pointer;
   padding: 5px;
+  transition: color 0.3s;
 }
 
 /* 下载按钮 */
