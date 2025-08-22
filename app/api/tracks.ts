@@ -90,7 +90,7 @@ export const tracksApi = {
   downloadTrackProxy(trackId: number): Promise<Blob> {
     // 获取后端 API 基础 URL
     const baseURL =
-      import.meta.env.VITE_APP_BASE_API || "http://localhost:8080";
+      import.meta.env.VITE_APP_BASE_API || "http://3.135.175.245:8080";
 
     // 直接使用 axios 实例，不经过 http.ts 的响应拦截器
     return axios

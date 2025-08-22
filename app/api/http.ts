@@ -9,7 +9,8 @@ import type {
 } from "axios";
 
 // 定义 API 基础 URL
-const baseURL = import.meta.env.VITE_APP_BASE_API || "http://localhost:8080";
+const baseURL =
+  import.meta.env.VITE_APP_BASE_API || "http://3.135.175.245:8080";
 
 // 创建 Axios 实例
 const service: AxiosInstance = axios.create({
