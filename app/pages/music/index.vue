@@ -298,6 +298,7 @@ const handlePageChange = (newPage: number) => {
 };
 
 onMounted(() => {
+  console.log("Music page mounted");
   fetchPlaylists();
   fetchTracks();
 });
