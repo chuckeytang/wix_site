@@ -25,4 +25,8 @@ export default defineNuxtConfig({
   elementPlus: {
     importStyle: "scss", // 使用 scss 样式
   },
+  devServer: {
+    port: 3020,
+    host: "0.0.0.0", // 允许外部访问
+  },
 });
