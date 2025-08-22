@@ -44,13 +44,13 @@
         </svg>
       </button>
       <div class="track-info">
-        <span class="track-title">{{ track.Title }}</span>
-        <span class="track-artist">{{ track.Artist }}</span>
+        <span class="track-title">{{ track.title }}</span>
+        <span class="track-artist">{{ track.artist }}</span>
       </div>
     </div>
 
     <WaveformPlayer
-      :audio-url="mockAudioUrl"
+      :audio-url="track.audioFileUrl"
       :is-playing="isPlaying"
       @play="handlePlay"
       @pause="handlePause"
@@ -60,16 +60,16 @@
 
     <div class="track-meta-info">
       <div class="duration-bpm">
-        <span class="duration">{{ track.Duration }}</span>
-        <span class="bpm">{{ track.BPM + "  BPM" }}</span>
+        <span class="duration">{{ formatDuration(track.duration) }}</span>
+        <span v-if="track.bpm" class="bpm">{{ track.bpm + "  BPM" }}</span>
       </div>
     </div>
 
-    <div class="category-tags">
-      <span v-for="(tag, index) in track.Categories" :key="index" class="tag">{{
+    <!-- <div class="category-tags">
+      <span v-for="(tag, index) in track.tags" :key="index" class="tag">{{
         tag
       }}</span>
-    </div>
+    </div> -->
 
     <div class="right-column-group">
       <div class="action-buttons">
@@ -118,14 +118,16 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, defineProps, watch } from "vue";
 import { useMusicPlayerStore } from "~/stores/musicPlayer.js";
-import WaveformPlayer from "./WaveformPlayer.vue"; // 确保路径正确
+import WaveformPlayer from "./WaveformPlayer.vue";
+import type { Tracks } from "~/types/tracks"; // Import the Tracks type
 
 const props = defineProps({
   track: {
-    type: Object,
+    // Specify the correct type for the prop
+    type: Object as () => Tracks,
     required: true,
   },
 });
@@ -133,17 +135,21 @@ const props = defineProps({
 const musicPlayerStore = useMusicPlayerStore();
 const isPlaying = ref(false);
 const progress = ref(0);
-const waveformPlayerRef = ref(null);
+const waveformPlayerRef = ref<InstanceType<typeof WaveformPlayer> | null>(null);
 
-const mockAudioUrl =
-  "https://music.wixstatic.com/mp3/69f695_c5c7728f296849e19848b540ebd81491.mp3";
+// Utility function to format duration from seconds to MM:SS
+const formatDuration = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds < 10 ? "0" : ""}${remainingSeconds}`;
+};
 
-// 播放/暂停的逻辑现在调用子组件的方法
+// 播放/暂停的逻辑
 const togglePlay = () => {
   if (isPlaying.value) {
     waveformPlayerRef.value?.pause();
   } else {
-    musicPlayerStore.setCurrentPlayingId(props.track.ID);
+    musicPlayerStore.setCurrentPlayingId(props.track.trackId);
     waveformPlayerRef.value?.play();
   }
 };
@@ -151,17 +157,17 @@ const togglePlay = () => {
 // 监听子组件发出的事件
 const handlePlay = () => {
   isPlaying.value = true;
-  musicPlayerStore.setCurrentPlayingId(props.track.ID);
+  musicPlayerStore.setCurrentPlayingId(props.track.trackId);
 };
 
 const handlePause = () => {
   isPlaying.value = false;
-  if (musicPlayerStore.currentPlayingId === props.track.ID) {
+  if (musicPlayerStore.currentPlayingId === props.track.trackId) {
     musicPlayerStore.setCurrentPlayingId(null);
   }
 };
 
-const handleUpdateProgress = (newProgress) => {
+const handleUpdateProgress = (newProgress: number) => {
   progress.value = newProgress;
 };
 
@@ -169,7 +175,7 @@ const handleUpdateProgress = (newProgress) => {
 watch(
   () => musicPlayerStore.currentPlayingId,
   (newId) => {
-    if (newId !== null && newId !== props.track.ID) {
+    if (newId !== null && newId !== props.track.trackId) {
       if (isPlaying.value) {
         waveformPlayerRef.value?.pause();
       }
@@ -181,7 +187,7 @@ watch(
 <style scoped>
 .music-card-list {
   display: grid;
-  grid-template-columns: 250px 750px 100px 220px auto;
+  grid-template-columns: 250px 1250px 100px 220px auto;
   align-items: center;
   gap: 20px; /* 控制列之间的间距 */
 

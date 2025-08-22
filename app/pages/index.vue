@@ -31,10 +31,16 @@
 
     <section class="playlists-section">
       <div class="container">
-        <div class="playlist-grid">
+        <div v-if="loading" class="loading-message">
+          <span>Loading playlists...</span>
+        </div>
+        <div v-else-if="error" class="error-message">
+          <span>Failed to load playlists. Please try again later.</span>
+        </div>
+        <div v-else class="playlist-grid">
           <PlaylistCard
             v-for="playlist in limitedPlaylists"
-            :key="playlist.ID"
+            :key="playlist.playlistId"
             :playlist="playlist"
           />
         </div>
@@ -85,106 +91,62 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import PlaylistCard from "~/components/PlaylistCard.vue"; // 导入新组件
+import PlaylistCard from "~/components/PlaylistCard.vue";
+import { playlistsApi } from "~/api";
+import type { Playlists } from "~/types/playlists";
 
-// 使用你提供的数据作为模拟数据
-const playlists = [
-  {
-    Title: "Dynamic Beats",
-    Description: "High-energy songs to get you moving.",
-    Image:
-      "https://static.wixstatic.com/media/49d671_1f25c1d366fe4f5085fcbcc5d3170990~mv2.png",
-    ID: "62fa014c-4731-4033-82e4-4bed757eddf5",
-    Tracks_playlists: "15",
-  },
-  {
-    Title: "Trending Now",
-    Description: "The sounds that are currently shaping the music world.",
-    Image:
-      "https://static.wixstatic.com/media/49d671_b6178c0bc4ae46ea84b96db29ea99328~mv2.png",
-    ID: "6c9e4e34-4c74-4805-81ea-4cafcec4539b",
-    Tracks_playlists: "15",
-  },
-  {
-    Title: "Deep Cuts",
-    Description: "Forgotten gems and hidden finds from the archives.",
-    Image:
-      "https://static.wixstatic.com/media/49d671_d4d2a5131128447197f3a0d735fc9a30~mv2.png",
-    ID: "9d5bab62-dc02-41f6-894c-a3c8b047d0a1",
-    Tracks_playlists: "15",
-  },
-  {
-    Title: "Weekly Top 50",
-    Description: "The most popular tracks, curated by our editors.",
-    Image:
-      "https://static.wixstatic.com/media/49d671_af26ba40aff54a0bb135b03bcb883c1f~mv2.png",
-    ID: "b1634484-83ca-44b5-8ef1-b6b15bcdfc95",
-    Tracks_playlists: "50",
-  },
-  {
-    Title: "Viral Anthems",
-    Description: "Catchy songs from internet ads and memes.",
-    Image:
-      "https://static.wixstatic.com/media/49d671_86f6547da50f4198914264ba474d8899~mv2.png",
-    ID: "c953d058-e010-46cf-912d-e139a6298229",
-    Tracks_playlists: "15",
-  },
-  {
-    Title: "Summer Breeze",
-    Description: "Laid-back tunes for those perfect long summer days.",
-    Image:
-      "https://static.wixstatic.com/media/49d671_98f950ea3c684a84bfceb2d29d44941f~mv2.png",
-    ID: "cd86c202-17dc-413e-84eb-0df735a5a507",
-    Tracks_playlists: "15",
-  },
-  {
-    Title: "August Spotlight",
-    Description: "The freshest new songs for this month. Wonderful!!",
-    Image:
-      "https://static.wixstatic.com/media/49d671_d077decb4d9e48f88e388c678559f890~mv2.png",
-    ID: "f02dd718-021d-4742-b62c-6c38ba07e752",
-    Tracks_playlists: "15",
-  },
-  {
-    Title: "July Editorial Picks",
-    Description: "The best music handpicked by our team last month.",
-    Image:
-      "https://static.wixstatic.com/media/49d671_e7d486fd460c4ac186644f4148412e25~mv2.png",
-    ID: "fa963306-304b-4334-a8e0-edeedc6c4031",
-    Tracks_playlists: "15",
-  },
-];
+// 播放列表数据状态
+const playlists = ref<Playlists[]>([]);
+const loading = ref(true);
+const error = ref(false);
 
 // 使用 computed 属性来截取前6个播放列表
 const limitedPlaylists = computed(() => {
-  return playlists.slice(0, 6);
+  return playlists.value.slice(0, 6);
 });
 
-// 处理视频正反向播放的逻辑
-const videoElement = ref(null);
-let isReversing = false;
+// 获取播放列表数据
+const fetchPlaylists = async () => {
+  loading.value = true;
+  error.value = false;
+  try {
+    const response = await playlistsApi.getPlaylistsList({
+      pageNum: 1,
+      pageSize: 6,
+    });
+    // 后端返回的数据在 rows 字段中
+    playlists.value = response.rows;
+  } catch (err) {
+    console.error("Failed to fetch playlists:", err);
+    error.value = true;
+  } finally {
+    loading.value = false;
+  }
+};
 
 // 监听视频结束事件
-const handleVideoEnd = (event) => {
-  const video = event.target;
-  isReversing = !isReversing;
-  if (isReversing) {
-    video.playbackRate = -0.5; // 设置为负值实现反向播放
-    video.currentTime = video.duration; // 跳转到末尾
+const handleVideoEnd = (event: Event) => {
+  const video = event.target as HTMLVideoElement;
+  // 此处逻辑可能需要调整，因为 playbackRate 负值并非所有浏览器都支持
+  // 更常见的是使用 video.currentTime 和 requestAnimationFrame 实现
+  video.playbackRate *= -1;
+  if (video.playbackRate < 0) {
+    video.currentTime = video.duration;
   } else {
-    video.playbackRate = 0.5; // 设置为正值实现正向播放
-    video.currentTime = 0; // 跳转到开头
+    video.currentTime = 0;
   }
   video.play();
 };
 
 // 在组件挂载后获取视频元素并设置初始属性
 onMounted(() => {
+  fetchPlaylists();
+  // 保持原有的视频逻辑
   const video = document.querySelector(".hero-video");
   if (video) {
-    video.playbackRate = 0.5; // 设置初始播放速度
+    (video as HTMLVideoElement).playbackRate = 0.5;
   }
 });
 </script>
@@ -199,7 +161,7 @@ onMounted(() => {
 }
 
 .hero-section {
-  position: relative; /* 必须是 relative 来定位绝对定位的子元素 */
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;

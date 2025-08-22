@@ -33,7 +33,7 @@
               <div class="right-side-content">
                 <PlaylistCard
                   v-for="playlist in playlists"
-                  :key="playlist.ID"
+                  :key="playlist.playlistId"
                   :playlist="playlist"
                 />
               </div>
@@ -41,7 +41,7 @@
           </div>
         </section>
         <section class="filters-and-sorts-section">
-          <div class = "container_2">
+          <div class="container_2">
             <div class="header-content-wrapper">
               <button class="filter-button" @click="toggleSidebar">
                 <svg
@@ -70,8 +70,8 @@
               </button>
               <div class="sort-and-view-options">
                 <div class="sort-dropdown">
-                  <div class="dropdown-header" @click="toggleSortDropdown">
-                    <span class="current-sort">{{ currentSort.label }}</span>
+                  <div class="dropdown-header" @click.stop="toggleSortDropdown">
+                    <span class="current-sort">{{ currentSort?.label }}</span>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="16"
@@ -93,7 +93,7 @@
                       :key="option.value"
                       @click="selectSortOption(option)"
                       :class="{
-                        'is-active': currentSort.value === option.value,
+                        'is-active': currentSort?.value === option.value,
                       }"
                     >
                       {{ option.label }}
@@ -150,128 +150,133 @@
           </div>
         </section>
         <section class="music-list-section" v-if="currentView === 'list'">
-          <MusicCard
-            v-for="(track, index) in tracks"
-            :key="index"
-            :track="track"
-          />
-        </section>
-        <section class = "music-grid-section" v-else>
-          <div class = "music-grid-container">
-            <MusicGridCard
-            v-for="(track, index) in tracks"
-              :key="index"
+          <div v-if="tracksLoading" class="loading-state">
+            Loading tracks...
+          </div>
+          <div v-else-if="tracksError" class="error-state">
+            Failed to load tracks.
+          </div>
+          <template v-else>
+            <MusicCard
+              v-for="track in tracks"
+              :key="track.trackId"
               :track="track"
             />
+          </template>
+        </section>
+        <section class="music-grid-section" v-else>
+          <div v-if="tracksLoading" class="loading-state">
+            Loading tracks...
           </div>
+          <div v-else-if="tracksError" class="error-state">
+            Failed to load tracks.
+          </div>
+          <template v-else>
+            <MusicGridCard
+              v-for="track in tracks"
+              :key="track.trackId"
+              :track="track"
+            />
+          </template>
         </section>
       </div>
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
 import SearchBar from "~/components/SearchBar.vue";
 import PlaylistCard from "~/components/PlaylistCard.vue";
-import MusicGridCard from '~/components/MusicGridCard.vue'
+import MusicCard from "~/components/MusicCard.vue";
+import MusicGridCard from "~/components/MusicGridCard.vue";
 
-const isSidebarOpen = ref(false);
-const isDropdownOpen = ref(false);
-const currentView = ref("list");
+// 导入 API 和类型
+import { tracksApi, playlistsApi } from "~/api";
+import type { Tracks } from "~/types/tracks";
+import type { Playlists } from "~/types/playlists";
 
-const toggleSidebar = () => {
-  isSidebarOpen.value = !isSidebarOpen.value;
-};
-
-const setView = (viewType) => {
-  currentView.value = viewType;
-  console.log("当前视图模式:", currentView.value);
-};
+// 状态
+const isSidebarOpen = ref<boolean>(false);
+const isDropdownOpen = ref<boolean>(false);
+const currentView = ref<string>("list");
 
 const sortOptions = [
   { value: "popular", label: "popular" },
   { value: "newest", label: "newest" },
   { value: "oldest", label: "oldest" },
 ];
-
 const currentSort = ref(sortOptions[0]);
+
+// 数据状态
+const playlists = ref<Playlists[]>([]);
+const playlistsLoading = ref<boolean>(true);
+const playlistsError = ref<boolean>(false);
+
+const tracks = ref<Tracks[]>([]);
+const tracksLoading = ref<boolean>(true);
+const tracksError = ref<boolean>(false);
+
+const toggleSidebar = () => {
+  isSidebarOpen.value = !isSidebarOpen.value;
+};
+
+const setView = (viewType: string) => {
+  currentView.value = viewType;
+  console.log("当前视图模式:", currentView.value);
+};
 
 const toggleSortDropdown = () => {
   isDropdownOpen.value = !isDropdownOpen.value;
 };
 
-const selectSortOption = (option) => {
+const selectSortOption = (option: { value: string; label: string }) => {
   currentSort.value = option;
   isDropdownOpen.value = false;
+  // TODO: 根据排序选项重新获取音乐列表
 };
 
-const playlists = [
-  {
-    Title: "Dynamic Beats",
-    Description: "High-energy songs to get you moving.",
-    Image:
-      "https://static.wixstatic.com/media/49d671_1f25c1d366fe4f5085fcbcc5d3170990~mv2.png",
-    ID: "62fa014c-4731-4033-82e4-4bed757eddf5",
-    Tracks_playlists: "15",
-  },
-  {
-    Title: "Trending Now",
-    Description: "The sounds that are currently shaping the music world.",
-    Image:
-      "https://static.wixstatic.com/media/49d671_b6178c0bc4ae46ea84b96db29ea99328~mv2.png",
-    ID: "6c9e4e34-4c74-4805-81ea-4cafcec4539b",
-    Tracks_playlists: "15",
-  },
-  {
-    Title: "Deep Cuts",
-    Description: "Forgotten gems and hidden finds from the archives.",
-    Image:
-      "https://static.wixstatic.com/media/49d671_d4d2a5131128447197f3a0d735fc9a30~mv2.png",
-    ID: "9d5bab62-dc02-41f6-894c-a3c8b047d0a1",
-    Tracks_playlists: "15",
-  },
-  {
-    Title: "Weekly Top 50",
-    Description: "The most popular tracks, curated by our editors.",
-    Image:
-      "https://static.wixstatic.com/media/49d671_af26ba40aff54a0bb135b03bcb883c1f~mv2.png",
-    ID: "b1634484-83ca-44b5-8ef1-b6b15bcdfc95",
-    Tracks_playlists: "50",
-  },
-];
+// 异步数据获取
+const fetchPlaylists = async () => {
+  playlistsLoading.value = true;
+  playlistsError.value = false;
+  try {
+    const response = await playlistsApi.getPlaylistsList({
+      pageNum: 1,
+      pageSize: 4,
+    }); // 假设只显示4个
+    console.log("fetchPlaylists:", response);
+    playlists.value = response.rows;
+  } catch (e) {
+    playlistsError.value = true;
+    console.error("Failed to fetch playlists:", e);
+  } finally {
+    playlistsLoading.value = false;
+  }
+};
 
-const tracks = [
-  {
-    ID: 1,
-    Title: "Clean Success",
-    Artist: "Boomers",
-    Duration: "2:24",
-    BPM: 115,
-    Categories: ["企业音乐", "时尚音乐"],
-    WaveformImage:
-      "https://wix-musicwave-bucket1.s3.ca-central-1.amazonaws.com/music_waveforms/Wavecont-Inspire-2-Full-Lenght_waveform.svg",
-  },
-  {
-    ID: 2,
-    Title: "With the Greatest Will",
-    Artist: "Koto Audio",
-    Duration: "2:24",
-    BPM: 128,
-    Categories: ["企业音乐", "营销/生活", "积极/鼓舞"],
-    WaveformImage:
-      "https://wix-musicwave-bucket1.s3.ca-central-1.amazonaws.com/music_waveforms/Inspiring Dreams_waveform.svg",
-  },
-  {
-    ID: 3,
-    Title: "Adventurous Life",
-    Artist: "L-Razy Music",
-    Duration: "2:35",
-    BPM: 108,
-    Categories: ["企业音乐", "营销/轻柔"],
-    WaveformImage:
-      "https://wix-musicwave-bucket1.s3.ca-central-1.amazonaws.com/music_waveforms/In Dreams_waveform.svg",
-  },
-];
+const fetchTracks = async () => {
+  tracksLoading.value = true;
+  tracksError.value = false;
+  try {
+    const response = await tracksApi.getTracksList({
+      pageNum: 1,
+      pageSize: 10,
+    }); // 假设默认每页10个
+    console.log("fetchTracks:", response);
+    tracks.value = response.rows;
+  } catch (e) {
+    tracksError.value = true;
+    console.error("Failed to fetch tracks:", e);
+  } finally {
+    tracksLoading.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchPlaylists();
+  fetchTracks();
+});
 </script>
 
 <style scoped>
@@ -281,7 +286,7 @@ const tracks = [
   padding: 0 20px;
 }
 
-.container_2{
+.container_2 {
   max-width: 95%;
   margin: 0 auto;
   padding: 0 20px;

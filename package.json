@@ -5,7 +5,6 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
-    "dev-mac": "http_proxy=http://127.0.0.1:9090 https_proxy=http://127.0.0.1:9090 nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
@@ -20,6 +19,7 @@
     "@vueuse/core": "^13.6.0",
     "@vueuse/motion": "^3.0.3",
     "@vueuse/nuxt": "^13.6.0",
+    "axios": "^1.11.0",
     "element-plus": "^2.10.7",
     "lottie-web": "^5.13.0",
     "nuxt": "^4.0.3",
@@ -31,6 +31,7 @@
   },
   "devDependencies": {
     "@element-plus/nuxt": "^1.1.4",
+    "@types/axios": "^0.9.36",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.12"
