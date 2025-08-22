@@ -113,7 +113,11 @@
         </button>
       </div>
 
-      <button class="download-button">download</button>
+      <div class="right-column-group">
+        <button class="download-button" @click="handleDownload">
+          download
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -121,6 +125,7 @@
 <script setup lang="ts">
 import { ref, defineProps, watch } from "vue";
 import { useMusicPlayerStore } from "~/stores/musicPlayer.js";
+import { tracksApi } from "~/api";
 import WaveformPlayer from "./WaveformPlayer.vue";
 import type { Tracks } from "~/types/tracks"; // Import the Tracks type
 
@@ -131,6 +136,33 @@ const props = defineProps({
     required: true,
   },
 });
+
+// 处理下载逻辑
+const handleDownload = async () => {
+  if (!props.track.audioFileUrl) {
+    console.error("Audio file URL is not available.");
+    return;
+  }
+
+  try {
+    const blob = await tracksApi.downloadTrackProxy(props.track.trackId!);
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${props.track.title}.mp3`);
+
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    console.log("Download started successfully.");
+  } catch (error) {
+    console.error("Failed to download the audio file:", error);
+  }
+};
 
 const musicPlayerStore = useMusicPlayerStore();
 const isPlaying = ref(false);
@@ -187,7 +219,9 @@ watch(
 <style scoped>
 .music-card-list {
   display: grid;
-  grid-template-columns: 250px 1250px 100px 220px auto;
+  grid-template-columns:
+    minmax(150px, 2fr) minmax(300px, 8fr) minmax(80px, 1fr)
+    minmax(150px, 2fr) auto;
   align-items: center;
   gap: 20px; /* 控制列之间的间距 */
 

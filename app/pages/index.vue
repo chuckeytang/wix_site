@@ -178,7 +178,7 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover; /* 确保视频覆盖整个容器 */
-  transform: translate(-50%, -50%); /* 居中 */
+  transform: translate(-50%, -40%); /* 居中 */
 }
 
 .hero-content {

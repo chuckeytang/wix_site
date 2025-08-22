@@ -1,58 +1,94 @@
 <template>
-    <div class = "music-grid-card">
-        <div class = "card-header">
-            <h3 class = "track-title">{{ track.Title }}</h3>
-            <p class = "track-artist">{{ track.Artist }}</p>
-        </div>
-
-        <div class = "player-section">
-            <button class = "play-button" @click = "togglePlay">
-                <svg v-if = "!isPlaying" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                  <rect x="6" y="4" width="4" height="16"></rect>
-                  <rect x="14" y="4" width="4" height="16"></rect>
-                </svg>
-            </button>
-            <div class = "waveform-wrapper">
-              <WaveformPlayer
-                :audio-url="mockAudioUrl"
-                :is-playing="isPlaying"
-                @play="handlePlay"
-                @pause="handlePause"
-                @update-progress="handleUpdateProgress"
-                ref="waveformPlayerRef"
-              />
-            </div>
-        </div>
-
-        <div class = "card-footer">
-            <button class = "action-btn icon-heart">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                </svg>
-            </button>
-            <button class = "action-btn icon-more">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                    <circle cx="12" cy="12" r="2"></circle>
-                    <circle cx="19" cy="12" r="2"></circle>
-                    <circle cx="5" cy="12" r="2"></circle>
-                </svg>
-            </button>
-            <button class = "download-button">download</button>
-        </div>
+  <div class="music-grid-card">
+    <div class="card-header">
+      <h3 class="track-title">{{ track.title }}</h3>
+      <p class="track-artist">{{ track.artist }}</p>
     </div>
+
+    <div class="player-section">
+      <button class="play-button" @click="togglePlay">
+        <svg
+          v-if="!isPlaying"
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          stroke="none"
+        >
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        <svg
+          v-else
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          stroke="none"
+        >
+          <rect x="6" y="4" width="4" height="16"></rect>
+          <rect x="14" y="4" width="4" height="16"></rect>
+        </svg>
+      </button>
+      <div class="waveform-wrapper">
+        <WaveformPlayer
+          :audio-url="track.audioFileUrl"
+          :is-playing="isPlaying"
+          @play="handlePlay"
+          @pause="handlePause"
+          @update-progress="handleUpdateProgress"
+          ref="waveformPlayerRef"
+        />
+      </div>
+    </div>
+
+    <div class="card-footer">
+      <button class="action-btn icon-heart">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+          ></path>
+        </svg>
+      </button>
+      <button class="action-btn icon-more">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          stroke="none"
+        >
+          <circle cx="12" cy="12" r="2"></circle>
+          <circle cx="19" cy="12" r="2"></circle>
+          <circle cx="5" cy="12" r="2"></circle>
+        </svg>
+      </button>
+      <button class="download-button">download</button>
+    </div>
+  </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, defineProps, watch } from "vue";
 import WaveformPlayer from "./WaveformPlayer.vue";
 import { useMusicPlayerStore } from "~/stores/musicPlayer.js";
+import type { Tracks } from "~/types/tracks";
 
 const props = defineProps({
-    track: {
-    type: Object,
+  track: {
+    type: Object as () => Tracks,
     required: true,
   },
 });
@@ -60,10 +96,7 @@ const props = defineProps({
 const musicPlayerStore = useMusicPlayerStore();
 const isPlaying = ref(false);
 const progress = ref(0);
-const waveformPlayerRef = ref(null);
-
-const mockAudioUrl =
-  "https://music.wixstatic.com/mp3/69f695_c5c7728f296849e19848b540ebd81491.mp3";
+const waveformPlayerRef = ref<InstanceType<typeof WaveformPlayer> | null>(null);
 
 // 播放/暂停的逻辑现在调用子组件的方法
 const togglePlay = () => {
@@ -71,8 +104,8 @@ const togglePlay = () => {
     waveformPlayerRef.value?.pause();
   } else {
     // 设置全局正在播放的曲目 ID
-    musicPlayerStore.setCurrentPlayingId(props.track.ID);
-    console.log(props.track.ID);
+    musicPlayerStore.setCurrentPlayingId(props.track.trackId);
+    console.log(props.track.trackId);
     waveformPlayerRef.value?.play();
   }
 };
@@ -80,17 +113,17 @@ const togglePlay = () => {
 // 监听 WaveformPlayer 发出的事件
 const handlePlay = () => {
   isPlaying.value = true;
-  musicPlayerStore.setCurrentPlayingId(props.track.ID);
+  musicPlayerStore.setCurrentPlayingId(props.track.trackId);
 };
 
 const handlePause = () => {
   isPlaying.value = false;
-  if (musicPlayerStore.currentPlayingId === props.track.ID) {
+  if (musicPlayerStore.currentPlayingId === props.track.trackId) {
     musicPlayerStore.setCurrentPlayingId(null);
   }
 };
 
-const handleUpdateProgress = (newProgress) => {
+const handleUpdateProgress = (newProgress: number) => {
   progress.value = newProgress;
 };
 
@@ -98,7 +131,7 @@ const handleUpdateProgress = (newProgress) => {
 watch(
   () => musicPlayerStore.currentPlayingId,
   (newId) => {
-    if (newId !== null && newId !== props.track.ID) {
+    if (newId !== null && newId !== props.track.trackId) {
       if (isPlaying.value) {
         waveformPlayerRef.value?.pause();
       }
@@ -117,12 +150,17 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 15px; /* 控制各区域之间的垂直间距 */
-  transition: border-color 0.3s, box-shadow 0.3s;
+
+  max-width: 400px;
+
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s;
 }
 
 .music-grid-card:hover {
-    border-color: #ffc93c; /* 示例高亮颜色 */
-    box-shadow: 0 0 15px rgba(255, 201, 60, 0.2);
+  border-color: #ffc93c; /* 示例高亮颜色 */
+  box-shadow: 0 0 15px rgba(255, 201, 60, 0.2);
 }
 
 .card-header {
@@ -159,7 +197,9 @@ watch(
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.3s, border-color 0.3s;
+  transition:
+    background-color 0.3s,
+    border-color 0.3s;
   flex-shrink: 0;
 }
 
@@ -211,7 +251,9 @@ watch(
   padding: 8px 20px;
   border-radius: 50px;
   cursor: pointer;
-  transition: background-color 0.3s, border-color 0.3s;
+  transition:
+    background-color 0.3s,
+    border-color 0.3s;
   margin-left: auto; /* 让下载按钮自动推到最右边 */
 }
 

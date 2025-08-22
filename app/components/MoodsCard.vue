@@ -1,12 +1,12 @@
 <template>
-  <div class="genres-card">
+  <div class="moods-card">
     <div class="card-image-container">
       <div class="play-button-overlay">
         <button class="play-button">▶</button>
       </div>
       <img :src="moodlist.coverImageUrl" :alt="moodlist.name" />
     </div>
-    <div class="genres-card-content">
+    <div class="card-content">
       <h3 class="card-title">{{ moodlist.name }}</h3>
     </div>
   </div>
@@ -18,7 +18,6 @@ import type { Moods } from "~/types/moods";
 
 defineProps({
   moodlist: {
-    // 使用类型断言明确指定 prop 的类型
     type: Object as () => Moods,
     required: true,
   },
@@ -26,8 +25,8 @@ defineProps({
 </script>
 
 <style scoped>
-.genres-card {
-  /* 移除 position: relative; */
+/* 使用 moods-card 作为最外层容器，避免与 genres-card 冲突 */
+.moods-card {
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -37,74 +36,76 @@ defineProps({
   cursor: pointer;
 }
 
-.genres-card:hover {
+.moods-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 }
 
 .card-image-container {
-  /* 移除 position: absolute; 和 top/left 等，让它在文档流中 */
   width: 100%;
-  /* 使用 padding-bottom 实现 4:3 的宽高比 */
-  padding-bottom: 75%;
-  position: relative; /* 为子元素 img 提供定位参考 */
+  /* 关键：使用 padding-bottom 实现正方形宽高比 (1:1) */
+  padding-bottom: 100%;
+  position: relative;
   transition: filter 0.3s ease-in-out;
 }
 
 .card-image-container img {
-  /* 图片绝对定位到容器内，并覆盖 */
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  /* 确保图片完全覆盖，并裁剪多余部分 */
   object-fit: cover;
 }
 
-.card-content-banner {
-  background-color: #dcd5d5; /* 根据图片颜色调整 */
-  color: #fff;
-  padding: 15px;
-  text-align: left; /* 文字左对齐 */
+/* 底部标题内容区 */
+.card-content {
+  background-color: rgba(255, 255, 255, 0.05); /* 淡雅的半透明白色背景 */
+  padding: 10px;
+  /* 居中对齐 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 }
 
 .card-title {
   margin: 0;
   font-size: 1.2rem;
   font-weight: 700;
-  color: #dcd5d5;
+  color: #fff; /* 确保标题颜色清晰可见 */
 }
 
+/* 悬停时的播放按钮覆盖层 */
 .play-button-overlay {
-  position: absolute; /* 绝对定位，覆盖在图片上 */
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* 半透明黑色背景 */
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
-  justify-content: center; /* 水平居中 */
-  align-items: center; /* 垂直居中 */
-  opacity: 0; /* 默认隐藏 */
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
   transition: opacity 0.3s ease-in-out;
-  z-index: 10; /* 确保在图片上方 */
+  z-index: 10;
 }
 
-.genres-card:hover .play-button-overlay {
+.moods-card:hover .play-button-overlay {
   opacity: 1;
 }
 
-/* 鼠标悬停时，图片变暗 */
-.genres-card:hover .card-image-container img {
+.moods-card:hover .card-image-container img {
   filter: brightness(70%);
 }
 
-/* 播放按钮样式 */
 .play-button {
-  background-color: #dcd5d5;
+  background-color: #fff; /* 按钮背景色 */
   color: #1a1a1a;
   border: none;
-  border-radius: 50%; /* 圆形按钮 */
+  border-radius: 50%;
   width: 60px;
   height: 60px;
   font-size: 24px;
@@ -116,6 +117,6 @@ defineProps({
 }
 
 .play-button:hover {
-  transform: scale(1.1); /* 悬停时放大 */
+  transform: scale(1.1);
 }
 </style>

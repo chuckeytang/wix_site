@@ -3,6 +3,7 @@
 import request from "./http";
 import type { Tracks, PaginationResult } from "~/types/tracks";
 import type { AjaxResult } from "~/types/ajax";
+import axios from "axios"; // 引入 axios
 
 /**
  * 音乐曲目相关的 API 接口
@@ -62,5 +63,44 @@ export const tracksApi = {
     return request.post("/site/tracks/export", query, {
       responseType: "blob", // 响应类型为 Blob，用于下载
     });
+  },
+
+  /**
+   * 下载音乐文件（推荐直接下载，无需代理）
+   * @param audioFileUrl 音频文件的完整URL
+   * @returns 返回一个包含 Blob 数据的 Promise
+   */
+  downloadTrackFile(audioFileUrl: string): Promise<Blob> {
+    return axios
+      .get(audioFileUrl, {
+        responseType: "blob",
+      })
+      .then((response) => response.data as Blob)
+      .catch((error) => {
+        console.error("下载文件失败:", error);
+        return Promise.reject(error);
+      });
+  },
+
+  /**
+   * 通过后端代理下载音乐文件
+   * @param trackId 音乐曲目ID
+   * @returns 返回一个包含 Blob 数据的 Promise
+   */
+  downloadTrackProxy(trackId: number): Promise<Blob> {
+    // 获取后端 API 基础 URL
+    const baseURL =
+      import.meta.env.VITE_APP_BASE_API || "http://localhost:8080";
+
+    // 直接使用 axios 实例，不经过 http.ts 的响应拦截器
+    return axios
+      .get(`${baseURL}/site/tracks/download/${trackId}`, {
+        responseType: "blob",
+      })
+      .then((response) => response.data as Blob)
+      .catch((error) => {
+        console.error("通过代理下载文件失败:", error);
+        return Promise.reject(error);
+      });
   },
 };

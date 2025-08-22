@@ -80,11 +80,11 @@ onMounted(() => {
 }
 
 .card-content {
-  background-color: #1a1a1a; /* 设置整个卡片区域的深色背景 */
+  background-color: #000;
   display: grid;
   grid-template-columns: repeat(6, 1fr); /* 确保固定为6列 */
   gap: 30px;
-  padding: 80px 20px;
+  padding: 40px 60px;
   max-width: none;
   margin: 0 auto;
 }

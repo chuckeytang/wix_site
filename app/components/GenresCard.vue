@@ -6,7 +6,7 @@
       </div>
       <img :src="genreslist.coverImageUrl" :alt="genreslist.name" />
     </div>
-    <div class="genres-card-content">
+    <div class="card-content">
       <h3 class="card-title">{{ genreslist.name }}</h3>
     </div>
   </div>
@@ -43,11 +43,10 @@ defineProps({
 }
 
 .card-image-container {
-  /* 移除 position: absolute; 和 top/left 等，让它在文档流中 */
   width: 100%;
-  /* 使用 padding-bottom 实现 4:3 的宽高比 */
-  padding-bottom: 75%;
-  position: relative; /* 为子元素 img 提供定位参考 */
+  /* 关键：使用 padding-bottom 实现正方形宽高比 (1:1) */
+  padding-bottom: 100%;
+  position: relative;
 }
 
 .card-image-container img {
@@ -61,18 +60,22 @@ defineProps({
   transition: filter 0.3s ease-in-out;
 }
 
-.card-content-banner {
-  background-color: #dcd5d5; /* 根据图片颜色调整 */
-  color: #fff;
-  padding: 15px;
-  text-align: left; /* 文字左对齐 */
+/* 底部标题内容区 */
+.card-content {
+  background-color: rgba(255, 255, 255, 0.05); /* 淡雅的半透明白色背景 */
+  padding: 10px;
+  /* 居中对齐 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 }
 
 .card-title {
   margin: 0;
   font-size: 1.2rem;
   font-weight: 700;
-  color: #dcd5d5;
+  color: #fff; /* 确保标题颜色清晰可见 */
 }
 
 .play-button-overlay {
@@ -101,7 +104,7 @@ defineProps({
 
 /* 播放按钮样式 */
 .play-button {
-  background-color: #dcd5d5;
+  background-color: #fff;
   color: #1a1a1a;
   border: none;
   border-radius: 50%; /* 圆形按钮 */

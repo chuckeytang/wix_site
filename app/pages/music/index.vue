@@ -13,7 +13,7 @@
         <section class="title-section">
           <div class="container">
             <div class="right-aligned-header">
-              <a href="/all-playlists" class="view-all-button"
+              <a href="/playlists" class="view-all-button"
                 >View All Playlists</a
               >
             </div>
@@ -172,13 +172,21 @@
             Failed to load tracks.
           </div>
           <template v-else>
-            <MusicGridCard
-              v-for="track in tracks"
-              :key="track.trackId"
-              :track="track"
-            />
+            <div class="music-grid-container">
+              <MusicGridCard
+                v-for="track in tracks"
+                :key="track.trackId"
+                :track="track"
+              />
+            </div>
           </template>
         </section>
+        <Pagination
+          v-if="!tracksLoading && !tracksError"
+          :total-pages="totalPages"
+          :current-page="currentPage"
+          @update:currentPage="handlePageChange"
+        />
       </div>
     </div>
   </div>
@@ -190,6 +198,7 @@ import SearchBar from "~/components/SearchBar.vue";
 import PlaylistCard from "~/components/PlaylistCard.vue";
 import MusicCard from "~/components/MusicCard.vue";
 import MusicGridCard from "~/components/MusicGridCard.vue";
+import Pagination from "~/components/Pagination.vue";
 
 // 导入 API 和类型
 import { tracksApi, playlistsApi } from "~/api";
@@ -216,6 +225,13 @@ const playlistsError = ref<boolean>(false);
 const tracks = ref<Tracks[]>([]);
 const tracksLoading = ref<boolean>(true);
 const tracksError = ref<boolean>(false);
+const currentPage = ref<number>(1);
+const pageSize = ref<number>(10);
+const totalTracks = ref<number>(0);
+
+const totalPages = computed(() => {
+  return Math.ceil(totalTracks.value / pageSize.value);
+});
 
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
@@ -260,17 +276,25 @@ const fetchTracks = async () => {
   tracksError.value = false;
   try {
     const response = await tracksApi.getTracksList({
-      pageNum: 1,
-      pageSize: 10,
-    }); // 假设默认每页10个
+      pageNum: currentPage.value,
+      pageSize: pageSize.value,
+    });
     console.log("fetchTracks:", response);
     tracks.value = response.rows;
+    totalTracks.value = response.total;
   } catch (e) {
     tracksError.value = true;
     console.error("Failed to fetch tracks:", e);
   } finally {
     tracksLoading.value = false;
   }
+};
+
+const handlePageChange = (newPage: number) => {
+  currentPage.value = newPage;
+  fetchTracks();
+  // 滚动到页面顶部
+  window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
 onMounted(() => {
@@ -280,6 +304,37 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 页面最外层容器 */
+.page-wrapper {
+  transition: transform 0.3s ease-in-out;
+  overflow: hidden;
+}
+
+/* 侧边栏基础样式 */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 300px; /* 侧边栏宽度 */
+  height: 100%;
+  background-color: #1a1a1a;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease-in-out;
+  z-index: 1000;
+}
+
+/* 侧边栏打开时的样式 */
+.sidebar.is-open {
+  transform: translateX(0);
+}
+
+/* 主内容区 */
+.main-content {
+  flex-grow: 1;
+  transition: transform 0.3s ease-in-out;
+}
+
 .container {
   max-width: 80%;
   margin: 0 auto;
@@ -394,38 +449,6 @@ onMounted(() => {
   width: 20px;
   height: 20px;
   color: #0d0d1a;
-}
-
-/* 页面最外层容器 */
-.page-wrapper {
-  display: flex;
-  transition: transform 0.3s ease-in-out;
-  overflow: hidden;
-}
-
-/* 侧边栏基础样式 */
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 300px; /* 侧边栏宽度 */
-  height: 100%;
-  background-color: #1a1a1a;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
-  transform: translateX(-100%);
-  transition: transform 0.3s ease-in-out;
-  z-index: 1000;
-}
-
-/* 侧边栏打开时的样式 */
-.sidebar.is-open {
-  transform: translateX(0);
-}
-
-/* 主内容区 */
-.main-content {
-  flex-grow: 1;
-  transition: transform 0.3s ease-in-out;
 }
 
 /* 当侧边栏打开时，主内容区向右平移 */
@@ -558,8 +581,8 @@ onMounted(() => {
   margin: 0 auto;
   padding: 0 20px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 400px));
+  gap: 20px;
 }
 
 .music-list-section,
