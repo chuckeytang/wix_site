@@ -9,7 +9,7 @@
     <div class="main-content">
       <div>
         <section class="hero-section"></section>
-        <div class = "search-bar-container">
+        <div class="search-bar-container">
           <SearchBar />
         </div>
         <section class="title-section">
@@ -191,6 +191,7 @@
         />
       </div>
     </div>
+    <MusicPlayerPanel />
   </div>
 </template>
 
@@ -201,6 +202,7 @@ import PlaylistCard from "~/components/PlaylistCard.vue";
 import MusicCard from "~/components/MusicCard.vue";
 import MusicGridCard from "~/components/MusicGridCard.vue";
 import Pagination from "~/components/Pagination.vue";
+import MusicPlayerPanel from "~/components/MusicPlayerPanel.vue";
 
 // 导入 API 和类型
 import { tracksApi, playlistsApi } from "~/api";

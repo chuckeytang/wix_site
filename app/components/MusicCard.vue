@@ -1,7 +1,7 @@
 <template>
   <div class="music-card-list">
     <div class="left-section">
-      <button class="play-button" @click="togglePlay">
+      <button class="play-button" @click="togglePlayAndSetTrack">
         <svg viewBox="0 0 36 36" class="circular-progress-bar">
           <path
             class="circle-bg"
@@ -14,7 +14,7 @@
           />
         </svg>
         <svg
-          v-if="!isPlaying"
+          v-if="!localIsPlaying"
           xmlns="http://www.w3.org/2000/svg"
           width="24"
           height="24"
@@ -51,10 +51,10 @@
 
     <WaveformPlayer
       :audio-url="track.audioFileUrl"
-      :is-playing="isPlaying"
-      @play="handlePlay"
-      @pause="handlePause"
+      :is-playing="localIsPlaying"
       @update-progress="handleUpdateProgress"
+      @ready="handleReady"
+      @waveform-click="handleWaveformClick"
       ref="waveformPlayerRef"
     />
 
@@ -124,10 +124,10 @@
 
 <script setup lang="ts">
 import { ref, defineProps, watch } from "vue";
-import { useMusicPlayerStore } from "~/stores/musicPlayer.js";
+import { useMusicPlayerStore } from "~/stores/musicPlayer";
 import { tracksApi } from "~/api";
 import WaveformPlayer from "./WaveformPlayer.vue";
-import type { Tracks } from "~/types/tracks"; // Import the Tracks type
+import type { Tracks } from "~/types/tracks";
 
 const props = defineProps({
   track: {
@@ -136,6 +136,46 @@ const props = defineProps({
     required: true,
   },
 });
+
+const musicPlayerStore = useMusicPlayerStore();
+const progress = ref(0);
+const waveformPlayerRef = ref<InstanceType<typeof WaveformPlayer> | null>(null);
+
+// 使用 computed 属性来同步本地播放状态和全局状态
+const localIsPlaying = computed(() => {
+  const result =
+    musicPlayerStore.currentTrack?.trackId === props.track.trackId &&
+    musicPlayerStore.isPlaying;
+  return result;
+});
+
+// 使用 computed 属性来同步本地进度和全局进度
+const globalProgress = computed(() => {
+  if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
+    return (musicPlayerStore.currentTime / musicPlayerStore.duration) * 100;
+  }
+  return 0;
+});
+
+// Utility function to format duration from seconds to MM:SS
+const formatDuration = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds < 10 ? "0" : ""}${remainingSeconds}`;
+};
+
+// 播放/暂停的逻辑，首先设置全局 Store
+const togglePlayAndSetTrack = () => {
+  if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
+    // 如果点击的是当前正在播放的歌曲，则切换播放/暂停状态
+    console.log("暂停", props.track.trackId);
+    musicPlayerStore.togglePlayPause();
+  } else {
+    // 如果点击了新歌曲，则设置新歌曲为当前歌曲并播放
+    console.log("播放track", props.track.trackId);
+    musicPlayerStore.setTrack(props.track);
+  }
+};
 
 // 处理下载逻辑
 const handleDownload = async () => {
@@ -164,56 +204,26 @@ const handleDownload = async () => {
   }
 };
 
-const musicPlayerStore = useMusicPlayerStore();
-const isPlaying = ref(false);
-const progress = ref(0);
-const waveformPlayerRef = ref<InstanceType<typeof WaveformPlayer> | null>(null);
-
-// Utility function to format duration from seconds to MM:SS
-const formatDuration = (seconds: number): string => {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes}:${remainingSeconds < 10 ? "0" : ""}${remainingSeconds}`;
-};
-
-// 播放/暂停的逻辑
-const togglePlay = () => {
-  if (isPlaying.value) {
-    waveformPlayerRef.value?.pause();
-  } else {
-    musicPlayerStore.setCurrentPlayingId(props.track.trackId);
-    waveformPlayerRef.value?.play();
-  }
-};
-
-// 监听子组件发出的事件
-const handlePlay = () => {
-  isPlaying.value = true;
-  musicPlayerStore.setCurrentPlayingId(props.track.trackId);
-};
-
-const handlePause = () => {
-  isPlaying.value = false;
-  if (musicPlayerStore.currentPlayingId === props.track.trackId) {
-    musicPlayerStore.setCurrentPlayingId(null);
+// 处理波形图点击
+const handleWaveformClick = (relativePosition: number) => {
+  musicPlayerStore.setTrack(props.track);
+  if (waveformPlayerRef.value) {
+    waveformPlayerRef.value.seekTo(relativePosition);
   }
 };
 
 const handleUpdateProgress = (newProgress: number) => {
-  progress.value = newProgress;
+  // 当歌曲不是当前播放歌曲时，不更新全局进度
+  if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
+    musicPlayerStore.updateTime(newProgress);
+  }
 };
 
-// 监听全局状态变化，控制波形图暂停
-watch(
-  () => musicPlayerStore.currentPlayingId,
-  (newId) => {
-    if (newId !== null && newId !== props.track.trackId) {
-      if (isPlaying.value) {
-        waveformPlayerRef.value?.pause();
-      }
-    }
+const handleReady = () => {
+  if (waveformPlayerRef.value) {
+    musicPlayerStore.setDuration(waveformPlayerRef.value.getDuration());
   }
-);
+};
 </script>
 
 <style scoped>
