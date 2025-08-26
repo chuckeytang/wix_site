@@ -51,9 +51,8 @@
 
 <style scoped>
 .search-section {
-  background-color: #1a1a1a;
-  padding: 20px 0;
-  padding-top: 100px; 
+  background-color: transparent;
+  padding: 20px 0; 
 }
 
 .container {

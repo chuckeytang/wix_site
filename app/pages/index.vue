@@ -16,6 +16,9 @@
 
       <div class="hero-content">
         <h1>VERSCAPE</h1>
+        <div class = "search-bar-container">
+          <SearchBar/>
+        </div>
         <h2>Bring Your Story to Life<br />with Sound</h2>
         <p>
           Unlimited access to royalty-free music and SFX for all your creative
@@ -96,6 +99,7 @@ import { ref, computed, onMounted } from "vue";
 import PlaylistCard from "~/components/PlaylistCard.vue";
 import { playlistsApi } from "~/api";
 import type { Playlists } from "~/types/playlists";
+import SearchBar from "~/components/SearchBar.vue";
 
 // 播放列表数据状态
 const playlists = ref<Playlists[]>([]);
@@ -293,5 +297,18 @@ onMounted(() => {
 
 .footer-column a:hover {
   color: #fff;
+}
+
+.search-bar-container {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 260px;
+  width: 220%; 
+  background-color: transparent;
+}
+
+.hero-content h2 {
+  margin-top: 120px; /* 这里的数值需要手动调整，直到不重叠 */
 }
 </style>

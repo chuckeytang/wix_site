@@ -2,14 +2,16 @@
   <div class="page-wrapper" :class="{ 'sidebar-open': isSidebarOpen }">
     <aside class="sidebar" :class="{ 'is-open': isSidebarOpen }">
       <div class="sidebar-content">
-        <h3 class="sidebar-title">type</h3>
+        <h3 class="sidebar-title"></h3>
       </div>
     </aside>
 
     <div class="main-content">
       <div>
         <section class="hero-section"></section>
-        <SearchBar />
+        <div class = "search-bar-container">
+          <SearchBar />
+        </div>
         <section class="title-section">
           <div class="container">
             <div class="right-aligned-header">
@@ -226,7 +228,7 @@ const tracks = ref<Tracks[]>([]);
 const tracksLoading = ref<boolean>(true);
 const tracksError = ref<boolean>(false);
 const currentPage = ref<number>(1);
-const pageSize = ref<number>(10);
+const pageSize = ref<number>(20);
 const totalTracks = ref<number>(0);
 
 const totalPages = computed(() => {
@@ -590,5 +592,12 @@ onMounted(() => {
 .music-grid-section {
   background-color: #0d0d1a;
   padding: 20px 0;
+}
+
+.search-bar-container {
+  width: 100%;
+  margin: 0 auto;
+  padding-top: 80px;
+  background-color: #262529;
 }
 </style>
