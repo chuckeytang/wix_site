@@ -105,7 +105,6 @@ const togglePlay = () => {
   } else {
     // 设置全局正在播放的曲目 ID
     musicPlayerStore.setCurrentPlayingId(props.track.trackId);
-    console.log(props.track.trackId);
     waveformPlayerRef.value?.play();
   }
 };
@@ -119,7 +118,7 @@ const handlePlay = () => {
 const handlePause = () => {
   isPlaying.value = false;
   if (musicPlayerStore.currentPlayingId === props.track.trackId) {
-    musicPlayerStore.setCurrentPlayingId(null);
+    musicPlayerStore.setCurrentPlayingId(undefined);
   }
 };
 

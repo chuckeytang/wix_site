@@ -50,27 +50,12 @@ const wavesurfer = ref(null);
 const hoverProgress = ref(0);
 const totalDuration = ref(0);
 
-// 监听 isPlaying 属性变化，控制播放/暂停
+// 监听 audioUrl 变化，重新加载音频
 watch(
-  () => props.isPlaying,
-  (newVal) => {
-    if (!wavesurfer.value) {
-      console.warn("[WaveformPlayer] wavesurfer 实例未初始化!");
-      return;
-    }
-
-    if (newVal) {
-      // 避免重复播放
-      if (!wavesurfer.value.isPlaying()) {
-        wavesurfer.value.play();
-        console.log(`[WaveformPlayer] 开始播放，歌曲 ID: ${props.audioUrl}`);
-      }
-    } else {
-      // 避免重复暂停
-      if (wavesurfer.value.isPlaying()) {
-        wavesurfer.value.pause();
-        console.log(`[WaveformPlayer] 暂停播放，歌曲 ID: ${props.audioUrl}`);
-      }
+  () => props.audioUrl,
+  (newUrl, oldUrl) => {
+    if (newUrl && newUrl !== oldUrl) {
+      loadAudio(newUrl);
     }
   }
 );
@@ -128,9 +113,6 @@ const createWavesurfer = () => {
   wavesurfer.value.on("ready", () => {
     totalDuration.value = wavesurfer.value.getDuration();
     emits("ready");
-    if (props.isPlaying) {
-      wavesurfer.value.play();
-    }
   });
 };
 
@@ -144,13 +126,12 @@ onUnmounted(() => {
   }
 });
 
-// 处理波形图点击和悬停
 const handleWaveformClick = (event) => {
-  if (!waveformRef.value) return;
+  if (!waveformRef.value || !wavesurfer.value) return;
   const rect = waveformRef.value.getBoundingClientRect();
   const relativeX = (event.clientX - rect.left) / rect.width;
-  // 向父组件传递点击位置的相对进度
-  emits("waveform-click", relativeX);
+  wavesurfer.value.seekTo(relativeX); // 直接控制波形图进度
+  emits("waveform-click", relativeX); // 向父组件传递点击位置的相对进度
 };
 
 const handleHover = (event) => {
@@ -165,11 +146,22 @@ const handleHoverLeave = () => {
 };
 
 // 暴露给父组件的方法
-const play = () => wavesurfer.value?.play();
-const pause = () => wavesurfer.value?.pause();
+const play = () => {
+  console.log(`[WaveformPlayer] 开始播放，歌曲 ID: ${props.audioUrl}`);
+  wavesurfer.value?.play();
+};
+const pause = () => {
+  console.log(`[WaveformPlayer] 暂停播放，歌曲 ID: ${props.audioUrl}`);
+  wavesurfer.value?.pause();
+};
 const seekTo = (progress) => wavesurfer.value?.seekTo(progress);
 const setVolume = (volume) => wavesurfer.value?.setVolume(volume);
 const getDuration = () => totalDuration.value;
+const loadAudio = (url) => {
+  if (wavesurfer.value) {
+    wavesurfer.value.load(url);
+  }
+};
 
 const setSegment = (segment) => {
   let start = 0;
@@ -192,6 +184,7 @@ defineExpose({
   setVolume,
   getDuration,
   setSegment,
+  loadAudio,
 });
 </script>
 

@@ -28,6 +28,9 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
      * 歌曲总时长（秒）。
      */
     duration: 0,
+
+    // 用于在波形图点击时同步进度的状态
+    seekToProgress: null as number | null,
   }),
   actions: {
     /**
@@ -44,8 +47,12 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
      * @param track 完整的歌曲对象
      */
     setTrack(track: Tracks) {
-      this.currentTrack = track;
-      this.currentPlayingId = track.trackId!; // 同步更新ID
+      if (this.currentTrack?.trackId !== track.trackId) {
+        this.currentTrack = track;
+        this.currentPlayingId = track.trackId!;
+        this.currentTime = 0;
+        this.duration = track.duration; // 从元数据中获取 duration
+      }
       this.isPlaying = true;
     },
 
@@ -90,6 +97,27 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
      */
     setDuration(totalDuration: number) {
       this.duration = totalDuration;
+    },
+
+    /**
+     * 设置播放进度。
+     * @param progress 0到1之间的相对进度
+     */
+    seekTo(progress: number) {
+      if (this.currentTrack) {
+        this.currentTime = this.duration * progress;
+        // 注意：这里我们只更新了 store 状态，实际的 seek 操作由 MusicPlayerPanel 里的 watch 负责
+        // 然后触发 seekToProgress 状态，通知组件进行 seek
+        console.log("current Time:", this.currentTime);
+        this.seekToProgress = progress;
+      }
+    },
+
+    /**
+     * 重置 seekToProgress 状态，防止重复触发
+     */
+    clearSeekToProgress() {
+      this.seekToProgress = null;
     },
   },
   getters: {

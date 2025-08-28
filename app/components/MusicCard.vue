@@ -52,7 +52,6 @@
     <WaveformPlayer
       :audio-url="track.audioFileUrl"
       :is-playing="localIsPlaying"
-      @update-progress="handleUpdateProgress"
       @ready="handleReady"
       @waveform-click="handleWaveformClick"
       ref="waveformPlayerRef"
@@ -157,6 +156,17 @@ const globalProgress = computed(() => {
   return 0;
 });
 
+// 监听全局进度变化，更新 musicCard 的波形图
+watch(
+  () => globalProgress.value,
+  (newProgress) => {
+    // 只有当是当前播放歌曲时才同步波形图
+    if (localIsPlaying.value && waveformPlayerRef.value) {
+      waveformPlayerRef.value.seekTo(newProgress / 100);
+    }
+  }
+);
+
 // Utility function to format duration from seconds to MM:SS
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
@@ -168,7 +178,6 @@ const formatDuration = (seconds: number): string => {
 const togglePlayAndSetTrack = () => {
   if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
     // 如果点击的是当前正在播放的歌曲，则切换播放/暂停状态
-    console.log("暂停", props.track.trackId);
     musicPlayerStore.togglePlayPause();
   } else {
     // 如果点击了新歌曲，则设置新歌曲为当前歌曲并播放
@@ -207,16 +216,7 @@ const handleDownload = async () => {
 // 处理波形图点击
 const handleWaveformClick = (relativePosition: number) => {
   musicPlayerStore.setTrack(props.track);
-  if (waveformPlayerRef.value) {
-    waveformPlayerRef.value.seekTo(relativePosition);
-  }
-};
-
-const handleUpdateProgress = (newProgress: number) => {
-  // 当歌曲不是当前播放歌曲时，不更新全局进度
-  if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
-    musicPlayerStore.updateTime(newProgress);
-  }
+  musicPlayerStore.seekTo(relativePosition);
 };
 
 const handleReady = () => {

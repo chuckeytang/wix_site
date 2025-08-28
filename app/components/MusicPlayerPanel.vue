@@ -8,6 +8,7 @@
             :is-playing="playerStore.isPlaying"
             @update-progress="handleUpdateProgress"
             @ready="handleReady"
+            @waveform-click="handleWaveformClick"
             ref="waveformPlayerRef"
           />
         </div>
@@ -223,20 +224,79 @@ const segments = [
   { value: "60s", label: "60s" },
 ];
 
+// 这个监听器将处理所有来自 store 的播放/暂停指令
+watch(
+  () => playerStore.isPlaying,
+  (newVal, oldVal) => {
+    // 避免首次加载时的不必要触发
+    if (newVal === oldVal) return;
+
+    if (waveformPlayerRef.value) {
+      if (newVal) {
+        // 播放前，先将 Wavesurfer seek 到当前进度
+        const relativeProgress = playerStore.currentTime / playerStore.duration;
+        waveformPlayerRef.value.seekTo(relativeProgress);
+
+        waveformPlayerRef.value.play();
+      } else {
+        waveformPlayerRef.value.pause();
+      }
+    }
+  }
+);
+
+// 监听 seekToProgress 状态，控制波形图进度同步
+watch(
+  () => playerStore.seekToProgress,
+  (newProgress) => {
+    if (newProgress !== null && waveformPlayerRef.value) {
+      // 调用 Wavesurfer 的 seekTo 方法
+      waveformPlayerRef.value.seekTo(newProgress);
+      // 同步完成后，立即重置 store 中的状态，避免重复触发
+      playerStore.clearSeekToProgress();
+    }
+  }
+);
+
+// 监听歌曲变化，加载新波形图
+watch(
+  () => playerStore.currentTrack,
+  (newTrack, oldTrack) => {
+    if (newTrack && newTrack.trackId !== oldTrack?.trackId) {
+      if (waveformPlayerRef.value) {
+        waveformPlayerRef.value.loadAudio(newTrack.audioFileUrl);
+      }
+    }
+  }
+);
+
 // 进度更新事件处理
 const handleUpdateProgress = (progress: number) => {
   // 根据总时长和进度计算当前时间
-  if (waveformPlayerRef.value) {
-    const totalDuration = waveformPlayerRef.value.getDuration();
-    currentTime.value = (progress / 100) * totalDuration;
+  if (playerStore.duration > 0) {
+    // 直接使用来自 store 的 duration
+    currentTime.value = (progress / 100) * playerStore.duration;
     playerStore.updateTime(currentTime.value);
   }
 };
 
+// 只有当 WaveformPlayer 准备好时，才开始播放
 const handleReady = () => {
   if (waveformPlayerRef.value) {
-    playerStore.setDuration(waveformPlayerRef.value.getDuration());
+    if (playerStore.isPlaying) {
+      // 在播放前，先seekTo到全局进度
+      const relativeProgress = playerStore.currentTime / playerStore.duration;
+      waveformPlayerRef.value.seekTo(relativeProgress);
+
+      // 在 ready 事件中确保播放
+      waveformPlayerRef.value.play();
+    }
   }
+};
+
+const handleWaveformClick = (relativePosition: number) => {
+  // 当在 MusicPlayerPanel 的波形图上点击时，直接调用 seekTo action
+  playerStore.seekTo(relativePosition);
 };
 
 // 时长格式化
