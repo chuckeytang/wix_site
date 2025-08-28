@@ -156,6 +156,34 @@ const globalProgress = computed(() => {
   return 0;
 });
 
+watch(
+  () => musicPlayerStore.currentSegment,
+  (newSegment) => {
+    if (!waveformPlayerRef.value) return;
+
+    if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
+      // 1. 如果是当前播放的歌曲，则应用全局分段设置
+      waveformPlayerRef.value.setSegment(newSegment);
+    } else {
+      // 2. 如果不是当前播放的歌曲，则取消分段设置
+      waveformPlayerRef.value.setSegment("full");
+    }
+  }
+);
+
+watch(
+  () => musicPlayerStore.currentPlayingId,
+  (newId) => {
+    // 如果全局播放ID存在，并且不是当前卡片的ID
+    if (newId && newId !== props.track.trackId) {
+      // 强制暂停此卡片的播放
+      if (waveformPlayerRef.value) {
+        waveformPlayerRef.value.pause();
+      }
+    }
+  }
+);
+
 // 监听全局进度变化，更新 musicCard 的波形图
 watch(
   () => globalProgress.value,
@@ -215,6 +243,7 @@ const handleDownload = async () => {
 
 // 处理波形图点击
 const handleWaveformClick = (relativePosition: number) => {
+  console.log("musiccard点击");
   musicPlayerStore.setTrack(props.track);
   musicPlayerStore.seekTo(relativePosition);
 };

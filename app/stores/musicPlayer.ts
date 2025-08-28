@@ -31,6 +31,9 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
 
     // 用于在波形图点击时同步进度的状态
     seekToProgress: null as number | null,
+
+    // 当前选择的分段状态
+    currentSegment: "full" as string,
   }),
   actions: {
     /**
@@ -51,7 +54,8 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
         this.currentTrack = track;
         this.currentPlayingId = track.trackId!;
         this.currentTime = 0;
-        this.duration = track.duration; // 从元数据中获取 duration
+        this.duration = track.duration;
+        this.currentSegment = "full";
       }
       this.isPlaying = true;
     },
@@ -118,6 +122,13 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
      */
     clearSeekToProgress() {
       this.seekToProgress = null;
+    },
+
+    /**
+     * 设置segment
+     */
+    setSegment(segment: string) {
+      this.currentSegment = segment;
     },
   },
   getters: {

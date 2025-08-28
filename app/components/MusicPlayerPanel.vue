@@ -8,7 +8,6 @@
             :is-playing="playerStore.isPlaying"
             @update-progress="handleUpdateProgress"
             @ready="handleReady"
-            @waveform-click="handleWaveformClick"
             ref="waveformPlayerRef"
           />
         </div>
@@ -224,6 +223,19 @@ const segments = [
   { value: "60s", label: "60s" },
 ];
 
+// 监听全局分段状态，并同步到本地 UI 和 WaveformPlayer
+watch(
+  () => playerStore.currentSegment,
+  (newSegment) => {
+    // 同步到本地状态，用于更新按钮样式
+    currentSegment.value = newSegment;
+    // 调用 WaveformPlayer 的 setSegment 方法
+    if (waveformPlayerRef.value) {
+      waveformPlayerRef.value.setSegment(newSegment);
+    }
+  }
+);
+
 // 这个监听器将处理所有来自 store 的播放/暂停指令
 watch(
   () => playerStore.isPlaying,
@@ -236,7 +248,6 @@ watch(
         // 播放前，先将 Wavesurfer seek 到当前进度
         const relativeProgress = playerStore.currentTime / playerStore.duration;
         waveformPlayerRef.value.seekTo(relativeProgress);
-
         waveformPlayerRef.value.play();
       } else {
         waveformPlayerRef.value.pause();
@@ -283,20 +294,16 @@ const handleUpdateProgress = (progress: number) => {
 // 只有当 WaveformPlayer 准备好时，才开始播放
 const handleReady = () => {
   if (waveformPlayerRef.value) {
-    if (playerStore.isPlaying) {
-      // 在播放前，先seekTo到全局进度
+    if (playerStore.isPlaying && playerStore.duration > 0) {
+      console.log("Waveform ready, starting playback.");
       const relativeProgress = playerStore.currentTime / playerStore.duration;
       waveformPlayerRef.value.seekTo(relativeProgress);
-
-      // 在 ready 事件中确保播放
       waveformPlayerRef.value.play();
+
+      // 在 ready 时，根据当前选中的分段，重新设置波形图
+      waveformPlayerRef.value.setSegment(currentSegment.value);
     }
   }
-};
-
-const handleWaveformClick = (relativePosition: number) => {
-  // 当在 MusicPlayerPanel 的波形图上点击时，直接调用 seekTo action
-  playerStore.seekTo(relativePosition);
 };
 
 // 时长格式化
@@ -309,6 +316,7 @@ const formatDuration = (seconds: number): string => {
 
 // 时长分段切换
 const handleSegmentChange = (segment: string) => {
+  playerStore.setSegment(segment); // 更新全局分段状态
   currentSegment.value = segment;
   if (waveformPlayerRef.value) {
     waveformPlayerRef.value.setSegment(segment);
