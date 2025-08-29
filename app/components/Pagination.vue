@@ -138,7 +138,7 @@ const pagesToShow = computed(() => {
 
 <style scoped>
 .pagination-container {
-  background-color: #000;
+  background-color: transparent;
   display: flex;
   align-items: center;
   justify-content: center;

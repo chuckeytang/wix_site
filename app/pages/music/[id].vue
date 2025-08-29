@@ -312,8 +312,7 @@ onMounted(() => {
 .search-bar-container {
   width: 100%;
   margin: 0 auto;
-  padding-top: 80px;
-  background-color: #262529;
+  background-color: transparent;
 }
 
 .main-content-container {

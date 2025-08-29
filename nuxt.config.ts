@@ -22,11 +22,16 @@ export default defineNuxtConfig({
       },
     },
   },
+  runtimeConfig: {
+    public: {
+      appBaseApi: process.env.NUXT_PUBLIC_APP_BASE_API,
+    },
+  },
   elementPlus: {
     importStyle: "scss", // 使用 scss 样式
   },
   devServer: {
-    port: 3020,
+    port: parseInt(process.env.NUXT_PUBLIC_PORT || "3000"),
     host: "0.0.0.0", // 允许外部访问
   },
 });

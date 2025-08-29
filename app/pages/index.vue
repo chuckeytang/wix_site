@@ -16,8 +16,8 @@
 
       <div class="hero-content">
         <h1>VERSCAPE</h1>
-        <div class = "search-bar-container">
-          <SearchBar/>
+        <div class="search-bar-container">
+          <SearchBar />
         </div>
         <h2>Bring Your Story to Life<br />with Sound</h2>
         <p>
@@ -304,7 +304,7 @@ onMounted(() => {
   left: 50%;
   transform: translateX(-50%);
   top: 260px;
-  width: 220%; 
+  width: 220%;
   background-color: transparent;
 }
 

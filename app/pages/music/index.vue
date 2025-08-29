@@ -8,9 +8,8 @@
 
     <div class="main-content">
       <div>
-        <section class="hero-section"></section>
         <div class="search-bar-container">
-          <SearchBar />
+          <SearchBar @search="handleSearch" />
         </div>
         <section class="title-section">
           <div class="container">
@@ -205,6 +204,7 @@ import MusicCard from "~/components/MusicCard.vue";
 import MusicGridCard from "~/components/MusicGridCard.vue";
 import Pagination from "~/components/Pagination.vue";
 import MusicPlayerPanel from "~/components/MusicPlayerPanel.vue";
+import { useRoute, useRouter } from "vue-router";
 
 // 导入 API 和类型
 import { tracksApi, playlistsApi } from "~/api";
@@ -238,6 +238,15 @@ const tracksError = ref<boolean>(false);
 const currentPage = ref<number>(1);
 const pageSize = ref<number>(20);
 const totalTracks = ref<number>(0);
+
+const router = useRouter();
+// 搜索处理方法，用于跳转到搜索结果页
+const handleSearch = (query: string) => {
+  if (query) {
+    // 检查查询字符串是否为空
+    router.push({ path: "/search", query: { q: query } });
+  }
+};
 
 const totalPages = computed(() => {
   return Math.ceil(totalTracks.value / pageSize.value);
@@ -310,18 +319,16 @@ const handleTrackCardClick = (track: Tracks) => {
   musicPlayerStore.setPlaylist(tracks.value, track);
 };
 
-/*************  ✨ Windsurf Command ⭐  *************/
 /**
  *  Handling page change event
  * @param {number} newPage - The new page number which user selected
  */
-/*******  dfbfd4ec-d623-4ea0-9c98-c8a2fc943684  *******/ const handlePageChange =
-  (newPage: number) => {
-    currentPage.value = newPage;
-    fetchTracks();
-    // 滚动到页面顶部
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+const handlePageChange = (newPage: number) => {
+  currentPage.value = newPage;
+  fetchTracks();
+  // 滚动到页面顶部
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
 
 onMounted(() => {
   console.log("Music page mounted");
@@ -335,6 +342,7 @@ onMounted(() => {
 .page-wrapper {
   transition: transform 0.3s ease-in-out;
   overflow: hidden;
+  background-color: #0d0d1a;
 }
 
 /* 侧边栏基础样式 */
@@ -375,7 +383,7 @@ onMounted(() => {
 }
 
 .title-section {
-  background-color: #000;
+  background-color: #0d0d1a;
   color: #fff;
   padding: 50px 0;
 }
@@ -622,6 +630,6 @@ onMounted(() => {
   width: 100%;
   margin: 0 auto;
   padding-top: 80px;
-  background-color: #262529;
+  background-color: transparent;
 }
 </style>

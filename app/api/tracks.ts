@@ -87,20 +87,27 @@ export const tracksApi = {
    * @param trackId 音乐曲目ID
    * @returns 返回一个包含 Blob 数据的 Promise
    */
-  downloadTrackProxy(trackId: number): Promise<Blob> {
-    // 获取后端 API 基础 URL
-    const baseURL =
-      import.meta.env.VITE_APP_BASE_API || "http://3.135.175.245:8080";
+  async downloadTrackProxy(trackId: number): Promise<Blob> {
+    try {
+      // 在方法内部获取运行时配置
+      const config = useRuntimeConfig();
 
-    // 直接使用 axios 实例，不经过 http.ts 的响应拦截器
-    return axios
-      .get(`${baseURL}/site/tracks/download/${trackId}`, {
-        responseType: "blob",
-      })
-      .then((response) => response.data as Blob)
-      .catch((error) => {
-        console.error("通过代理下载文件失败:", error);
-        return Promise.reject(error);
-      });
+      // 获取后端 API 基础 URL
+      const baseURL = config.public.appBaseApi;
+
+      // 直接使用 axios 实例，不经过 http.ts 的响应拦截器
+      const response = await axios.get(
+        `${baseURL}/site/tracks/download/${trackId}`,
+        {
+          responseType: "blob",
+        }
+      );
+
+      return response.data as Blob;
+    } catch (error) {
+      console.error("通过代理下载文件失败:", error);
+      // 根据你的需求决定如何处理错误
+      return Promise.reject(error);
+    }
   },
 };

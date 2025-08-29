@@ -8,9 +8,9 @@ import type {
   AxiosRequestHeaders,
 } from "axios";
 
+const config = useRuntimeConfig();
 // 定义 API 基础 URL
-const baseURL =
-  import.meta.env.VITE_APP_BASE_API || "http://3.135.175.245:8080";
+const baseURL = config.public.appBaseApi;
 
 // 创建 Axios 实例
 const service: AxiosInstance = axios.create({
