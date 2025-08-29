@@ -163,6 +163,7 @@
               v-for="track in tracks"
               :key="track.trackId"
               :track="track"
+              @click.native="handleTrackCardClick(track)"
             />
           </template>
         </section>
@@ -179,6 +180,7 @@
                 v-for="track in tracks"
                 :key="track.trackId"
                 :track="track"
+                @click.native="handleTrackCardClick(track)"
               />
             </div>
           </template>
@@ -208,6 +210,10 @@ import MusicPlayerPanel from "~/components/MusicPlayerPanel.vue";
 import { tracksApi, playlistsApi } from "~/api";
 import type { Tracks } from "~/types/tracks";
 import type { Playlists } from "~/types/playlists";
+
+// 导入 Pinia store
+import { useMusicPlayerStore } from "~/stores/musicPlayer";
+const musicPlayerStore = useMusicPlayerStore();
 
 // 状态
 const isSidebarOpen = ref<boolean>(false);
@@ -286,6 +292,9 @@ const fetchTracks = async () => {
     console.log("fetchTracks:", response);
     tracks.value = response.rows;
     totalTracks.value = response.total;
+    // 将当前获取到的 tracks 列表设置到全局 store 中
+    // 当列表加载完成时，设置播放列表
+    musicPlayerStore.setPlaylist(tracks.value);
   } catch (e) {
     tracksError.value = true;
     console.error("Failed to fetch tracks:", e);
@@ -294,12 +303,25 @@ const fetchTracks = async () => {
   }
 };
 
-const handlePageChange = (newPage: number) => {
-  currentPage.value = newPage;
-  fetchTracks();
-  // 滚动到页面顶部
-  window.scrollTo({ top: 0, behavior: "smooth" });
+// 处理 MusicCard 和 MusicGridCard 的点击事件
+const handleTrackCardClick = (track: Tracks) => {
+  // 当点击歌曲卡片时，设置播放列表和当前播放的歌曲
+  // 这里直接将当前页面的整个 tracks.value 作为播放列表
+  musicPlayerStore.setPlaylist(tracks.value, track);
 };
+
+/*************  ✨ Windsurf Command ⭐  *************/
+/**
+ *  Handling page change event
+ * @param {number} newPage - The new page number which user selected
+ */
+/*******  dfbfd4ec-d623-4ea0-9c98-c8a2fc943684  *******/ const handlePageChange =
+  (newPage: number) => {
+    currentPage.value = newPage;
+    fetchTracks();
+    // 滚动到页面顶部
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
 onMounted(() => {
   console.log("Music page mounted");

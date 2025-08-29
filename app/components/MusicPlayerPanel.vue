@@ -14,7 +14,10 @@
 
         <div class="controls-row">
           <div class="control-group">
-            <button class="control-btn prev-btn">
+            <button
+              class="control-btn prev-btn"
+              @click="playerStore.playPrevTrack()"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -69,7 +72,10 @@
                 <line x1="14" y1="15" x2="14" y2="9"></line>
               </svg>
             </button>
-            <button class="control-btn next-btn">
+            <button
+              class="control-btn next-btn"
+              @click="playerStore.playNextTrack()"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"

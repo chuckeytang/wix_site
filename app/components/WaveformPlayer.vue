@@ -168,8 +168,9 @@ onMounted(() => {
   createWavesurfer();
 });
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
   if (wavesurfer.value) {
+    console.log("销毁 WaveSurfer 实例...");
     wavesurfer.value.destroy();
   }
 });

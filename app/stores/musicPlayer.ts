@@ -15,6 +15,16 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
     currentTrack: null as Tracks | null,
 
     /**
+     * 当前播放列表（通常是来自列表页面的 tracks 数组）。
+     */
+    currentPlaylist: [] as Tracks[],
+
+    /**
+     * 当前播放歌曲在 currentPlaylist 中的索引。
+     */
+    currentTrackIndex: -1 as number,
+
+    /**
      * 播放状态，true为播放，false为暂停。
      */
     isPlaying: false,
@@ -45,11 +55,34 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
     },
 
     /**
+     * 设置当前播放列表，并可指定初始播放的歌曲。
+     * @param playlist 歌曲列表
+     * @param track 初始播放的歌曲对象 (可选)
+     */
+    setPlaylist(playlist: Tracks[], track?: Tracks) {
+      this.currentPlaylist = playlist;
+      if (track) {
+        this.setTrack(track);
+      }
+    },
+
+    /**
      * 设置当前正在播放的完整歌曲对象。
      * 这会触发播放面板的显示。
      * @param track 完整的歌曲对象
      */
     setTrack(track: Tracks) {
+      // 检查新歌曲是否在当前列表中，并更新索引
+      const index = this.currentPlaylist.findIndex(
+        (t) => t.trackId === track.trackId
+      );
+      if (index !== -1) {
+        this.currentTrackIndex = index;
+      } else {
+        // 如果新歌曲不在列表中，则重置索引
+        this.currentTrackIndex = -1;
+      }
+
       if (this.currentTrack?.trackId !== track.trackId) {
         this.currentTrack = track;
         this.currentPlayingId = track.trackId!;
@@ -58,6 +91,33 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
         this.currentSegment = "full";
       }
       this.isPlaying = true;
+    },
+
+    /**
+     * 播放上一首歌曲。
+     */
+    playPrevTrack() {
+      if (this.currentPlaylist.length === 0 || this.currentTrackIndex <= 0) {
+        // 没有上一首，可以循环回到最后一首或停止
+        return;
+      }
+      const prevTrack = this.currentPlaylist[this.currentTrackIndex - 1];
+      this.setTrack(prevTrack!);
+    },
+
+    /**
+     * 播放下一首歌曲。
+     */
+    playNextTrack() {
+      if (
+        this.currentPlaylist.length === 0 ||
+        this.currentTrackIndex >= this.currentPlaylist.length - 1
+      ) {
+        // 没有下一首，可以循环回到第一首或停止
+        return;
+      }
+      const nextTrack = this.currentPlaylist[this.currentTrackIndex + 1];
+      this.setTrack(nextTrack!);
     },
 
     /**

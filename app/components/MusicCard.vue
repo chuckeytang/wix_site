@@ -44,7 +44,9 @@
         </svg>
       </button>
       <div class="track-info">
-        <span class="track-title">{{ track.title }}</span>
+        <NuxtLink :to="`/music/${track.trackId}`" class="track-title">
+          {{ track.title }}
+        </NuxtLink>
         <span class="track-artist">{{ track.artist }}</span>
       </div>
     </div>
@@ -139,6 +141,7 @@ const props = defineProps({
 const musicPlayerStore = useMusicPlayerStore();
 const progress = ref(0);
 const waveformPlayerRef = ref<InstanceType<typeof WaveformPlayer> | null>(null);
+const route = useRoute();
 
 // 使用 computed 属性来同步本地播放状态和全局状态
 const localIsPlaying = computed(() => {
@@ -204,6 +207,13 @@ const formatDuration = (seconds: number): string => {
 
 // 播放/暂停的逻辑，首先设置全局 Store
 const togglePlayAndSetTrack = () => {
+  // ⭐ 新增：只有在列表页才设置播放列表
+  if (route.path === "/music") {
+    // 这里需要获取父组件传来的整个 tracks 列表。
+    // 由于 musicCard 没有这个 prop，所以需要一个事件来从父组件获取。
+    // 另一种更简单的方式是直接在列表页的点击事件中调用 setPlaylist。
+  }
+
   if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
     // 如果点击的是当前正在播放的歌曲，则切换播放/暂停状态
     musicPlayerStore.togglePlayPause();
@@ -592,5 +602,17 @@ const handleReady = () => {
   background: linear-gradient(to top, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.2));
   pointer-events: none;
   z-index: 10;
+}
+
+.track-title {
+  font-weight: bold;
+  font-size: 1.1em;
+  color: #edebeb; /* 保持与原有 span 相同的颜色 */
+  text-decoration: none; /* 移除下划线 */
+  transition: color 0.2s ease-in-out;
+}
+
+.track-title:hover {
+  color: #ff8c62; /* 悬停时改变颜色，提供视觉反馈 */
 }
 </style>
