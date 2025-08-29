@@ -14,10 +14,7 @@
 
         <div class="controls-row">
           <div class="control-group">
-            <button
-              class="control-btn prev-btn"
-              @click="playerStore.playPrevTrack()"
-            >
+            <button class="control-btn prev-btn" @click="handlePrevButton()">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -74,6 +71,8 @@
             </button>
             <button
               class="control-btn next-btn"
+              :disabled="isDetailPage"
+              :class="{ disabled: isDetailPage }"
               @click="playerStore.playNextTrack()"
             >
               <svg
@@ -229,6 +228,12 @@ const segments = [
   { value: "60s", label: "60s" },
 ];
 
+// 使用 useRoute 和 computed 判断当前是否为详情页
+const route = useRoute();
+const isDetailPage = computed(() => {
+  return route.path.startsWith("/music/");
+});
+
 // 监听全局分段状态，并同步到本地 UI 和 WaveformPlayer
 watch(
   () => playerStore.currentSegment,
@@ -357,6 +362,25 @@ const handleDownload = async (track: Tracks) => {
     console.error("Failed to download the audio file:", error);
   }
 };
+
+// 处理上一首按钮的点击事件
+const handlePrevButton = () => {
+  if (isDetailPage.value) {
+    // 如果在详情页，则重新播放当前歌曲
+    if (waveformPlayerRef.value) {
+      // 停止当前播放，将进度归零，然后重新播放
+      waveformPlayerRef.value.pause();
+      waveformPlayerRef.value.seekTo(0);
+      waveformPlayerRef.value.play();
+    }
+    // 更新 store 的状态
+    playerStore.updateTime(0);
+    playerStore.setIsPlaying(true);
+  } else {
+    // 如果在列表页，调用 store 的上一首功能
+    playerStore.playPrevTrack();
+  }
+};
 </script>
 
 <style scoped>
@@ -427,6 +451,13 @@ const handleDownload = async (track: Tracks) => {
   color: #fff;
   cursor: pointer;
   transition: color 0.3s;
+}
+
+/* 禁用按钮的样式 */
+.control-btn.disabled {
+  color: #555; /* 将图标颜色变灰 */
+  cursor: not-allowed;
+  pointer-events: none; /* 确保它不能被点击 */
 }
 
 .control-btn:hover {
