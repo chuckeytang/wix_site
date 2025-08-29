@@ -2,7 +2,7 @@
   <div class="page-wrapper" :class="{ 'sidebar-open': isSidebarOpen }">
     <aside class="sidebar" :class="{ 'is-open': isSidebarOpen }">
       <div class="sidebar-content">
-        <h3 class="sidebar-title"></h3>
+        <Sidebar :config="filterConfig" @update:filters="handleFilterChange" />
       </div>
     </aside>
 
@@ -198,12 +198,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { debounce } from "lodash-es";
 import SearchBar from "~/components/SearchBar.vue";
 import PlaylistCard from "~/components/PlaylistCard.vue";
 import MusicCard from "~/components/MusicCard.vue";
 import MusicGridCard from "~/components/MusicGridCard.vue";
 import Pagination from "~/components/Pagination.vue";
 import MusicPlayerPanel from "~/components/MusicPlayerPanel.vue";
+import Sidebar from "~/components/Sidebar.vue";
 import { useRoute, useRouter } from "vue-router";
 
 // 导入 API 和类型
@@ -219,6 +221,12 @@ const musicPlayerStore = useMusicPlayerStore();
 const isSidebarOpen = ref<boolean>(false);
 const isDropdownOpen = ref<boolean>(false);
 const currentView = ref<string>("list");
+
+type FiltersState = {
+  genres: string[];
+  vocals: string[];
+  bpmRange: [number, number];
+};
 
 const sortOptions = [
   { value: "popular", label: "popular" },
@@ -247,6 +255,62 @@ const handleSearch = (query: string) => {
     router.push({ path: "/search", query: { q: query } });
   }
 };
+
+// 筛选器配置
+const filterConfig = reactive([
+  {
+    id: "genres",
+    title: "类型",
+    componentType: "SearchableCheckboxFilter",
+    props: {
+      items: [
+        {
+          id: "hip-hop",
+          name: "Hip Hop",
+          count: 3150,
+          children: [{ id: "trap", name: "陷阱音乐", count: 784 }],
+        },
+        {
+          id: "rnb",
+          name: "R&B",
+          count: 2888,
+          children: [{ id: "rnb-pop", name: "R&B 流行乐", count: 751 }],
+        },
+      ],
+    },
+  },
+  {
+    id: "vocals",
+    title: "声乐",
+    componentType: "SimpleCheckboxFilter",
+    props: {
+      items: [
+        { id: "lead-vocals", name: "主唱声乐", count: 2471 },
+        { id: "choir", name: "合唱/组合", count: 2734 },
+      ],
+      description: "大多数声乐歌曲都包含伴奏版本",
+    },
+  },
+  {
+    id: "bpmRange",
+    title: "BPM",
+    componentType: "RangeSliderFilter",
+    props: { min: 0, max: 250 },
+  },
+]);
+
+// 筛选器状态
+const filters: FiltersState = reactive({
+  genres: [],
+  vocals: [],
+  bpmRange: [0, 250],
+});
+
+// 节流函数，防止频繁调用 fetchTracks
+const debouncedFetchTracks = debounce(() => {
+  currentPage.value = 1; // 筛选条件变化时重置到第一页
+  fetchTracks();
+}, 300);
 
 const totalPages = computed(() => {
   return Math.ceil(totalTracks.value / pageSize.value);
@@ -328,6 +392,13 @@ const handlePageChange = (newPage: number) => {
   fetchTracks();
   // 滚动到页面顶部
   window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+// 处理 Sidebar 组件发出的筛选条件更新事件
+const handleFilterChange = (newFilters: FiltersState) => {
+  // 注意：reactive 对象直接赋值会失去响应性，使用 Object.assign
+  Object.assign(filters, newFilters);
+  debouncedFetchTracks(); // 使用节流函数触发轨道获取
 };
 
 onMounted(() => {
