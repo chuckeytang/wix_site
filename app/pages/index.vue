@@ -17,7 +17,7 @@
       <div class="hero-content">
         <h1>VERSCAPE</h1>
         <div class="search-bar-container">
-          <SearchBar />
+          <SearchBar @search="handleSearch" />
         </div>
         <h2>Bring Your Story to Life<br />with Sound</h2>
         <p>
@@ -45,6 +45,7 @@
             v-for="playlist in limitedPlaylists"
             :key="playlist.playlistId"
             :playlist="playlist"
+            @click="handleCardClick(playlist.playlistId!)"
           />
         </div>
       </div>
@@ -105,6 +106,7 @@ import SearchBar from "~/components/SearchBar.vue";
 const playlists = ref<Playlists[]>([]);
 const loading = ref(true);
 const error = ref(false);
+const router = useRouter();
 
 // 使用 computed 属性来截取前6个播放列表
 const limitedPlaylists = computed(() => {
@@ -128,6 +130,19 @@ const fetchPlaylists = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const handleSearch = (query: string) => {
+  if (query) {
+    router.push({ path: "/search", query: { q: query } });
+  }
+};
+
+const handleCardClick = (playlistId: number) => {
+  console.log("Card clicked with ID:", playlistId);
+  router.push({
+    path: `/playlists/${playlistId}`,
+  });
 };
 
 // 监听视频结束事件

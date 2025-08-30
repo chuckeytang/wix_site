@@ -2,7 +2,7 @@
   <div class="page-container">
     <TheHeader />
     <div class="search-bar-container">
-      <SearchBar />
+      <SearchBar @search="handleSearch" />
     </div>
 
     <div class="main-content-container">
@@ -177,6 +177,7 @@ import MusicPlayerPanel from "~/components/MusicPlayerPanel.vue";
 // 路由信息
 const route = useRoute();
 const trackId = Number(route.params.id);
+const router = useRouter();
 
 // 状态管理
 const track = ref<Tracks | null>(null);
@@ -190,6 +191,12 @@ const localIsPlaying = computed(() => {
     musicPlayerStore.isPlaying
   );
 });
+
+const handleSearch = (query: string) => {
+  if (query) {
+    router.push({ path: "/search", query: { q: query } });
+  }
+};
 
 const handleDownload = async () => {
   if (!track.value?.trackId) {

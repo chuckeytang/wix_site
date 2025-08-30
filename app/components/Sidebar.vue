@@ -48,10 +48,8 @@ const filterConfig = ref([]);
 const filters = reactive({});
 
 const initializeFilters = (config) => {
-  console.log("Sidebar: 正在初始化 filters...", toRaw(config));
   const initialData = {};
   config.forEach((c) => {
-    console.log(`Sidebar: 处理筛选器 ...`, toRaw(c));
     if (c.componentType === "RangeSliderFilter") {
       initialData[c.id] = [c.props.min, c.props.max];
     } else if (c.props.items) {
@@ -59,10 +57,8 @@ const initializeFilters = (config) => {
     } else {
       initialData[c.id] = null;
     }
-    console.log(`Sidebar: 为筛选器 '${c.id}' 设置初始值:`, initialData[c.id]);
   });
   Object.assign(filters, initialData);
-  console.log("Sidebar: filters 初始化完成，当前状态:", toRaw(filters));
 };
 
 // 监听 props.config 的变化，并在变化后更新本地的 filterConfig
@@ -70,7 +66,6 @@ watch(
   () => props.config,
   (newConfig) => {
     if (newConfig && newConfig.length > 0) {
-      console.log("Sidebar: 检测到 props.config 更新，正在同步数据。");
       filterConfig.value = newConfig;
       initializeFilters(newConfig);
     }
@@ -82,10 +77,6 @@ watch(
 watch(
   filters,
   (newFilters) => {
-    console.log(
-      "Sidebar: filters 状态变化，触发 update:filters 事件。新状态:",
-      toRaw(newFilters)
-    );
     emit("update:filters", newFilters);
   },
   { deep: true }

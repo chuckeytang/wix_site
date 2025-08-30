@@ -60,7 +60,7 @@ const fetchMoods = async () => {
 };
 
 const handleCardClick = (moodId: number) => {
-  console.log('Card clicked with ID:', moodId); // 可选：调试信息
+  console.log("Card clicked with ID:", moodId); // 可选：调试信息
   // 使用编程式导航跳转到详情页
   router.push({
     path: `/moods/${moodId}`, // 使用动态路径
