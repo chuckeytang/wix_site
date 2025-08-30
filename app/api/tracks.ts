@@ -15,7 +15,7 @@ export const tracksApi = {
    * @returns 包含音乐曲目列表和总数的 Promise
    */
   getTracksList(query: any): Promise<PaginationResult<Tracks>> {
-    return request.get("/site/tracks/list", { params: query });
+    return request.post("/site/tracks/list", query);
   },
 
   /**

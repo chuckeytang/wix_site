@@ -300,15 +300,9 @@ const setView = (viewType: string) => {
   console.log("当前视图模式:", currentView.value);
 };
 
-/*************  ✨ Windsurf Command ⭐  *************/
-/**
- * Toggle the visibility of the sort dropdown menu.
- * If the menu is currently visible, hide it. Otherwise, show it.
- */
-/*******  adbf2fb4-1dac-418d-a548-e087de24057e  *******/ const toggleSortDropdown =
-  () => {
-    isDropdownOpen.value = !isDropdownOpen.value;
-  };
+const toggleSortDropdown = () => {
+  isDropdownOpen.value = !isDropdownOpen.value;
+};
 
 const selectSortOption = (option: { value: string; label: string }) => {
   currentSort.value = option;
@@ -339,15 +333,30 @@ const fetchTracks = async () => {
   tracksLoading.value = true;
   tracksError.value = false;
   try {
-    const response = await tracksApi.getTracksList({
+    // 核心改动: 从 filters 响应式对象中构建查询参数
+    const query = {
       pageNum: currentPage.value,
       pageSize: pageSize.value,
-    });
-    console.log("fetchTracks:", response);
+      // 检查数组是否为空，若不为空则转换为逗号分隔的字符串
+      genres: filters.genres.length > 0 ? filters.genres.join(",") : undefined,
+      moods: filters.moods.length > 0 ? filters.moods.join(",") : undefined,
+      // BPM 和 Duration 是范围选择器，直接使用数组的两个值
+      minBpm: filters.bpmRange[0],
+      maxBpm: filters.bpmRange[1],
+      minDuration: filters.durationRange[0],
+      maxDuration: filters.durationRange[1],
+      // 音乐家也是多选框，转换为逗号分隔的字符串
+      artist: filters.author.length > 0 ? filters.author.join(",") : undefined,
+      // 排序选项
+      sort: currentSort.value?.value,
+    };
+
+    console.log("正在获取音乐列表，查询参数:", query);
+
+    const response = await tracksApi.getTracksList(query);
+    console.log("fetchTracks API 响应:", response);
     tracks.value = response.rows;
     totalTracks.value = response.total;
-    // 将当前获取到的 tracks 列表设置到全局 store 中
-    // 当列表加载完成时，设置播放列表
     musicPlayerStore.setPlaylist(tracks.value);
   } catch (e) {
     tracksError.value = true;
