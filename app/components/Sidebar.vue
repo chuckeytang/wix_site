@@ -1,89 +1,103 @@
 <template>
-    <div class="sidebar-container">
-      <FilterSection
-        v-for="config in filterConfig"
-        :key="config.id"
-        :title="config.title"
-        :start-open="config.id === 'genres'"
-      >
-        <component
-          :is="componentMap[config.componentType]"
-          v-if="componentMap[config.componentType]"
-          v-model="filters[config.id]"
-          v-bind="config.props"
-        />
-      </FilterSection>
-    </div>
+  <div class="sidebar-container">
+    <FilterSection
+      v-for="config in filterConfig"
+      :key="config.id"
+      :title="config.title"
+      :start-open="config.id === 'genres'"
+    >
+      <component
+        :is="componentMap[config.componentType]"
+        v-if="componentMap[config.componentType]"
+        v-model="filters[config.id]"
+        v-bind="config.props"
+      />
+    </FilterSection>
+  </div>
 </template>
 
 <script setup>
-import { reactive, watch } from 'vue';
+import { reactive, watch, defineProps, defineEmits } from "vue";
 
-// 1. 导入所有需要的“零件”组件
-import FilterSection from './Filters/FilterSection.vue';
-import SearchableCheckboxFilter from './Filters/SearchableCheckboxFilter.vue';
-import SimpleCheckboxFilter from './Filters/SimpleCheckboxFilter.vue';
-import RangeSliderFilter from './Filters/RangeSliderFilter.vue';
+// 导入所有需要的“零件”组件
+import FilterSection from "./Filters/FilterSection.vue";
+import SearchableCheckboxFilter from "./Filters/SearchableCheckboxFilter.vue";
+import SimpleCheckboxFilter from "./Filters/SimpleCheckboxFilter.vue";
+import RangeSliderFilter from "./Filters/RangeSliderFilter.vue";
 
-// 2. 创建一个“组件地图”，将字符串名字映射到真实的组件上
+// 创建一个“组件地图”
 const componentMap = {
   SearchableCheckboxFilter,
   SimpleCheckboxFilter,
   RangeSliderFilter,
 };
 
-// 3. 这是我们的核心“配置清单”
-// 在真实应用中，这个数组可以由父组件通过 props 传入，甚至直接从 API 获取！
-const filterConfig = reactive([
-  {
-    id: 'genres',
-    title: '类型',
-    componentType: 'SearchableCheckboxFilter',
-    props: {
-      items: [
-        { id: 'hip-hop', name: 'Hip Hop', count: 3150, children: [{ id: 'trap', name: '陷阱音乐', count: 784 }] },
-        { id: 'rnb', name: 'R&B', count: 2888, children: [{ id: 'rnb-pop', name: 'R&B 流行乐', count: 751 }] },
-      ]
-    }
+// 1. 核心改动：定义 props 来接收父组件传入的配置
+const props = defineProps({
+  config: {
+    type: Array,
+    required: true,
   },
-  {
-    id: 'vocals',
-    title: '声乐',
-    componentType: 'SimpleCheckboxFilter',
-    props: {
-      items: [
-        { id: 'lead-vocals', name: '主唱声乐', count: 2471 },
-        { id: 'choir', name: '合唱/组合', count: 2734 },
-      ],
-      description: "大多数声乐歌曲都包含伴奏版本"
-    }
-  },
-  {
-    id: 'bpmRange',
-    title: 'BPM',
-    componentType: 'RangeSliderFilter',
-    props: { min: 0, max: 250 }
-  }
-]);
-
-// 4. 定义 emit 和 filters 状态，与之前相同
-const emit = defineEmits(['update:filters']);
-
-const filters = reactive({
-  genres: [],
-  vocals: [],
-  bpmRange: [0, 250],
 });
 
-// 5. watch 逻辑也保持不变
-watch(filters, (newFilters) => {
-  emit('update:filters', newFilters);
-});
+// 2. 定义 emit
+const emit = defineEmits(["update:filters"]);
+
+// 核心改动 1: 将 filterConfig 声明为响应式变量
+const filterConfig = ref([]);
+const filters = reactive({});
+
+const initializeFilters = (config) => {
+  console.log("Sidebar: 正在初始化 filters...", toRaw(config));
+  const initialData = {};
+  config.forEach((c) => {
+    console.log(`Sidebar: 处理筛选器 ...`, toRaw(c));
+    if (c.componentType === "RangeSliderFilter") {
+      initialData[c.id] = [c.props.min, c.props.max];
+    } else if (c.props.items) {
+      initialData[c.id] = [];
+    } else {
+      initialData[c.id] = null;
+    }
+    console.log(`Sidebar: 为筛选器 '${c.id}' 设置初始值:`, initialData[c.id]);
+  });
+  Object.assign(filters, initialData);
+  console.log("Sidebar: filters 初始化完成，当前状态:", toRaw(filters));
+};
+
+// 监听 props.config 的变化，并在变化后更新本地的 filterConfig
+watch(
+  () => props.config,
+  (newConfig) => {
+    if (newConfig && newConfig.length > 0) {
+      console.log("Sidebar: 检测到 props.config 更新，正在同步数据。");
+      filterConfig.value = newConfig;
+      initializeFilters(newConfig);
+    }
+  },
+  { immediate: true, deep: true }
+);
+
+// 监听 filters 状态的变化，并同步给父组件
+watch(
+  filters,
+  (newFilters) => {
+    console.log(
+      "Sidebar: filters 状态变化，触发 update:filters 事件。新状态:",
+      toRaw(newFilters)
+    );
+    emit("update:filters", newFilters);
+  },
+  { deep: true }
+);
 </script>
 
 <style scoped>
+/* 核心改动：样式调整以匹配 Premium Beat 风格 */
 .sidebar-container {
   padding: 0 20px 20px 20px;
+  background-color: #1c1b1b; /* 更深的背景色 */
   color: #fff;
+  border-right: 1px solid #333; /* 模拟 Premium Beat 的边框 */
 }
 </style>

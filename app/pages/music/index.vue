@@ -222,10 +222,25 @@ const isSidebarOpen = ref<boolean>(false);
 const isDropdownOpen = ref<boolean>(false);
 const currentView = ref<string>("list");
 
+// 定义筛选器配置项的类型
+interface FilterItem {
+  id: string;
+  title: string;
+  componentType: string;
+  props: {
+    min?: number;
+    max?: number;
+    unit?: string;
+    items?: { id: string; name: string; count: number }[];
+  };
+}
+
 type FiltersState = {
   genres: string[];
-  vocals: string[];
+  moods: string[];
   bpmRange: [number, number];
+  durationRange: [number, number];
+  author: string[];
 };
 
 const sortOptions = [
@@ -257,53 +272,13 @@ const handleSearch = (query: string) => {
 };
 
 // 筛选器配置
-const filterConfig = reactive([
-  {
-    id: "genres",
-    title: "类型",
-    componentType: "SearchableCheckboxFilter",
-    props: {
-      items: [
-        {
-          id: "hip-hop",
-          name: "Hip Hop",
-          count: 3150,
-          children: [{ id: "trap", name: "陷阱音乐", count: 784 }],
-        },
-        {
-          id: "rnb",
-          name: "R&B",
-          count: 2888,
-          children: [{ id: "rnb-pop", name: "R&B 流行乐", count: 751 }],
-        },
-      ],
-    },
-  },
-  {
-    id: "vocals",
-    title: "声乐",
-    componentType: "SimpleCheckboxFilter",
-    props: {
-      items: [
-        { id: "lead-vocals", name: "主唱声乐", count: 2471 },
-        { id: "choir", name: "合唱/组合", count: 2734 },
-      ],
-      description: "大多数声乐歌曲都包含伴奏版本",
-    },
-  },
-  {
-    id: "bpmRange",
-    title: "BPM",
-    componentType: "RangeSliderFilter",
-    props: { min: 0, max: 250 },
-  },
-]);
-
-// 筛选器状态
-const filters: FiltersState = reactive({
+const filterConfig = ref<FilterItem[]>([]);
+const filters = reactive<FiltersState>({
   genres: [],
-  vocals: [],
+  moods: [],
   bpmRange: [0, 250],
+  durationRange: [0, 600],
+  author: [],
 });
 
 // 节流函数，防止频繁调用 fetchTracks
@@ -325,9 +300,15 @@ const setView = (viewType: string) => {
   console.log("当前视图模式:", currentView.value);
 };
 
-const toggleSortDropdown = () => {
-  isDropdownOpen.value = !isDropdownOpen.value;
-};
+/*************  ✨ Windsurf Command ⭐  *************/
+/**
+ * Toggle the visibility of the sort dropdown menu.
+ * If the menu is currently visible, hide it. Otherwise, show it.
+ */
+/*******  adbf2fb4-1dac-418d-a548-e087de24057e  *******/ const toggleSortDropdown =
+  () => {
+    isDropdownOpen.value = !isDropdownOpen.value;
+  };
 
 const selectSortOption = (option: { value: string; label: string }) => {
   currentSort.value = option;
@@ -401,9 +382,103 @@ const handleFilterChange = (newFilters: FiltersState) => {
   debouncedFetchTracks(); // 使用节流函数触发轨道获取
 };
 
+// 用于获取并构建筛选器配置
+const fetchAndSetFilterConfig = async () => {
+  try {
+    const response = await tracksApi.getFilterOptions();
+    if (response.code === 200 && response.data) {
+      const options = response.data;
+      const newConfig: FilterItem[] = [];
+
+      // 构建流派（Genres）配置
+      if (options.genres && options.genres.length > 0) {
+        newConfig.push({
+          id: "genres",
+          title: "风格",
+          componentType: "SimpleCheckboxFilter",
+          props: {
+            items: options.genres.map((g: { name: string; count: number }) => ({
+              id: g.name,
+              name: g.name,
+              count: g.count,
+            })),
+          },
+        });
+      }
+
+      // 构建情绪（Moods）配置
+      if (options.moods && options.moods.length > 0) {
+        newConfig.push({
+          id: "moods",
+          title: "情绪",
+          componentType: "SimpleCheckboxFilter",
+          props: {
+            items: options.moods.map((m: { name: string; count: number }) => ({
+              id: m.name,
+              name: m.name,
+              count: m.count,
+            })),
+          },
+        });
+      }
+
+      // 构建 BPM 配置
+      if (options.minBpm !== undefined && options.maxBpm !== undefined) {
+        newConfig.push({
+          id: "bpmRange",
+          title: "BPM",
+          componentType: "RangeSliderFilter",
+          props: { min: options.minBpm, max: options.maxBpm },
+        });
+      }
+
+      // 构建持续时间（Duration）配置
+      if (
+        options.minDuration !== undefined &&
+        options.maxDuration !== undefined
+      ) {
+        newConfig.push({
+          id: "durationRange",
+          title: "持续时间",
+          componentType: "RangeSliderFilter",
+          props: {
+            min: options.minDuration,
+            max: options.maxDuration,
+            unit: "秒",
+          },
+        });
+      }
+
+      // 构建音乐家（Author）配置
+      if (options.artists && options.artists.length > 0) {
+        newConfig.push({
+          id: "author",
+          title: "音乐家",
+          componentType: "SimpleCheckboxFilter",
+          props: {
+            items: options.artists.map(
+              (a: { artist: string; count: number }) => ({
+                id: a.artist,
+                name: a.artist,
+                count: a.count,
+              })
+            ),
+          },
+        });
+      }
+
+      // 在获取到数据后，更新 filterConfig
+      filterConfig.value = newConfig;
+    }
+  } catch (error) {
+    console.error("Failed to fetch filter options:", error);
+  }
+};
+
 onMounted(() => {
   console.log("Music page mounted");
   fetchPlaylists();
+  fetchAndSetFilterConfig();
   fetchTracks();
 });
 </script>
@@ -414,6 +489,7 @@ onMounted(() => {
   transition: transform 0.3s ease-in-out;
   overflow: hidden;
   background-color: #0d0d1a;
+  color: #fff;
 }
 
 /* 侧边栏基础样式 */
@@ -421,13 +497,21 @@ onMounted(() => {
   position: fixed;
   top: 0;
   left: 0;
-  width: 300px; /* 侧边栏宽度 */
+  width: 300px;
   height: 100%;
-  background-color: #1a1a1a;
+  background-color: #1c1b1b; /* 调整为更深的黑色 */
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
   transform: translateX(-100%);
   transition: transform 0.3s ease-in-out;
   z-index: 1000;
+  padding: 20px 0; /* 添加上下内边距 */
+  box-sizing: border-box; /* 确保 padding 不会增加宽度 */
+  overflow-y: auto; /* 允许内容滚动 */
+}
+
+/* 侧边栏内容容器，用于内边距 */
+.sidebar-content {
+  padding: 0 15px; /* 左右内边距 */
 }
 
 /* 侧边栏打开时的样式 */

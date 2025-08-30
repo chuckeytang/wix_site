@@ -19,6 +19,14 @@ export const tracksApi = {
   },
 
   /**
+   * 获取筛选器选项
+   * @returns 包含所有筛选选项的 Promise
+   */
+  getFilterOptions(): Promise<AjaxResult<any>> {
+    return request.get("/site/tracks/filter-options");
+  },
+
+  /**
    * 获取音乐曲目详细信息
    * @param trackId 音乐曲目ID
    * @returns 包含单个音乐曲目详细信息的 Promise
