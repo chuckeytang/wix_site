@@ -1,5 +1,5 @@
 <template>
-  <div class="playlist-card">
+  <div class="playlist-card" @click = "handleCardClick()">
     <img :src="playlist.imageUrl" :alt="playlist.title" class="card-image" />
 
     <div class="card-content-overlay">
@@ -20,12 +20,18 @@ import { defineProps } from "vue";
 import type { Playlists } from "~/types/playlists"; // Import the new Playlist type
 
 // Define the component props using the correct type
-defineProps({
+const props = defineProps({
   playlist: {
     type: Object as () => Playlists, // Use a type assertion for type-safety
     required: true,
   },
 });
+
+const emit = defineEmits(['select-card']);
+
+const handleCardClick = () => {
+  emit('select-card', props.playlist.playlistId);
+};
 </script>
 
 <style scoped>

@@ -24,6 +24,7 @@
             v-for="mood in moodslist"
             :key="mood.moodId"
             :moodlist="mood"
+            @select-card="handleCardClick"
           />
         </template>
       </section>
@@ -36,10 +37,13 @@ import { ref, onMounted } from "vue";
 import MoodsCard from "~/components/MoodsCard.vue";
 import { moodsApi } from "~/api";
 import type { Moods } from "~/types/moods";
+import { useRouter } from "vue-router";
 
 const moodslist = ref<Moods[]>([]);
 const loading = ref(true);
 const error = ref(false);
+
+const router = useRouter();
 
 const fetchMoods = async () => {
   loading.value = true;
@@ -53,6 +57,14 @@ const fetchMoods = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const handleCardClick = (moodId: number) => {
+  console.log('Card clicked with ID:', moodId); // 可选：调试信息
+  // 使用编程式导航跳转到详情页
+  router.push({
+    path: `/moods/${moodId}`, // 使用动态路径
+  });
 };
 
 onMounted(() => {

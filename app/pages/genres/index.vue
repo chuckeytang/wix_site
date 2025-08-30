@@ -24,6 +24,7 @@
             v-for="genre in genreslist"
             :key="genre.genreId"
             :genreslist="genre"
+            @select-card="handleCardClick"
           />
         </template>
       </section>
@@ -36,10 +37,13 @@ import { ref, onMounted } from "vue";
 import GenresCard from "~/components/GenresCard.vue";
 import { genresApi } from "~/api";
 import type { Genres } from "~/types/genres";
+import { useRouter } from "vue-router";
 
 const genreslist = ref<Genres[]>([]);
 const loading = ref(true);
 const error = ref(false);
+
+const router = useRouter();
 
 const fetchGenres = async () => {
   loading.value = true;
@@ -53,6 +57,15 @@ const fetchGenres = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+
+const handleCardClick = (genreId: number) => {
+  console.log('Card clicked with ID:', genreId); // 可选：调试信息
+  // 使用编程式导航跳转到详情页
+  router.push({
+    path: `/genres/${genreId}`, // 使用动态路径
+  });
 };
 
 onMounted(() => {

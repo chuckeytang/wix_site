@@ -3,6 +3,7 @@
 import request from "./http";
 import type { Playlists, PaginationResult } from "~/types/playlists";
 import type { AjaxResult } from "~/types/ajax";
+import type { Tracks } from "~/types/tracks";
 
 /**
  * 播放列表相关的 API 接口
@@ -61,6 +62,21 @@ export const playlistsApi = {
   exportPlaylists(query: any): Promise<void> {
     return request.post("/site/playlists/export", query, {
       responseType: "blob", // 响应类型为 Blob，用于下载
+    });
+  },
+
+  /**
+   * 根据播放列表ID查询其下的音乐曲目列表
+   * @param playlistId 播放列表ID
+   * @param query 查询参数
+   * @returns 包含音乐曲目列表和总数的 Promise
+   */
+  getPlaylistMusic(
+    playlistId: number,
+    query: any
+  ): Promise<PaginationResult<Tracks>> {
+    return request.get(`/site/playlists/${playlistId}/tracks`, {
+      params: query,
     });
   },
 };

@@ -3,6 +3,7 @@
 import request from "./http";
 import type { Moods, PaginationResult } from "~/types/moods";
 import type { AjaxResult } from "~/types/ajax";
+import type { Tracks } from "~/types/tracks";
 
 /**
  * 音乐情绪相关的 API 接口
@@ -62,5 +63,15 @@ export const moodsApi = {
     return request.post("/site/moods/export", query, {
       responseType: "blob", // 响应类型为 Blob，用于下载
     });
+  },
+
+  /**
+   * 根据情绪ID查询其下的音乐曲目列表
+   * @param moodId 情绪ID
+   * @param query 查询参数
+   * @returns 包含音乐曲目列表和总数的 Promise
+   */
+  getMoodsMusic(moodId: number, query: any): Promise<PaginationResult<Tracks>> {
+    return request.get(`/site/moods/${moodId}/tracks`, { params: query });
   },
 };

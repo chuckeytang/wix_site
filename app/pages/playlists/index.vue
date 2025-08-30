@@ -18,6 +18,7 @@
             v-for="playlist in playlists"
             :key="playlist.playlistId"
             :playlist="playlist"
+            @select-card="handleCardClick"
           />
         </div>
       </div>
@@ -30,10 +31,13 @@ import { ref, onMounted } from "vue";
 import PlaylistCard from "~/components/PlaylistCard.vue";
 import { playlistsApi } from "~/api";
 import type { Playlists } from "~/types/playlists";
+import { useRouter } from "vue-router";
 
 const playlists = ref<Playlists[]>([]);
 const loading = ref(true);
 const error = ref(false);
+
+const router = useRouter();
 
 const fetchPlaylists = async () => {
   loading.value = true;
@@ -48,6 +52,14 @@ const fetchPlaylists = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const handleCardClick = (playlistId: number) => {
+  console.log('Card clicked with ID:', playlistId); // 可选：调试信息
+  // 使用编程式导航跳转到详情页
+  router.push({
+    path: `/playlists/${playlistId}`, // 使用动态路径
+  });
 };
 
 onMounted(() => {

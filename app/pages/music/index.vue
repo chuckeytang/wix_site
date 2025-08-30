@@ -162,7 +162,6 @@
               v-for="track in tracks"
               :key="track.trackId"
               :track="track"
-              @click.native="handleTrackCardClick(track)"
             />
           </template>
         </section>
@@ -179,7 +178,6 @@
                 v-for="track in tracks"
                 :key="track.trackId"
                 :track="track"
-                @click.native="handleTrackCardClick(track)"
               />
             </div>
           </template>
@@ -364,13 +362,6 @@ const fetchTracks = async () => {
   } finally {
     tracksLoading.value = false;
   }
-};
-
-// 处理 MusicCard 和 MusicGridCard 的点击事件
-const handleTrackCardClick = (track: Tracks) => {
-  // 当点击歌曲卡片时，设置播放列表和当前播放的歌曲
-  // 这里直接将当前页面的整个 tracks.value 作为播放列表
-  musicPlayerStore.setPlaylist(tracks.value, track);
 };
 
 /**

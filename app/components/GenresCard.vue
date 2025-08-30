@@ -1,5 +1,5 @@
 <template>
-  <div class="genres-card">
+  <div class="genres-card" @click = "handleCardClick()">
     <div class="card-image-container">
       <div class="play-button-overlay">
         <button class="play-button">▶</button>
@@ -16,13 +16,19 @@
 import { defineProps } from "vue";
 import type { Genres } from "~/types/genres";
 
-defineProps({
+const props = defineProps({
   genreslist: {
     // 使用类型断言明确指定 prop 的类型
     type: Object as () => Genres,
     required: true,
   },
 });
+
+const emit = defineEmits(['select-card']);
+
+const handleCardClick = () => {
+  emit('select-card', props.genreslist.genreId);
+};
 </script>
 
 <style scoped>

@@ -1,5 +1,5 @@
 <template>
-  <div class="moods-card">
+  <div class="moods-card" @click = "handleCardClick()">
     <div class="card-image-container">
       <div class="play-button-overlay">
         <button class="play-button">▶</button>
@@ -16,12 +16,18 @@
 import { defineProps } from "vue";
 import type { Moods } from "~/types/moods";
 
-defineProps({
+const props = defineProps({
   moodlist: {
     type: Object as () => Moods,
     required: true,
   },
 });
+
+const emit = defineEmits(['select-card']);
+
+const handleCardClick = () => {
+  emit('select-card', props.moodlist.moodId);
+};
 </script>
 
 <style scoped>

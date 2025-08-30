@@ -3,6 +3,7 @@
 import request from "./http";
 import type { Genres, PaginationResult } from "~/types/genres";
 import type { AjaxResult } from "~/types/ajax";
+import type { Tracks } from "~/types/tracks";
 
 /**
  * 音乐流派相关的 API 接口
@@ -15,6 +16,20 @@ export const genresApi = {
    */
   getGenresList(query?: any): Promise<PaginationResult<Genres>> {
     return request.get("/site/genres/list", { params: query });
+  },
+
+  /**
+   * 根据流派ID查询其下的音乐曲目列表
+   * @param genreId 流派ID
+   * @param query 查询参数
+   * @returns 包含音乐曲目列表和总数的 Promise
+   */
+  getGenresMusic(
+    genreId: number,
+    query: any
+  ): Promise<PaginationResult<Tracks>> {
+    // 使用 GET 请求，将 genreId 放入路径，将分页和排序参数放入 query
+    return request.get(`/site/genres/${genreId}/tracks`, { params: query });
   },
 
   /**
