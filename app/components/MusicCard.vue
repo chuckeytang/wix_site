@@ -1,7 +1,7 @@
 <template>
   <div class="music-card-list">
     <div class="left-section">
-      <button class="play-button" @click="togglePlayAndSetTrack">
+      <button class="play-button" @click="handlePlayButtonClick()">
         <svg viewBox="0 0 36 36" class="circular-progress-bar">
           <path
             class="circle-bg"
@@ -56,6 +56,9 @@
       :is-playing="localIsPlaying"
       @ready="handleReady"
       @waveform-click="handleWaveformClick"
+      @play="handlePlay"
+      @pause="handlePause"
+      :can-control="false"
       ref="waveformPlayerRef"
     />
 
@@ -205,23 +208,41 @@ const formatDuration = (seconds: number): string => {
   return `${minutes}:${remainingSeconds < 10 ? "0" : ""}${remainingSeconds}`;
 };
 
-// 播放/暂停的逻辑，首先设置全局 Store
-const togglePlayAndSetTrack = () => {
-  // ⭐ 新增：只有在列表页才设置播放列表
-  if (route.path === "/music") {
-    // 这里需要获取父组件传来的整个 tracks 列表。
-    // 由于 musicCard 没有这个 prop，所以需要一个事件来从父组件获取。
-    // 另一种更简单的方式是直接在列表页的点击事件中调用 setPlaylist。
-  }
-
+// 统一处理播放按钮点击事件
+const handlePlayButtonClick = () => {
   if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
-    // 如果点击的是当前正在播放的歌曲，则切换播放/暂停状态
     musicPlayerStore.togglePlayPause();
   } else {
-    // 如果点击了新歌曲，则设置新歌曲为当前歌曲并播放
-    console.log("播放track", props.track.trackId);
     musicPlayerStore.setTrack(props.track);
   }
+};
+
+// 处理波形图点击，仅将事件传递给 store
+const handleWaveformClick = (relativePosition: number) => {
+  if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
+    musicPlayerStore.seekTo(relativePosition);
+  } else {
+    musicPlayerStore.setTrack(props.track);
+    setTimeout(() => {
+      musicPlayerStore.seekTo(relativePosition);
+    }, 20);
+  }
+};
+
+// 监听 waveform 发出的 play 事件，并更新 store 状态
+const handlePlay = () => {
+  if (
+    !musicPlayerStore.currentTrack ||
+    musicPlayerStore.currentTrack.trackId !== props.track.trackId
+  ) {
+    musicPlayerStore.setTrack(props.track);
+  }
+  musicPlayerStore.setIsPlaying(true);
+};
+
+// 监听 waveform 发出的 pause 事件，并更新 store 状态
+const handlePause = () => {
+  musicPlayerStore.setIsPlaying(false);
 };
 
 // 处理下载逻辑
@@ -249,13 +270,6 @@ const handleDownload = async () => {
   } catch (error) {
     console.error("Failed to download the audio file:", error);
   }
-};
-
-// 处理波形图点击
-const handleWaveformClick = (relativePosition: number) => {
-  console.log("musiccard点击");
-  musicPlayerStore.setTrack(props.track);
-  musicPlayerStore.seekTo(relativePosition);
 };
 
 const handleReady = () => {

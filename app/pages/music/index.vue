@@ -476,7 +476,6 @@ const fetchAndSetFilterConfig = async () => {
 };
 
 onMounted(() => {
-  console.log("Music page mounted");
   fetchPlaylists();
   fetchAndSetFilterConfig();
   fetchTracks();

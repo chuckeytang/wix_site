@@ -19,7 +19,6 @@ import { computed } from "vue";
 import Slider from "@vueform/slider";
 import "@vueform/slider/themes/default.css";
 
-console.log("RangeSliderFilter.vue setup 被调用");
 const props = defineProps({
   modelValue: { type: Array, required: true },
   min: { type: Number, default: 0 },

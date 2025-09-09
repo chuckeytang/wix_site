@@ -4,7 +4,6 @@
     @mousemove="handleHover"
     @mouseenter="handleHoverEnter"
     @mouseleave="handleHoverLeave"
-    @click="handleWaveformClick"
   >
     <div class="wavesurfer-container" ref="waveformRef"></div>
     <div
@@ -36,6 +35,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  canControl: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const emits = defineEmits([
@@ -58,6 +61,21 @@ watch(
   (newUrl, oldUrl) => {
     if (newUrl && newUrl !== oldUrl) {
       loadAudio(newUrl);
+    }
+  }
+);
+
+watch(
+  () => props.isPlaying,
+  (newVal) => {
+    if (newVal) {
+      if (!wavesurfer.value.isPlaying()) {
+        wavesurfer.value.play();
+      }
+    } else {
+      if (wavesurfer.value.isPlaying()) {
+        wavesurfer.value.pause();
+      }
     }
   }
 );
@@ -122,46 +140,80 @@ const createWavesurfer = () => {
     emits("ready");
   });
 
-  wavesurfer.value.on("interaction", (time) => {
-    console.log("Interaction:", time);
-    // 检查是否有分段区域存在
-    if (regions.value?.getRegions()?.length > 0) {
-      const mainRegion = regions.value.getRegions()[0];
+  if (props.canControl) {
+    wavesurfer.value.on("interaction", (time) => {
+      // 检查是否有分段区域存在
+      if (regions.value?.getRegions()?.length > 0) {
+        const mainRegion = regions.value.getRegions()[0];
 
-      // 如果点击在区域外，将播放头跳转回区域起始点
-      if (time < mainRegion.start || time > mainRegion.end) {
-        wavesurfer.value.seekTo(
-          mainRegion.end / wavesurfer.value.getDuration()
-        );
+        // 如果点击在区域外，将播放头跳转回区域起始点
+        if (time < mainRegion.start || time > mainRegion.end) {
+          wavesurfer.value.seekTo(
+            mainRegion.end / wavesurfer.value.getDuration()
+          );
+        } else {
+          console.log(
+            "Click within region.",
+            time / wavesurfer.value.getDuration()
+          );
+          // 如果点击在区域内，跳转到点击位置
+          wavesurfer.value.seekTo(time / wavesurfer.value.getDuration());
+          emits("waveform-click", time / wavesurfer.value.getDuration());
+        }
       } else {
-        console.log(
-          "Click within region.",
-          time / wavesurfer.value.getDuration()
-        );
-        // 如果点击在区域内，跳转到点击位置
+        // 如果没有分段区域，直接跳转到点击位置
         wavesurfer.value.seekTo(time / wavesurfer.value.getDuration());
+        wavesurfer.value.play();
         emits("waveform-click", time / wavesurfer.value.getDuration());
       }
-    } else {
-      // 如果没有分段区域，直接跳转到点击位置
-      wavesurfer.value.seekTo(time / wavesurfer.value.getDuration());
+    });
+
+    // regions插件的事件监听器
+    regions.value.on("region-clicked", (region, e) => {
+      console.log(`region-in`);
       wavesurfer.value.play();
-      emits("waveform-click", time / wavesurfer.value.getDuration());
-    }
-  });
+      emits("play");
+    });
 
-  // regions插件的事件监听器
-  regions.value.on("region-clicked", (region, e) => {
-    console.log(`region-in`);
-    wavesurfer.value.play();
-    emits("play");
-  });
+    regions.value.on("region-out", (region) => {
+      console.log(`region-out`);
+      wavesurfer.value.pause();
+      emits("pause");
+    });
+  } else {
+    wavesurfer.value.on("interaction", (time) => {
+      // 检查是否有分段区域存在
+      if (regions.value?.getRegions()?.length > 0) {
+        const mainRegion = regions.value.getRegions()[0];
 
-  regions.value.on("region-out", (region) => {
-    console.log(`region-out`);
-    wavesurfer.value.pause();
-    emits("pause");
-  });
+        // 如果点击在区域外，将播放头跳转回区域起始点
+        if (time < mainRegion.start || time > mainRegion.end) {
+          emits(
+            "waveform-click",
+            mainRegion.end / wavesurfer.value.getDuration()
+          );
+          console.log(
+            "Click outside region.",
+            mainRegion.end / wavesurfer.value.getDuration()
+          );
+        } else {
+          emits("waveform-click", time / wavesurfer.value.getDuration());
+        }
+      } else {
+        // 如果没有分段区域，直接跳转到点击位置
+        emits("waveform-click", time / wavesurfer.value.getDuration());
+      }
+    });
+
+    // regions插件的事件监听器
+    regions.value.on("region-clicked", (region, e) => {
+      emits("play");
+    });
+
+    regions.value.on("region-out", (region) => {
+      emits("pause");
+    });
+  }
 };
 
 onMounted(() => {

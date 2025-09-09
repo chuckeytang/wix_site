@@ -8,6 +8,8 @@
             :is-playing="playerStore.isPlaying"
             @update-progress="handleUpdateProgress"
             @ready="handleReady"
+            @waveform-click="handleWaveformClick"
+            :can-control="true"
             ref="waveformPlayerRef"
           />
         </div>
@@ -291,6 +293,10 @@ watch(
     }
   }
 );
+
+const handleWaveformClick = (relativePosition: number) => {
+  playerStore.seekTo(relativePosition);
+};
 
 // 进度更新事件处理
 const handleUpdateProgress = (progress: number) => {

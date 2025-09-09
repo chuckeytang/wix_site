@@ -126,10 +126,6 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
     togglePlayPause() {
       if (this.currentTrack) {
         this.isPlaying = !this.isPlaying;
-        if (!this.isPlaying) {
-          this.currentPlayingId = undefined;
-          this.currentTrack = null;
-        }
       }
     },
 
@@ -140,10 +136,6 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
     setIsPlaying(state: boolean) {
       if (this.currentTrack) {
         this.isPlaying = state;
-        if (!state) {
-          this.currentPlayingId = undefined;
-          this.currentTrack = null;
-        }
       }
     },
 
@@ -172,7 +164,6 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
         this.currentTime = this.duration * progress;
         // 注意：这里我们只更新了 store 状态，实际的 seek 操作由 MusicPlayerPanel 里的 watch 负责
         // 然后触发 seekToProgress 状态，通知组件进行 seek
-        console.log("current Time:", this.currentTime);
         this.seekToProgress = progress;
       }
     },
