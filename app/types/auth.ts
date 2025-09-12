@@ -1,13 +1,16 @@
 // types/auth.d.ts
 export interface LoginData {
-  email?: string;
+  loginId?: {
+    email?: string;
+  };
   password?: string;
 }
 
 export interface RegisterData {
-  email?: string;
+  loginId?: {
+    email?: string;
+  };
   password?: string;
-  // 其他字段...
 }
 
 export interface WixTokenResponse {

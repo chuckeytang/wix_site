@@ -3,22 +3,42 @@
     <div class="dialog-content">
       <button class="close-button" @click="close">&times;</button>
 
-      <h2 class="dialog-title">{{ isLoginMode ? "登录" : "注册" }}</h2>
+      <h2 class="dialog-title">{{ isLoginMode ? "LOGIN" : "SIGN UP" }}</h2>
 
-      <form @submit.prevent="handleSubmit">
+      <div v-if="showVerificationDialog">
+        <p class="dialog-text">
+          A verification code has been sent to your email. Please enter it
+          below.
+        </p>
         <div class="form-group">
-          <label for="email">电子邮件或用户名</label>
+          <input
+            id="verificationCode"
+            v-model="verificationCode"
+            type="text"
+            class="dialog-input"
+            required
+            placeholder="Verification Code"
+          />
+        </div>
+        <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
+        <button type="button" @click="handleVerifyCode" class="submit-button">
+          VERIFY
+        </button>
+      </div>
+
+      <form v-else @submit.prevent="handleSubmit">
+        <div class="form-group">
           <input
             id="email"
             v-model="email"
             type="email"
             class="dialog-input"
             required
+            placeholder="Email or Username"
           />
         </div>
 
         <div class="form-group">
-          <label for="password">密码</label>
           <div class="password-input-wrapper">
             <input
               id="password"
@@ -26,29 +46,24 @@
               :type="passwordVisible ? 'text' : 'password'"
               class="dialog-input"
               required
+              placeholder="Password"
             />
             <button
               type="button"
               class="password-toggle"
               @click="togglePasswordVisibility"
             >
-              <span class="material-icons">
-                {{ passwordVisible ? "visibility" : "visibility_off" }}
-              </span>
+              <img
+                :src="
+                  passwordVisible
+                    ? '/icons/visibility_off.svg'
+                    : '/icons/visibility.svg'
+                "
+                :alt="passwordVisible ? 'hide password' : 'show password'"
+                class="password-icon"
+              />
             </button>
           </div>
-        </div>
-
-        <div v-if="!isLoginMode" class="form-group accept-terms">
-          <input
-            id="accept-terms"
-            type="checkbox"
-            v-model="acceptTerms"
-            required
-          />
-          <label for="accept-terms"
-            >获取整个图片：请将趋势、优惠和通知信息通过电子邮件发送给我。</label
-          >
         </div>
 
         <div v-if="isLoginMode" class="form-actions">
@@ -56,47 +71,62 @@
             href="#"
             class="forgot-password"
             @click.prevent="handleForgotPassword"
-            >忘记密码?</a
+            >Forgot Password?</a
           >
         </div>
 
         <button type="submit" class="submit-button">
-          {{ isLoginMode ? "登录" : "开始使用" }}
+          {{ isLoginMode ? "LOGIN" : "GET STARTED" }}
         </button>
       </form>
 
       <div class="divider">
-        <span class="or-text">或</span>
+        <span class="or-text">OR</span>
       </div>
 
       <div class="social-login-options">
         <button class="social-button google">
           <img src="/icons/google-icon.svg" alt="Google" />
-          通过 Google 继续
+          CONTINUE WITH GOOGLE
         </button>
         <button class="social-button facebook">
           <img src="/icons/facebook-icon.svg" alt="Facebook" />
-          通过 Facebook 继续
+          CONTINUE WITH FACEBOOK
         </button>
         <button class="social-button apple">
           <img src="/icons/apple-icon.svg" alt="Apple" />
-          通过 Apple 继续
+          CONTINUE WITH APPLE
         </button>
       </div>
 
       <div class="mode-switch">
-        <span v-if="isLoginMode">没有免费账户?</span>
-        <span v-else>已有账户?</span>
+        <span v-if="isLoginMode">NO FREE ACCOUNT?</span>
+        <span v-else>HAVE AN ACCOUNT?</span>
         <button class="switch-button" @click="toggleMode">
-          {{ isLoginMode ? "创建账户" : "登录" }}
+          {{ isLoginMode ? "CREATE ACCOUNT" : "LOG IN" }}
         </button>
       </div>
 
       <div v-if="!isLoginMode" class="terms-statement">
-        创建账户即表示我同意 Shutterstock
-        <a href="#" class="link">网站条款</a>、
-        <a href="#" class="link">隐私政策</a>和
-        <a href="#" class="link">许可条款</a>
+        <div class="accept-terms">
+          <input
+            id="accept-terms"
+            type="checkbox"
+            v-model="acceptTerms"
+            required
+          />
+          <label for="accept-terms">
+            GET TRENDS, OFFERS AND NOTIFICATIONS SENT TO ME BY EMAIL.
+          </label>
+        </div>
+      </div>
+      <div v-if="!isLoginMode" class="terms-statement">
+        <p>
+          BY CREATING AN ACCOUNT I AGREE TO THE WIX
+          <a href="#" class="link">TERMS OF USE</a>,
+          <a href="#" class="link">PRIVACY POLICY</a> AND
+          <a href="#" class="link">LICENSE AGREEMENT</a>.
+        </p>
       </div>
     </div>
   </div>
@@ -104,7 +134,7 @@
 
 <script setup>
 import { ref, watch } from "vue";
-import { authApi } from "~/api/auth"; // 导入 authApi
+import { authApi } from "~/api/auth";
 import { useAuthStore } from "~/stores/auth";
 
 const isLoginMode = ref(true);
@@ -114,6 +144,9 @@ const passwordVisible = ref(false);
 const acceptTerms = ref(false);
 const loading = ref(false);
 const errorMessage = ref("");
+const showVerificationDialog = ref(false);
+const verificationCode = ref("");
+const stateToken = ref("");
 
 const emit = defineEmits(["close"]);
 const authStore = useAuthStore();
@@ -124,11 +157,11 @@ const close = () => {
 
 const toggleMode = () => {
   isLoginMode.value = !isLoginMode.value;
-  // 切换模式时清空表单
   email.value = "";
   password.value = "";
   acceptTerms.value = false;
   errorMessage.value = "";
+  showVerificationDialog.value = false;
 };
 
 const togglePasswordVisibility = () => {
@@ -136,87 +169,126 @@ const togglePasswordVisibility = () => {
 };
 
 const handleSubmit = async () => {
-  if (loading.value) return; // 防止重复提交
+  if (loading.value) return;
 
   loading.value = true;
   errorMessage.value = "";
 
   try {
     if (isLoginMode.value) {
-      // 执行登录逻辑
       const response = await authApi.login({
-        email: email.value,
+        loginId: {
+          email: email.value,
+        },
         password: password.value,
       });
 
       if (response.code === 200) {
-        // 登录成功
-        console.log("登录成功，用户信息:", response.data);
-        // 调用 Pinia store 的方法存储用户信息和 token
+        console.log("Login successful:", response.data);
         authStore.setToken(response.data.accessToken);
-        authStore.setUser(response.data.user); // 假设返回了用户信息
-
-        emit("loginSuccess");
+        authStore.setUser(response.data.user);
         close();
       } else {
-        // 登录失败
         errorMessage.value =
-          response.msg || "登录失败，请检查您的用户名和密码。";
+          response.msg || "Login failed, please check your credentials.";
       }
     } else {
-      // 执行注册逻辑
       const response = await authApi.register({
-        email: email.value,
+        // 调整为嵌套结构以匹配后端和Wix API的要求
+        loginId: {
+          email: email.value,
+        },
         password: password.value,
       });
 
       if (response.code === 200) {
-        // 注册成功后，可以自动登录或提示用户登录
-        console.log("注册成功，请登录。");
-        toggleMode(); // 切换到登录模式
+        if (response.msg === "注册成功，请检查邮箱进行验证") {
+          showVerificationDialog.value = true;
+          stateToken.value = response.data; // The data here is the stateToken
+          errorMessage.value = "";
+        } else {
+          console.log("Registration successful, please log in.");
+          toggleMode();
+        }
       } else {
-        // 注册失败
-        errorMessage.value = response.msg || "注册失败，请稍后重试。";
+        errorMessage.value =
+          response.msg || "Registration failed, please try again later.";
       }
     }
   } catch (error) {
-    console.error("API 调用失败:", error);
-    errorMessage.value = "网络错误，请稍后重试。";
+    console.error("API call failed:", error);
+    // 检查并处理特定错误
+    if (error.response && error.response.data && error.response.data.msg) {
+      // 假设后端的全局异常处理器将错误信息放在了`msg`字段
+      errorMessage.value = error.response.data.msg;
+    } else if (error.message) {
+      // 如果后端直接返回了一个简单的错误字符串，例如来自RuntimeException
+      errorMessage.value = error.message;
+    } else {
+      errorMessage.value = "Network error, please try again later.";
+    }
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleVerifyCode = async () => {
+  if (!verificationCode.value) {
+    errorMessage.value = "Please enter the verification code.";
+    return;
+  }
+
+  loading.value = true;
+  errorMessage.value = "";
+
+  try {
+    // You need to create a new method in your authApi.ts for this call
+    const response = await authApi.verifyEmail({
+      code: verificationCode.value,
+      stateToken: stateToken.value,
+    });
+
+    if (response.code === 200) {
+      // Login successful after verification
+      console.log("Email verified successfully, logged in.");
+      authStore.setToken(response.data.token);
+      authStore.setUser(response.data.user); // Assuming the response returns user data
+      close();
+    } else {
+      errorMessage.value =
+        response.msg || "Verification failed, please try again.";
+    }
+  } catch (error) {
+    console.error("Verification API call failed:", error);
+    if (error.response && error.response.data && error.response.data.msg) {
+      errorMessage.value = error.response.data.msg;
+    } else {
+      errorMessage.value =
+        "An error occurred during verification. Please try again.";
+    }
   } finally {
     loading.value = false;
   }
 };
 
 const handleForgotPassword = () => {
-  // TODO: Implement this
-  console.log("Redirecting to forgot password page/dialog...");
+  console.log("Redirecting to forgot password page...");
 };
 
-// 监听 isLoginMode 变化，同步更新相关文本
 watch(isLoginMode, (newVal) => {
   console.log(`Switched to ${newVal ? "Login" : "Registration"} mode`);
 });
 </script>
 
 <style scoped>
-/* 使用主页的配色方案 */
-:root {
-  --primary-color: #ff9900; /* 主色调，来自菜单激活状态 */
-  --secondary-color: #ff8c62; /* 辅助色，来自按钮 */
-  --background-color: #0d0d1a; /* 背景色 */
-  --text-color: #fff; /* 白色文字 */
-  --light-gray: #ccc; /* 浅灰色文字 */
-  --dark-gray: #333; /* 深灰色 */
-  --border-color: #333;
-}
-
 .dialog-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
+  /* 调整背景色，使其更透明，以便能看到后面的模糊内容 */
+  background-color: rgba(0, 0, 0, 0.4);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -225,7 +297,7 @@ watch(isLoginMode, (newVal) => {
 }
 
 .dialog-content {
-  background-color: var(--background-color);
+  background-color: rgba(13, 13, 26, 0.6); /* 使用半透明背景色 */
   color: var(--text-color);
   padding: 40px;
   border-radius: 10px;
@@ -233,6 +305,8 @@ watch(isLoginMode, (newVal) => {
   max-width: 450px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   position: relative;
+  text-align: center; /* 居中所有内容 */
+  box-sizing: border-box;
 }
 
 .close-button {
@@ -255,27 +329,28 @@ watch(isLoginMode, (newVal) => {
   font-weight: bold;
   margin-bottom: 25px;
   text-align: center;
+  color: var(--text-color); /* 确保标题文字为白色 */
 }
 
 .form-group {
   margin-bottom: 20px;
 }
 
-.form-group label {
-  display: block;
-  font-size: 1rem;
-  margin-bottom: 8px;
-  color: var(--light-gray);
-}
-
 .dialog-input {
   width: 100%;
   padding: 12px 15px;
-  background-color: var(--dark-gray);
+  /* 调整背景为透明，以露出背景图片模糊效果 */
+  background-color: transparent;
   border: 1px solid var(--border-color);
   border-radius: 5px;
-  color: var(--text-color);
+  color: var(--text-color); /* 确保输入框文字为白色 */
   font-size: 1rem;
+  text-align: center; /* 输入文字居中 */
+}
+
+/* 调整 placeholder 样式 */
+.dialog-input::placeholder {
+  color: var(--light-gray); /* 使用浅灰色 */
 }
 
 .password-input-wrapper {
@@ -289,11 +364,11 @@ watch(isLoginMode, (newVal) => {
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: var(--light-gray);
   cursor: pointer;
 }
-.password-toggle .material-icons {
-  font-size: 1.2rem;
+.password-icon {
+  width: 24px; /* 设置图标大小 */
+  height: 24px;
 }
 
 .forgot-password {
@@ -347,7 +422,7 @@ watch(isLoginMode, (newVal) => {
   right: 0;
 }
 .or-text {
-  background-color: var(--background-color);
+  background-color: transparent; /* 更改背景为透明 */
   padding: 0 10px;
   font-size: 0.9rem;
   color: var(--light-gray);
@@ -413,12 +488,16 @@ watch(isLoginMode, (newVal) => {
 .accept-terms {
   display: flex;
   align-items: center;
+  justify-content: center;
+  text-align: left;
 }
-
 .accept-terms label {
   display: inline;
   margin-bottom: 0;
   margin-left: 10px;
   font-size: 0.9rem;
+}
+.terms-statement p {
+  line-height: 1.5;
 }
 </style>

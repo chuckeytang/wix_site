@@ -12,9 +12,9 @@ export const authApi = {
    * @returns 登录结果的 Promise，通常包含 token 信息
    */
   login(data: LoginData): Promise<AjaxResult<any>> {
-    // 这里的 '/site/wix/auth/login' 是一个假设的登录接口
+    // 这里的 '/site/wix/member/login' 是一个假设的登录接口
     // 您需要确保若依后端有对应的处理方法
-    return request.post("/site/wix/auth/login", data);
+    return request.post("/site/wix/member/login", data);
   },
 
   /**
@@ -23,9 +23,9 @@ export const authApi = {
    * @returns 注册结果的 Promise
    */
   register(data: RegisterData): Promise<AjaxResult<any>> {
-    // 这里的 '/site/wix/auth/register' 是一个假设的注册接口
+    // 这里的 '/site/wix/member/register' 是一个假设的注册接口
     // 您需要确保若依后端有对应的处理方法
-    return request.post("/site/wix/auth/register", data);
+    return request.post("/site/wix/member/register", data);
   },
 
   /**
@@ -33,7 +33,7 @@ export const authApi = {
    * @returns 包含访客 token 的 Promise
    */
   getVisitorToken(): Promise<AjaxResult<WixTokenResponse>> {
-    return request.get("/site/wix/auth/getVisitorToken");
+    return request.get("/site/wix/member/getVisitorToken");
   },
 
   /**
@@ -45,7 +45,25 @@ export const authApi = {
     refreshToken: string
   ): Promise<AjaxResult<WixTokenResponse>> {
     return request.post(
-      `/site/wix/auth/refreshVisitorToken?refreshToken=${refreshToken}`
+      `/site/wix/member/refreshVisitorToken?refreshToken=${refreshToken}`
     );
+  },
+
+  /**
+   * Email verification API
+   * @param data Contains the verification code and state token
+   */
+  verifyEmail(data: {
+    code: string;
+    stateToken: string;
+  }): Promise<AjaxResult<any>> {
+    return request.post("/site/wix/member/verifyEmail", data);
+  },
+
+  /**
+   * Deactivates a member's account
+   */
+  deactivate(): Promise<AjaxResult<any>> {
+    return request.delete("/site/wix/member/deactivate");
   },
 };
