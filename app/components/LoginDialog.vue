@@ -5,7 +5,21 @@
 
       <h2 class="dialog-title">{{ isLoginMode ? "LOGIN" : "SIGN UP" }}</h2>
 
-      <div v-if="showVerificationDialog">
+      <!-- 授权加载状态 -->
+      <div v-if="showAuthLoader" class="text-center p-8">
+        <p class="text-lg font-semibold text-white mb-4">
+          <span v-if="isLoginMode">Logging in...</span>
+          <span v-else>Signing up...</span>
+        </p>
+        <p class="text-sm text-gray-400">
+          Redirecting securely to Wix for final authorization.
+        </p>
+        <!-- 您可以在这里添加一个加载动画 -->
+        <div class="loader mx-auto my-4"></div>
+      </div>
+
+      <!-- 邮箱验证对话框 -->
+      <div v-else-if="showVerificationDialog">
         <p class="dialog-text">
           A verification code has been sent to your email. Please enter it
           below.
@@ -26,7 +40,9 @@
         </button>
       </div>
 
+      <!-- 登录/注册表单 -->
       <form v-else @submit.prevent="handleSubmit">
+        <!-- 表单内容保持不变 -->
         <div class="form-group">
           <input
             id="email"
@@ -37,7 +53,6 @@
             placeholder="Email or Username"
           />
         </div>
-
         <div class="form-group">
           <div class="password-input-wrapper">
             <input
@@ -65,7 +80,6 @@
             </button>
           </div>
         </div>
-
         <div v-if="isLoginMode" class="form-actions">
           <a
             href="#"
@@ -74,16 +88,14 @@
             >Forgot Password?</a
           >
         </div>
-
         <button type="submit" class="submit-button">
           {{ isLoginMode ? "LOGIN" : "GET STARTED" }}
         </button>
       </form>
-
+      <!-- 其他 UI 元素保持不变 -->
       <div class="divider">
         <span class="or-text">OR</span>
       </div>
-
       <div class="social-login-options">
         <button class="social-button google">
           <img src="/icons/google-icon.svg" alt="Google" />
@@ -98,7 +110,6 @@
           CONTINUE WITH APPLE
         </button>
       </div>
-
       <div class="mode-switch">
         <span v-if="isLoginMode">NO FREE ACCOUNT?</span>
         <span v-else>HAVE AN ACCOUNT?</span>
@@ -106,7 +117,6 @@
           {{ isLoginMode ? "CREATE ACCOUNT" : "LOG IN" }}
         </button>
       </div>
-
       <div v-if="!isLoginMode" class="terms-statement">
         <div class="accept-terms">
           <input
@@ -133,7 +143,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, onMounted, onBeforeUnmount } from "vue";
 import { authApi } from "~/api/auth";
 import { useAuthStore } from "~/stores/auth";
 
@@ -147,6 +157,8 @@ const errorMessage = ref("");
 const showVerificationDialog = ref(false);
 const verificationCode = ref("");
 const stateToken = ref("");
+const showAuthLoader = ref(false); // 新增：显示授权加载状态
+const wixUserId = ref(""); // 新增：存储Wix用户ID
 
 const emit = defineEmits(["close"]);
 const authStore = useAuthStore();
@@ -168,6 +180,58 @@ const togglePasswordVisibility = () => {
   passwordVisible.value = !passwordVisible.value;
 };
 
+// iframe回调处理器
+const handleIframeMessage = async (event) => {
+  // 验证消息来源，防止跨站脚本攻击
+  if (
+    event.origin !== "https://www.wix.com" &&
+    !event.origin.includes("wixapis.com")
+  ) {
+    return;
+  }
+
+  // 检查消息数据类型
+  const { type, payload } = event.data;
+  if (type === "authorizationCode" && payload.code) {
+    try {
+      showAuthLoader.value = false;
+      loading.value = true;
+      errorMessage.value = "";
+
+      // 调用后端回调接口，发送授权码以获取最终JWT
+      const response = await authApi.handleWixCallback({
+        code: payload.code,
+        state: payload.state,
+        wixUserId: wixUserId.value, // 将之前存储的Wix用户ID也发送过去
+      });
+
+      if (response.code === 200) {
+        console.log("Final login successful:", response.data);
+        authStore.setToken(response.data.token);
+        // authStore.setUser(response.data.user); // 假设后端返回了用户信息
+        close();
+      } else {
+        errorMessage.value = response.msg || "Authorization failed.";
+      }
+    } catch (error) {
+      console.error("API call failed:", error);
+      errorMessage.value = "An error occurred during authorization.";
+    } finally {
+      loading.value = false;
+    }
+  }
+};
+
+onMounted(() => {
+  // 挂载时添加监听器
+  window.addEventListener("message", handleIframeMessage);
+});
+
+onBeforeUnmount(() => {
+  // 组件卸载时移除监听器
+  window.removeEventListener("message", handleIframeMessage);
+});
+
 const handleSubmit = async () => {
   if (loading.value) return;
 
@@ -175,54 +239,49 @@ const handleSubmit = async () => {
   errorMessage.value = "";
 
   try {
-    if (isLoginMode.value) {
-      const response = await authApi.login({
-        loginId: {
-          email: email.value,
-        },
-        password: password.value,
-      });
+    const apiCall = isLoginMode.value
+      ? authApi.login({
+          loginId: { email: email.value },
+          password: password.value,
+        })
+      : authApi.register({
+          loginId: { email: email.value },
+          password: password.value,
+        });
 
-      if (response.code === 200) {
-        console.log("Login successful:", response.data);
-        authStore.setToken(response.data.accessToken);
-        authStore.setUser(response.data.user);
-        close();
+    const response = await apiCall;
+
+    if (response.code === 200) {
+      if (response.data.authUrl) {
+        wixUserId.value = response.data.wixUserId; // 存储Wix用户ID
+        showAuthLoader.value = true; // 显示加载状态
+
+        // 拼接完整的 iframe 回调 URL
+        // 您需要将 'https://www.verscape.com/auth/callback' 替换为您的实际回调页面URL
+        const redirectUrl = `https://www.verscape.com/auth/callback`;
+        const finalAuthUrl = `${response.data.authUrl}&redirectUrl=${encodeURIComponent(redirectUrl)}`;
+
+        // 动态创建隐藏的iframe并加载最终授权URL
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = finalAuthUrl;
+        document.body.appendChild(iframe);
+      } else if (response.msg === "注册成功，请检查邮箱进行验证") {
+        showVerificationDialog.value = true;
+        stateToken.value = response.data;
+        errorMessage.value = "";
       } else {
-        errorMessage.value =
-          response.msg || "Login failed, please check your credentials.";
+        console.log("Success, please log in.");
+        toggleMode();
       }
     } else {
-      const response = await authApi.register({
-        // 调整为嵌套结构以匹配后端和Wix API的要求
-        loginId: {
-          email: email.value,
-        },
-        password: password.value,
-      });
-
-      if (response.code === 200) {
-        if (response.msg === "注册成功，请检查邮箱进行验证") {
-          showVerificationDialog.value = true;
-          stateToken.value = response.data; // The data here is the stateToken
-          errorMessage.value = "";
-        } else {
-          console.log("Registration successful, please log in.");
-          toggleMode();
-        }
-      } else {
-        errorMessage.value =
-          response.msg || "Registration failed, please try again later.";
-      }
+      errorMessage.value = response.msg || "Operation failed.";
     }
   } catch (error) {
     console.error("API call failed:", error);
-    // 检查并处理特定错误
     if (error.response && error.response.data && error.response.data.msg) {
-      // 假设后端的全局异常处理器将错误信息放在了`msg`字段
       errorMessage.value = error.response.data.msg;
     } else if (error.message) {
-      // 如果后端直接返回了一个简单的错误字符串，例如来自RuntimeException
       errorMessage.value = error.message;
     } else {
       errorMessage.value = "Network error, please try again later.";
@@ -242,36 +301,43 @@ const handleVerifyCode = async () => {
   errorMessage.value = "";
 
   try {
-    // You need to create a new method in your authApi.ts for this call
     const response = await authApi.verifyEmail({
       code: verificationCode.value,
       stateToken: stateToken.value,
     });
 
     if (response.code === 200) {
-      // Login successful after verification
-      console.log("Email verified successfully, logged in.");
-      authStore.setToken(response.data.token);
-      authStore.setUser(response.data.user); // Assuming the response returns user data
-      close();
+      if (response.data.authUrl) {
+        wixUserId.value = response.data.wixUserId;
+        showAuthLoader.value = true;
+
+        // 拼接完整的 iframe 回调 URL
+        const redirectUrl = `https://www.verscape.com/auth/callback`;
+        const finalAuthUrl = `${response.data.authUrl}&redirectUrl=${encodeURIComponent(redirectUrl)}`;
+
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = finalAuthUrl;
+        document.body.appendChild(iframe);
+      } else {
+        errorMessage.value =
+          "Verification successful, but authorization URL was not received.";
+      }
     } else {
       errorMessage.value =
         response.msg || "Verification failed, please try again.";
     }
   } catch (error) {
     console.error("Verification API call failed:", error);
-    if (error.response && error.response.data && error.response.data.msg) {
-      errorMessage.value = error.response.data.msg;
-    } else {
-      errorMessage.value =
-        "An error occurred during verification. Please try again.";
-    }
+    errorMessage.value =
+      "An error occurred during verification. Please try again.";
   } finally {
     loading.value = false;
   }
 };
 
 const handleForgotPassword = () => {
+  // 可以根据Wix官方的重置密码流程来处理
   console.log("Redirecting to forgot password page...");
 };
 

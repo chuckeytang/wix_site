@@ -12,8 +12,6 @@ export const authApi = {
    * @returns 登录结果的 Promise，通常包含 token 信息
    */
   login(data: LoginData): Promise<AjaxResult<any>> {
-    // 这里的 '/site/wix/member/login' 是一个假设的登录接口
-    // 您需要确保若依后端有对应的处理方法
     return request.post("/site/wix/member/login", data);
   },
 
@@ -23,8 +21,6 @@ export const authApi = {
    * @returns 注册结果的 Promise
    */
   register(data: RegisterData): Promise<AjaxResult<any>> {
-    // 这里的 '/site/wix/member/register' 是一个假设的注册接口
-    // 您需要确保若依后端有对应的处理方法
     return request.post("/site/wix/member/register", data);
   },
 
@@ -65,5 +61,18 @@ export const authApi = {
    */
   deactivate(): Promise<AjaxResult<any>> {
     return request.delete("/site/wix/member/deactivate");
+  },
+
+  /**
+   * 处理Wix授权回调，向后端发送授权码以获取最终令牌
+   * @param data 包含授权码、状态参数和Wix用户ID
+   * @returns 登录成功的Promise，包含最终的JWT令牌
+   */
+  handleWixCallback(data: {
+    code: string;
+    state: string;
+    wixUserId: string;
+  }): Promise<AjaxResult<any>> {
+    return request.post("/site/wix/member/callback", data);
   },
 };
