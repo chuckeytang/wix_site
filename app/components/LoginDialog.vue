@@ -260,6 +260,7 @@ const handleSubmit = async () => {
         // 您需要将 'https://www.verscape.com/auth/callback' 替换为您的实际回调页面URL
         const redirectUrl = `https://www.verscape.com/auth/callback`;
         const finalAuthUrl = `${response.data.authUrl}&redirectUrl=${encodeURIComponent(redirectUrl)}`;
+        console.log("Final Authorization URL:", finalAuthUrl);
 
         // 动态创建隐藏的iframe并加载最终授权URL
         const iframe = document.createElement("iframe");
