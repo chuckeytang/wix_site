@@ -6,6 +6,7 @@ export { genresApi } from "./genres";
 export { moodsApi } from "./moods";
 export { plansApi } from "./plans";
 export { ordersApi } from "./orders";
+export { sfxApi } from "./sfx";
 export * from "./playlists";
 export * from "./moods";
 export * from "./genres";

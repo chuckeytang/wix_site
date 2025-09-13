@@ -61,7 +61,9 @@
             <p class="description">
               {{ playlistDetail.description || "No description available." }}
             </p>
-            <p class="track-count">{{ totalTracks }} 个免版税音乐音轨</p>
+            <p class="track-count">
+              {{ totalTracks }} Royalty-Free Music Tracks
+            </p>
           </div>
           <div class="playlist-intro-image-container">
             <img
@@ -417,7 +419,7 @@ const fetchAndSetFilterConfig = async () => {
       if (options.genres && options.genres.length > 0) {
         newConfig.push({
           id: "genres",
-          title: "风格",
+          title: "Genres",
           componentType: "SimpleCheckboxFilter",
           props: {
             items: options.genres.map((g: { name: string; count: number }) => ({
@@ -431,7 +433,7 @@ const fetchAndSetFilterConfig = async () => {
       if (options.moods && options.moods.length > 0) {
         newConfig.push({
           id: "moods",
-          title: "情绪",
+          title: "Moods",
           componentType: "SimpleCheckboxFilter",
           props: {
             items: options.moods.map((m: { name: string; count: number }) => ({
@@ -456,19 +458,19 @@ const fetchAndSetFilterConfig = async () => {
       ) {
         newConfig.push({
           id: "durationRange",
-          title: "持续时间",
+          title: "Duration",
           componentType: "RangeSliderFilter",
           props: {
             min: options.minDuration,
             max: options.maxDuration,
-            unit: "秒",
+            unit: "s",
           },
         });
       }
       if (options.artists && options.artists.length > 0) {
         newConfig.push({
           id: "author",
-          title: "音乐家",
+          title: "Author",
           componentType: "SimpleCheckboxFilter",
           props: {
             items: options.artists.map(

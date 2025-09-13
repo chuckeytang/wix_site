@@ -98,15 +98,20 @@ const waveformPlayerRef = ref<InstanceType<typeof WaveformPlayer> | null>(null);
 
 // 使用 computed 属性来同步本地播放状态和全局状态
 const localIsPlaying = computed(() => {
-  const result =
-    musicPlayerStore.currentTrack?.trackId === props.track.trackId &&
-    musicPlayerStore.isPlaying;
-  return result;
+  const isPlayingTrack =
+    musicPlayerStore.mediaType === "track" &&
+    (musicPlayerStore.currentTrack as Tracks)?.trackId === props.track.trackId;
+
+  return isPlayingTrack && musicPlayerStore.isPlaying;
 });
 
 // 使用 computed 属性来同步本地进度和全局进度
 const globalProgress = computed(() => {
-  if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
+  // 确保是当前播放的音乐曲目
+  if (
+    musicPlayerStore.mediaType === "track" &&
+    (musicPlayerStore.currentTrack as Tracks)?.trackId === props.track.trackId
+  ) {
     return (musicPlayerStore.currentTime / musicPlayerStore.duration) * 100;
   }
   return 0;
@@ -117,9 +122,16 @@ watch(
   () => musicPlayerStore.currentSegment,
   (newSegment) => {
     if (!waveformPlayerRef.value) return;
-    if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
+
+    // 确保是当前播放的音乐曲目
+    if (
+      musicPlayerStore.mediaType === "track" &&
+      (musicPlayerStore.currentTrack as Tracks)?.trackId === props.track.trackId
+    ) {
+      // 1. 如果是当前播放的歌曲，则应用全局分段设置
       waveformPlayerRef.value.setSegment(newSegment);
     } else {
+      // 2. 如果不是当前播放的歌曲，则取消分段设置
       waveformPlayerRef.value.setSegment("full");
     }
   }
@@ -149,7 +161,16 @@ watch(
 
 // 播放/暂停的逻辑，首先设置全局 Store
 const togglePlayAndSetTrack = () => {
-  if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
+  if (!props.track) return;
+
+  // 使用类型断言明确告诉编译器，musicPlayerStore.currentTrack 是一个 Tracks 类型
+  // 增加对 mediaType 的判断，以确保逻辑严谨性
+  const currentTrack = musicPlayerStore.currentTrack as Tracks;
+
+  if (
+    currentTrack?.trackId === props.track.trackId &&
+    musicPlayerStore.mediaType === "track"
+  ) {
     musicPlayerStore.togglePlayPause();
   } else {
     musicPlayerStore.setTrack(props.track);

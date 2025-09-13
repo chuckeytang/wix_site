@@ -148,15 +148,20 @@ const route = useRoute();
 
 // 使用 computed 属性来同步本地播放状态和全局状态
 const localIsPlaying = computed(() => {
-  const result =
-    musicPlayerStore.currentTrack?.trackId === props.track.trackId &&
-    musicPlayerStore.isPlaying;
-  return result;
+  const isPlayingTrack =
+    musicPlayerStore.mediaType === "track" &&
+    (musicPlayerStore.currentTrack as Tracks)?.trackId === props.track.trackId;
+
+  return isPlayingTrack && musicPlayerStore.isPlaying;
 });
 
 // 使用 computed 属性来同步本地进度和全局进度
 const globalProgress = computed(() => {
-  if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
+  // 确保是当前播放的音乐曲目
+  if (
+    musicPlayerStore.mediaType === "track" &&
+    (musicPlayerStore.currentTrack as Tracks)?.trackId === props.track.trackId
+  ) {
     return (musicPlayerStore.currentTime / musicPlayerStore.duration) * 100;
   }
   return 0;
@@ -167,7 +172,11 @@ watch(
   (newSegment) => {
     if (!waveformPlayerRef.value) return;
 
-    if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
+    // 确保是当前播放的音乐曲目
+    if (
+      musicPlayerStore.mediaType === "track" &&
+      (musicPlayerStore.currentTrack as Tracks)?.trackId === props.track.trackId
+    ) {
       // 1. 如果是当前播放的歌曲，则应用全局分段设置
       waveformPlayerRef.value.setSegment(newSegment);
     } else {
@@ -210,7 +219,11 @@ const formatDuration = (seconds: number): string => {
 
 // 统一处理播放按钮点击事件
 const handlePlayButtonClick = () => {
-  if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
+  // 确保是当前播放的音乐曲目
+  if (
+    musicPlayerStore.mediaType === "track" &&
+    (musicPlayerStore.currentTrack as Tracks)?.trackId === props.track.trackId
+  ) {
     musicPlayerStore.togglePlayPause();
   } else {
     musicPlayerStore.setTrack(props.track);
@@ -219,7 +232,11 @@ const handlePlayButtonClick = () => {
 
 // 处理波形图点击，仅将事件传递给 store
 const handleWaveformClick = (relativePosition: number) => {
-  if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
+  // 确保是当前播放的音乐曲目
+  if (
+    musicPlayerStore.mediaType === "track" &&
+    (musicPlayerStore.currentTrack as Tracks)?.trackId === props.track.trackId
+  ) {
     musicPlayerStore.seekTo(relativePosition);
   } else {
     musicPlayerStore.setTrack(props.track);
@@ -231,10 +248,12 @@ const handleWaveformClick = (relativePosition: number) => {
 
 // 监听 waveform 发出的 play 事件，并更新 store 状态
 const handlePlay = () => {
-  if (
-    !musicPlayerStore.currentTrack ||
-    musicPlayerStore.currentTrack.trackId !== props.track.trackId
-  ) {
+  // 确保不是在播放音效，并且不是同一首歌曲
+  const isDifferentTrack =
+    musicPlayerStore.mediaType !== "track" ||
+    (musicPlayerStore.currentTrack as Tracks)?.trackId !== props.track.trackId;
+
+  if (isDifferentTrack) {
     musicPlayerStore.setTrack(props.track);
   }
   musicPlayerStore.setIsPlaying(true);

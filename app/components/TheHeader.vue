@@ -11,6 +11,7 @@
           <li><NuxtLink to="/genres">GENRES</NuxtLink></li>
           <li><NuxtLink to="/moods">MOODS</NuxtLink></li>
           <li><NuxtLink to="/playlists">PLAYLISTS</NuxtLink></li>
+          <li><NuxtLink to="/sfx">SFX</NuxtLink></li>
           <li><NuxtLink to="/checkout">CHECKOUT</NuxtLink></li>
         </ul>
       </nav>
