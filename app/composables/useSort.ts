@@ -63,14 +63,11 @@ export function useSort(onSortChange: (option: SortOption) => void) {
 
   const handleClickOutside = (event: MouseEvent) => {
     // 检查点击事件是否发生在下拉菜单内部
-    console.log("event.target:", event.target);
-    console.log("dropdownRef.value:", dropdownRef.value);
     if (
       dropdownRef.value &&
       !dropdownRef.value.contains(event.target as Node)
     ) {
       isDropdownOpen.value = false;
-      console.log("isDropdownOpen.value:", isDropdownOpen.value);
     }
   };
 

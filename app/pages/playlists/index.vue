@@ -19,10 +19,12 @@
             :key="playlist.playlistId"
             :playlist="playlist"
             @select-card="handleCardClick"
+            @play-playlist="handlePlayPlaylist"
           />
         </div>
       </div>
     </section>
+    <MusicPlayerPanel />
   </div>
 </template>
 
@@ -32,18 +34,20 @@ import PlaylistCard from "~/components/PlaylistCard.vue";
 import { playlistsApi } from "~/api";
 import type { Playlists } from "~/types/playlists";
 import { useRouter } from "vue-router";
+import { useMusicPlayerStore } from "~/stores/musicPlayer";
+import type { Tracks } from "~/types/tracks";
 
 const playlists = ref<Playlists[]>([]);
 const loading = ref(true);
 const error = ref(false);
 
 const router = useRouter();
+const musicPlayerStore = useMusicPlayerStore();
 
 const fetchPlaylists = async () => {
   loading.value = true;
   error.value = false;
   try {
-    // 请求所有播放列表，若后端分页，这里可能需要调整 pageSize
     const response = await playlistsApi.getPlaylistsList({});
     playlists.value = response.rows;
   } catch (err) {
@@ -55,11 +59,28 @@ const fetchPlaylists = async () => {
 };
 
 const handleCardClick = (playlistId: number) => {
-  console.log('Card clicked with ID:', playlistId); // 可选：调试信息
-  // 使用编程式导航跳转到详情页
   router.push({
-    path: `/playlists/${playlistId}`, // 使用动态路径
+    path: `/playlists/${playlistId}`,
   });
+};
+
+const handlePlayPlaylist = async (playlistId: number) => {
+  try {
+    const response = await playlistsApi.getPlaylistMusic(playlistId, {
+      pageNum: 1,
+      pageSize: 100,
+    });
+    const tracksInPlaylist = response.rows;
+
+    if (tracksInPlaylist && tracksInPlaylist.length > 0) {
+      const randomIndex = Math.floor(Math.random() * tracksInPlaylist.length);
+      const randomTrack = tracksInPlaylist[randomIndex];
+
+      musicPlayerStore.setPlaylist(tracksInPlaylist, randomTrack, playlistId);
+    }
+  } catch (e) {
+    console.error("Failed to play playlist:", e);
+  }
 };
 
 onMounted(() => {
@@ -68,6 +89,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 样式代码保持不变 */
 .playlists-page-container {
   background-color: #000;
   color: #fff;
@@ -137,9 +159,6 @@ onMounted(() => {
 }
 
 .top-spacer {
-  /* 设置一个固定高度 */
   height: 120px;
-  /* 或者设置 padding */
-  /* padding-top: 150px; */
 }
 </style>

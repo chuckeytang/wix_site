@@ -16,9 +16,14 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
     currentTrack: null as Tracks | Sfx | null,
 
     /**
-     * 新增：当前播放媒体的类型。
+     * 当前播放媒体的类型。
      */
     mediaType: "track" as "track" | "sfx",
+
+    /**
+     * 当前播放列表的来源ID（流派ID, 情绪ID, 歌单ID）。
+     */
+    currentSourceId: undefined as number | undefined,
 
     /**
      * 当前播放列表（通常是来自列表页面的 tracks 数组）。
@@ -65,8 +70,9 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
      * @param playlist 歌曲列表
      * @param track 初始播放的歌曲对象 (可选)
      */
-    setPlaylist(playlist: Tracks[], track?: Tracks) {
+    setPlaylist(playlist: Tracks[], track?: Tracks, sourceId?: number) {
       this.currentPlaylist = playlist;
+      this.currentSourceId = sourceId;
       if (track) {
         this.setTrack(track);
       }
@@ -210,5 +216,11 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
   getters: {
     // 检查是否有歌曲在播放
     isGloballyPlaying: (state) => !!state.currentPlayingId && state.isPlaying,
+    currentProgress(): number {
+      if (this.duration > 0) {
+        return (this.currentTime / this.duration) * 100;
+      }
+      return 0;
+    },
   },
 });

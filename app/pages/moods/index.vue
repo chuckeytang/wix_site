@@ -25,10 +25,12 @@
             :key="mood.moodId"
             :moodlist="mood"
             @select-card="handleCardClick"
+            @play-mood="handlePlayMood"
           />
         </template>
       </section>
     </div>
+    <MusicPlayerPanel />
   </div>
 </template>
 
@@ -38,12 +40,15 @@ import MoodsCard from "~/components/MoodsCard.vue";
 import { moodsApi } from "~/api";
 import type { Moods } from "~/types/moods";
 import { useRouter } from "vue-router";
+import { useMusicPlayerStore } from "~/stores/musicPlayer";
+import type { Tracks } from "~/types/tracks";
 
 const moodslist = ref<Moods[]>([]);
 const loading = ref(true);
 const error = ref(false);
 
 const router = useRouter();
+const musicPlayerStore = useMusicPlayerStore();
 
 const fetchMoods = async () => {
   loading.value = true;
@@ -60,11 +65,31 @@ const fetchMoods = async () => {
 };
 
 const handleCardClick = (moodId: number) => {
-  console.log("Card clicked with ID:", moodId); // 可选：调试信息
-  // 使用编程式导航跳转到详情页
   router.push({
-    path: `/moods/${moodId}`, // 使用动态路径
+    path: `/moods/${moodId}`,
   });
+};
+
+const handlePlayMood = async (moodId: number) => {
+  try {
+    // 1. 获取该情绪下的所有音乐
+    const response = await moodsApi.getMoodsMusic(moodId, {
+      pageNum: 1,
+      pageSize: 100,
+    });
+    const tracksInMood = response.rows;
+
+    if (tracksInMood && tracksInMood.length > 0) {
+      // 2. 随机选择一首音乐
+      const randomIndex = Math.floor(Math.random() * tracksInMood.length);
+      const randomTrack = tracksInMood[randomIndex];
+
+      // 3. 设置播放列表，并开始播放
+      musicPlayerStore.setPlaylist(tracksInMood, randomTrack, moodId);
+    }
+  } catch (e) {
+    console.error("Failed to play mood:", e);
+  }
 };
 
 onMounted(() => {
@@ -94,7 +119,7 @@ onMounted(() => {
 .card-content {
   background-color: #000;
   display: grid;
-  grid-template-columns: repeat(6, 1fr); /* 确保固定为6列 */
+  grid-template-columns: repeat(6, 1fr);
   gap: 30px;
   padding: 40px 60px;
   max-width: none;
