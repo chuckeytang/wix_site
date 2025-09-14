@@ -186,7 +186,9 @@ watch(
   (newProgress) => {
     // 只有当是当前播放歌曲时才同步波形图
     if (localIsPlaying.value && waveformPlayerRef.value) {
-      waveformPlayerRef.value.seekTo(newProgress / 100);
+      if (!isNaN(newProgress)) {
+        waveformPlayerRef.value.seekTo(newProgress / 100);
+      }
     }
   }
 );

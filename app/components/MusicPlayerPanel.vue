@@ -300,8 +300,10 @@ watch(
       if (newVal) {
         // 播放前，先将 Wavesurfer seek 到当前进度
         const relativeProgress = playerStore.currentTime / playerStore.duration;
-        waveformPlayerRef.value.seekTo(relativeProgress);
-        waveformPlayerRef.value.play();
+        if (!isNaN(relativeProgress)) {
+          waveformPlayerRef.value.seekTo(relativeProgress);
+          waveformPlayerRef.value.play();
+        }
       } else {
         waveformPlayerRef.value.pause();
       }
@@ -315,9 +317,11 @@ watch(
   (newProgress) => {
     if (newProgress !== null && waveformPlayerRef.value) {
       // 调用 Wavesurfer 的 seekTo 方法
-      waveformPlayerRef.value.seekTo(newProgress);
-      // 同步完成后，立即重置 store 中的状态，避免重复触发
-      playerStore.clearSeekToProgress();
+      if (!isNaN(newProgress)) {
+        waveformPlayerRef.value.seekTo(newProgress);
+        // 同步完成后，立即重置 store 中的状态，避免重复触发
+        playerStore.clearSeekToProgress();
+      }
     }
   }
 );
