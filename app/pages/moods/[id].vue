@@ -96,8 +96,8 @@
                 {{ isSidebarOpen ? "Hide Filters" : "Show Filters" }}
               </button>
               <div class="sort-and-view-options">
-                <div class="sort-dropdown" @click.stop="toggleSortDropdown">
-                  <div class="dropdown-header">
+                <div class="sort-dropdown" ref="dropdownRef">
+                  <div class="dropdown-header" @click.stop="toggleSortDropdown">
                     <span class="current-sort">{{ currentSort?.label }}</span>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -231,6 +231,7 @@ import { moodsApi } from "~/api/moods";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
 import type { Moods } from "~/types/moods";
 import type { Tracks, PaginationResult } from "~/types/tracks";
+import { useSort, type SortOption } from "~/composables/useSort";
 
 const route = useRoute();
 const router = useRouter();
@@ -242,14 +243,7 @@ const loading = ref(true);
 const error = ref(false);
 
 const isSidebarOpen = ref<boolean>(false);
-const isDropdownOpen = ref<boolean>(false);
 const currentView = ref<string>("list");
-const sortOptions = [
-  { value: "popular", label: "popular" },
-  { value: "newest", label: "newest" },
-  { value: "oldest", label: "oldest" },
-];
-const currentSort = ref(sortOptions[0]);
 
 const tracks = ref<Tracks[]>([]);
 const tracksLoading = ref<boolean>(false);
@@ -261,6 +255,21 @@ const totalTracks = ref<number>(0);
 const totalPages = computed(() => {
   return Math.ceil(totalTracks.value / pageSize.value);
 });
+
+// 使用组合式函数封装排序逻辑
+const handleSortChange = () => {
+  currentPage.value = 1; // 排序变化时重置到第一页
+  fetchTracks();
+};
+
+const {
+  isDropdownOpen,
+  currentSort,
+  sortOptions,
+  toggleSortDropdown,
+  selectSortOption,
+  dropdownRef,
+} = useSort(handleSortChange);
 
 interface FilterItem {
   id: string;
@@ -314,17 +323,6 @@ const playAllTracks = () => {
 
 const setView = (viewType: string) => {
   currentView.value = viewType;
-};
-
-const toggleSortDropdown = () => {
-  isDropdownOpen.value = !isDropdownOpen.value;
-};
-
-const selectSortOption = (option: { value: string; label: string }) => {
-  currentSort.value = option;
-  isDropdownOpen.value = false;
-  currentPage.value = 1;
-  fetchTracks();
 };
 
 const handlePageChange = (newPage: number) => {
@@ -385,8 +383,8 @@ const fetchTracks = async () => {
       minDuration: filters.durationRange[0],
       maxDuration: filters.durationRange[1],
       artist: filters.author.length > 0 ? filters.author.join(",") : undefined,
-      sortValue: currentSort.value?.value,
-      sortLabel: currentSort.value?.label,
+      orderByColumn: currentSort.value?.orderByColumn,
+      isAsc: currentSort.value?.isAsc,
     };
     const response: PaginationResult<Tracks> = await moodsApi.getMoodsMusic(
       id,

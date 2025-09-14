@@ -101,8 +101,8 @@
               </button>
 
               <div class="sort-and-view-options">
-                <div class="sort-dropdown" @click.stop="toggleSortDropdown">
-                  <div class="dropdown-header">
+                <div class="sort-dropdown" ref="dropdownRef">
+                  <div class="dropdown-header" @click.stop="toggleSortDropdown">
                     <span class="current-sort">{{ currentSort?.label }}</span>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -239,6 +239,7 @@ import { useMusicPlayerStore } from "~/stores/musicPlayer";
 // 导入类型
 import type { Genres } from "~/types/genres";
 import type { Tracks, PaginationResult } from "~/types/tracks";
+import { useSort, type SortOption } from "~/composables/useSort";
 
 const route = useRoute();
 const router = useRouter();
@@ -250,14 +251,7 @@ const loading = ref(true);
 const error = ref(false);
 
 const isSidebarOpen = ref<boolean>(false);
-const isDropdownOpen = ref<boolean>(false);
 const currentView = ref<string>("list");
-const sortOptions = [
-  { value: "popular", label: "popular" },
-  { value: "newest", label: "newest" },
-  { value: "oldest", label: "oldest" },
-];
-const currentSort = ref(sortOptions[0]);
 
 const tracks = ref<Tracks[]>([]);
 const tracksLoading = ref<boolean>(false);
@@ -325,17 +319,6 @@ const setView = (viewType: string) => {
   currentView.value = viewType;
 };
 
-const toggleSortDropdown = () => {
-  isDropdownOpen.value = !isDropdownOpen.value;
-};
-
-const selectSortOption = (option: { value: string; label: string }) => {
-  currentSort.value = option;
-  isDropdownOpen.value = false;
-  currentPage.value = 1;
-  fetchTracks();
-};
-
 const handlePageChange = (newPage: number) => {
   currentPage.value = newPage;
   fetchTracks();
@@ -346,6 +329,21 @@ const handleFilterChange = (newFilters: FiltersState) => {
   Object.assign(filters, newFilters);
   debouncedFetchTracks();
 };
+
+// 使用组合式函数封装排序逻辑
+const handleSortChange = () => {
+  currentPage.value = 1; // 排序变化时重置到第一页
+  fetchTracks();
+};
+
+const {
+  isDropdownOpen,
+  currentSort,
+  sortOptions,
+  toggleSortDropdown,
+  selectSortOption,
+  dropdownRef,
+} = useSort(handleSortChange);
 
 const fetchData = async () => {
   const id = Number(genresId.value);
@@ -392,8 +390,8 @@ const fetchTracks = async () => {
       minDuration: filters.durationRange[0],
       maxDuration: filters.durationRange[1],
       artist: filters.author.length > 0 ? filters.author.join(",") : undefined,
-      sortValue: currentSort.value?.value,
-      sortLabel: currentSort.value?.label,
+      orderByColumn: currentSort.value?.orderByColumn,
+      isAsc: currentSort.value?.isAsc,
     };
     const response: PaginationResult<Tracks> = await genresApi.getGenresMusic(
       id,

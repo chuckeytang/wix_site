@@ -59,9 +59,8 @@ const fetchGenres = async () => {
   }
 };
 
-
 const handleCardClick = (genreId: number) => {
-  console.log('Card clicked with ID:', genreId); // 可选：调试信息
+  console.log("Card clicked with ID:", genreId); // 可选：调试信息
   // 使用编程式导航跳转到详情页
   router.push({
     path: `/genres/${genreId}`, // 使用动态路径
