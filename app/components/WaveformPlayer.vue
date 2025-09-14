@@ -24,7 +24,6 @@ import {
   defineEmits,
 } from "vue";
 import WaveSurfer from "wavesurfer.js";
-import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.esm.js";
 
 const props = defineProps({
   audioUrl: {
@@ -53,7 +52,6 @@ const waveformRef = ref(null);
 const wavesurfer = ref(null);
 const hoverProgress = ref(0);
 const totalDuration = ref(0);
-const regions = ref(null);
 
 // 监听 audioUrl 变化，重新加载音频
 watch(
@@ -61,21 +59,6 @@ watch(
   (newUrl, oldUrl) => {
     if (newUrl && newUrl !== oldUrl) {
       loadAudio(newUrl);
-    }
-  }
-);
-
-watch(
-  () => props.isPlaying,
-  (newVal) => {
-    if (newVal) {
-      if (!wavesurfer.value.isPlaying()) {
-        wavesurfer.value.play();
-      }
-    } else {
-      if (wavesurfer.value.isPlaying()) {
-        wavesurfer.value.pause();
-      }
     }
   }
 );
@@ -96,10 +79,6 @@ const createWavesurfer = () => {
   gradient.addColorStop(0.5, "#ffb38a");
   gradient.addColorStop(1, "#ffd08a");
 
-  // 获取 Regions 插件实例
-  const regionsPluginInstance = RegionsPlugin.create();
-  regions.value = regionsPluginInstance;
-
   // 2. 实例化 Wavesurfer
   wavesurfer.value = WaveSurfer.create({
     container: waveformRef.value,
@@ -112,7 +91,6 @@ const createWavesurfer = () => {
     height: 50,
     responsive: true,
     hideScrollbar: true,
-    plugins: [regionsPluginInstance],
   });
 
   if (props.audioUrl) {
@@ -141,77 +119,16 @@ const createWavesurfer = () => {
   });
 
   if (props.canControl) {
+    // 简化 interaction 监听器
     wavesurfer.value.on("interaction", (time) => {
-      // 检查是否有分段区域存在
-      if (regions.value?.getRegions()?.length > 0) {
-        const mainRegion = regions.value.getRegions()[0];
-
-        // 如果点击在区域外，将播放头跳转回区域起始点
-        if (time < mainRegion.start || time > mainRegion.end) {
-          wavesurfer.value.seekTo(
-            mainRegion.end / wavesurfer.value.getDuration()
-          );
-        } else {
-          console.log(
-            "Click within region.",
-            time / wavesurfer.value.getDuration()
-          );
-          // 如果点击在区域内，跳转到点击位置
-          wavesurfer.value.seekTo(time / wavesurfer.value.getDuration());
-          emits("waveform-click", time / wavesurfer.value.getDuration());
-        }
-      } else {
-        // 如果没有分段区域，直接跳转到点击位置
-        wavesurfer.value.seekTo(time / wavesurfer.value.getDuration());
-        wavesurfer.value.play();
-        emits("waveform-click", time / wavesurfer.value.getDuration());
-      }
-    });
-
-    // regions插件的事件监听器
-    regions.value.on("region-clicked", (region, e) => {
-      console.log(`region-in`);
-      wavesurfer.value.play();
-      emits("play");
-    });
-
-    regions.value.on("region-out", (region) => {
-      console.log(`region-out`);
-      wavesurfer.value.pause();
-      emits("pause");
+      // 直接跳转到点击位置
+      wavesurfer.value.seekTo(time / wavesurfer.value.getDuration());
+      emits("waveform-click", time / wavesurfer.value.getDuration());
     });
   } else {
+    // 简化 interaction 监听器
     wavesurfer.value.on("interaction", (time) => {
-      // 检查是否有分段区域存在
-      if (regions.value?.getRegions()?.length > 0) {
-        const mainRegion = regions.value.getRegions()[0];
-
-        // 如果点击在区域外，将播放头跳转回区域起始点
-        if (time < mainRegion.start || time > mainRegion.end) {
-          emits(
-            "waveform-click",
-            mainRegion.end / wavesurfer.value.getDuration()
-          );
-          console.log(
-            "Click outside region.",
-            mainRegion.end / wavesurfer.value.getDuration()
-          );
-        } else {
-          emits("waveform-click", time / wavesurfer.value.getDuration());
-        }
-      } else {
-        // 如果没有分段区域，直接跳转到点击位置
-        emits("waveform-click", time / wavesurfer.value.getDuration());
-      }
-    });
-
-    // regions插件的事件监听器
-    regions.value.on("region-clicked", (region, e) => {
-      emits("play");
-    });
-
-    regions.value.on("region-out", (region) => {
-      emits("pause");
+      emits("waveform-click", time / wavesurfer.value.getDuration());
     });
   }
 };
@@ -254,44 +171,12 @@ const loadAudio = (url) => {
   }
 };
 
-const setSegment = (segment) => {
-  if (!wavesurfer.value || !regions.value) {
-    console.error("Wavesurfer 或 Regions 实例未初始化！");
-    return;
-  }
-  // 移除所有旧的区域
-  regions.value.clearRegions();
-
-  let start = 0;
-  let end = wavesurfer.value.getDuration();
-
-  if (segment === "15s" && wavesurfer.value.getDuration() > 15) {
-    end = 15;
-  } else if (segment === "30s" && wavesurfer.value.getDuration() > 30) {
-    end = 30;
-  } else if (segment === "60s" && wavesurfer.value.getDuration() > 60) {
-    end = 60;
-  } else if (segment === "full") {
-    return;
-  }
-
-  // 创建一个新区域
-  const region = regions.value.addRegion({
-    start,
-    end,
-    color: "rgba(255, 140, 98, 0.3)",
-    drag: false, // 禁止拖动
-    resize: false, // 禁止改变大小
-  });
-};
-
 defineExpose({
   play,
   pause,
   seekTo,
   setVolume,
   getDuration,
-  setSegment,
   loadAudio,
 });
 </script>

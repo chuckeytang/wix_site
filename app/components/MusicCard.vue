@@ -168,25 +168,6 @@ const globalProgress = computed(() => {
 });
 
 watch(
-  () => musicPlayerStore.currentSegment,
-  (newSegment) => {
-    if (!waveformPlayerRef.value) return;
-
-    // 确保是当前播放的音乐曲目
-    if (
-      musicPlayerStore.mediaType === "track" &&
-      (musicPlayerStore.currentTrack as Tracks)?.trackId === props.track.trackId
-    ) {
-      // 1. 如果是当前播放的歌曲，则应用全局分段设置
-      waveformPlayerRef.value.setSegment(newSegment);
-    } else {
-      // 2. 如果不是当前播放的歌曲，则取消分段设置
-      waveformPlayerRef.value.setSegment("full");
-    }
-  }
-);
-
-watch(
   () => musicPlayerStore.currentPlayingId,
   (newId) => {
     // 如果全局播放ID存在，并且不是当前卡片的ID

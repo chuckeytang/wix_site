@@ -243,10 +243,10 @@ const isSfx = computed(
 // 动态获取当前播放的音频 URL
 const audioUrl = computed(() => {
   if (!playerStore.currentTrack) return "";
-  if (playerStore.mediaType === "sfx") {
-    return (playerStore.currentTrack as Sfx).audioFileUrl;
-  } else {
+  // 仅在音乐曲目类型时，才处理分段预览
+  if (playerStore.mediaType === "track") {
     const track = playerStore.currentTrack as Tracks;
+    console.log("segemnt", playerStore.currentSegment, track);
     switch (playerStore.currentSegment) {
       case "15s":
         return track.previewUrl15s;
@@ -256,8 +256,12 @@ const audioUrl = computed(() => {
         return track.previewUrl60s;
       case "full":
       default:
+        // 如果是 full 或其他情况，返回完整音频 URL
         return track.audioFileUrl;
     }
+  } else {
+    // 如果是音效（sfx），直接返回 audioFileUrl
+    return (playerStore.currentTrack as Sfx).audioFileUrl;
   }
 });
 
@@ -266,17 +270,23 @@ const isDetailPage = computed(() => {
   return route.path.startsWith("/music/");
 });
 
-// 监听全局分段状态，并同步到本地 UI 和 WaveformPlayer
 watch(
-  () => playerStore.currentSegment,
-  (newSegment) => {
-    // 同步到本地状态，用于更新按钮样式
-    currentSegment.value = newSegment;
-    // 调用 WaveformPlayer 的 setSegment 方法
-    if (waveformPlayerRef.value) {
-      waveformPlayerRef.value.setSegment(newSegment);
+  [() => playerStore.currentPlayingId, () => playerStore.currentSegment],
+  ([newId, newSegment], [oldId, oldSegment]) => {
+    // 只有当歌曲或分段变化时才重新加载音频
+    if (newId !== oldId || newSegment !== oldSegment) {
+      if (waveformPlayerRef.value && playerStore.currentTrack) {
+        const urlToLoad = audioUrl.value;
+        if (urlToLoad) {
+          console.log(`Loading new audio: ${urlToLoad}`);
+          // 先暂停并重置进度，再加载新的音频
+          waveformPlayerRef.value.pause();
+          waveformPlayerRef.value.loadAudio(urlToLoad);
+        }
+      }
     }
-  }
+  },
+  { immediate: true }
 );
 
 // 这个监听器将处理所有来自 store 的播放/暂停指令
@@ -312,22 +322,6 @@ watch(
   }
 );
 
-// 监听歌曲/音效变化，加载新波形图
-watch(
-  () => playerStore.currentPlayingId,
-  (newId, oldId) => {
-    if (newId !== oldId && playerStore.currentTrack) {
-      if (waveformPlayerRef.value) {
-        const urlToLoad = audioUrl.value;
-        if (urlToLoad) {
-          waveformPlayerRef.value.loadAudio(urlToLoad);
-        }
-      }
-    }
-  },
-  { immediate: true }
-);
-
 const handleWaveformClick = (relativePosition: number) => {
   playerStore.seekTo(relativePosition);
 };
@@ -342,21 +336,23 @@ const handleUpdateProgress = (progress: number) => {
   }
 };
 
-// 只有当 WaveformPlayer 准备好时，才开始播放
+// 唯一的播放触发点：当 Wavesurfer 准备好时，根据全局状态决定是否播放
 const handleReady = () => {
   if (waveformPlayerRef.value) {
+    // 1. 同步 Wavesurfer 报告的总时长到全局状态
     playerStore.setDuration(waveformPlayerRef.value.getDuration());
 
-    // 在 ready 时，根据当前选中的分段，重新设置波形图
-    if (playerStore.mediaType === "track") {
-      waveformPlayerRef.value.setSegment(playerStore.currentSegment);
-    }
-
+    // 2. 检查全局播放状态，如果为 true，则开始播放
     if (playerStore.isPlaying) {
       console.log("Waveform ready, starting playback.");
+      // 播放前，先将 Wavesurfer seek 到全局进度
       const relativeProgress = playerStore.currentTime / playerStore.duration;
-      waveformPlayerRef.value.seekTo(relativeProgress);
-      waveformPlayerRef.value.play();
+      console.log("relativeProgress", relativeProgress);
+      // 真正开始播放
+      if (!isNaN(relativeProgress)) {
+        waveformPlayerRef.value.seekTo(relativeProgress);
+        waveformPlayerRef.value.play();
+      }
     }
   }
 };
@@ -416,12 +412,8 @@ const handleDownload = async () => {
 // 处理上一首按钮的点击事件
 const handlePrevButton = () => {
   if (isDetailPage.value) {
-    if (waveformPlayerRef.value) {
-      waveformPlayerRef.value.pause();
-      waveformPlayerRef.value.seekTo(0);
-      waveformPlayerRef.value.play();
-    }
-    playerStore.updateTime(0);
+    // 详情页，重新播放当前歌曲
+    playerStore.setTrack(playerStore.currentTrack as Tracks); // 这一步会触发 watch 重新加载音频
     playerStore.setIsPlaying(true);
   } else {
     playerStore.playPrevTrack();
