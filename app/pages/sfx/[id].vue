@@ -7,16 +7,16 @@
 
     <div class="main-content-container">
       <nav class="breadcrumb">
-        <span>Royalty-Free Music</span>
+        <span>Sound Effects</span>
         <span class="separator">&gt;</span>
-        <a href="#" class="artist-link">{{ track?.artist || "..." }}</a>
+        <a href="#" class="artist-link">{{ sfx?.artist || "..." }}</a>
         <span class="separator">&gt;</span>
-        <span class="track-title-breadcrumb">{{ track?.title || "..." }}</span>
+        <span class="track-title-breadcrumb">{{ sfx?.title || "..." }}</span>
       </nav>
 
       <section class="track-details-section">
         <div class="left-column">
-          <button class="play-button" @click="togglePlayAndSetTrack">
+          <button class="play-button" @click="togglePlayAndSetSfx">
             <svg
               v-if="!localIsPlaying"
               xmlns="http://www.w3.org/2000/svg"
@@ -49,48 +49,14 @@
           </button>
         </div>
         <div class="right-column">
-          <h1 class="track-title">{{ track?.title || "Loading..." }}</h1>
-          <p class="track-artist">By {{ track?.artist || "..." }}</p>
+          <h1 class="track-title">{{ sfx?.title || "Loading..." }}</h1>
+          <p class="track-artist">By {{ sfx?.artist || "..." }}</p>
         </div>
       </section>
 
       <section class="meta-section">
-        <div class="license-info">
-          <span class="license-label">Any license comes with:</span>
-          <div class="license-options">
-            <span
-              class="option"
-              :class="{ active: activeSegment === 'full' }"
-              @click="selectSegmentOption('full')"
-            >
-              Full Track
-            </span>
-            <span
-              class="option"
-              :class="{ active: activeSegment === '15s' }"
-              @click="selectSegmentOption('15s')"
-            >
-              15
-            </span>
-            <span
-              class="option"
-              :class="{ active: activeSegment === '30s' }"
-              @click="selectSegmentOption('30s')"
-            >
-              30
-            </span>
-            <span
-              class="option"
-              :class="{ active: activeSegment === '60s' }"
-              @click="selectSegmentOption('60s')"
-            >
-              60
-            </span>
-          </div>
-        </div>
-
         <p class="track-description">
-          {{ track?.description || "No description provided." }}
+          {{ sfx?.description || "No description provided." }}
         </p>
 
         <div class="action-buttons">
@@ -171,37 +137,29 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
-import { tracksApi } from "~/api";
-import type { Tracks } from "~/types/tracks";
+import { sfxApi } from "~/api";
+import type { Sfx } from "~/types/sfx";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
 import TheHeader from "~/components/TheHeader.vue";
 import SearchBar from "~/components/SearchBar.vue";
 import MusicPlayerPanel from "~/components/MusicPlayerPanel.vue";
 
-// 路由信息
 const route = useRoute();
-const trackId = Number(route.params.id);
+const sfxId = Number(route.params.id);
 const router = useRouter();
 
-// 状态管理
-const track = ref<Tracks | null>(null);
+const sfx = ref<Sfx | null>(null);
 const loading = ref(true);
 const error = ref(false);
 
 const musicPlayerStore = useMusicPlayerStore();
 const localIsPlaying = computed(() => {
-  if (!musicPlayerStore.currentTrack || !musicPlayerStore.isPlaying) {
-    return false;
-  }
-
-  // 根据媒体类型来判断
-  if (musicPlayerStore.mediaType === "track") {
-    // 使用类型断言明确告诉编译器，这里的 currentTrack 是 Tracks 类型
-    const currentTrackAsTracks = musicPlayerStore.currentTrack as Tracks;
-    return currentTrackAsTracks.trackId === track.value?.trackId;
-  }
-
-  return false;
+  // 仅在当前媒体类型为 sfx 时进行比较，并断言类型
+  return (
+    (musicPlayerStore.currentTrack as Sfx)?.sfxId === sfx.value?.sfxId &&
+    musicPlayerStore.mediaType === "sfx" &&
+    musicPlayerStore.isPlaying
+  );
 });
 
 const handleSearch = (query: string) => {
@@ -211,29 +169,22 @@ const handleSearch = (query: string) => {
 };
 
 const handleDownload = async () => {
-  if (!track.value?.trackId) {
-    console.error("Track ID is not available for download.");
+  if (!sfx.value?.sfxId) {
+    console.error("SFX ID is not available for download.");
     return;
   }
 
   try {
-    // 调用 API 代理，获取歌曲的 Blob 对象
-    const blob = await tracksApi.downloadTrackProxy(track.value.trackId);
+    const blob = await sfxApi.downloadSfxProxy(sfx.value.sfxId);
 
-    // 创建一个临时的 URL 来指向 Blob
     const url = window.URL.createObjectURL(blob);
-
-    // 创建一个不可见的下载链接元素
     const link = document.createElement("a");
     link.href = url;
-    // 设置下载的文件名
-    link.setAttribute("download", `${track.value.title}.mp3`);
+    link.setAttribute("download", `${sfx.value.title}.mp3`);
 
-    // 将链接元素添加到文档中，并模拟点击
     document.body.appendChild(link);
     link.click();
 
-    // 完成下载后，移除链接并释放 URL
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
 
@@ -243,102 +194,59 @@ const handleDownload = async () => {
   }
 };
 
-const activeSegment = computed(() => {
-  // 如果当前详情页的歌曲不是全局播放器正在播放的歌曲，则默认显示“全曲”
-  // 在访问 trackId 之前，进行类型断言
-  if (
-    (musicPlayerStore.currentTrack as Tracks)?.trackId !==
-      track.value?.trackId ||
-    musicPlayerStore.mediaType === "sfx" // 增加判断，如果当前播放的是音效，则也默认显示“全曲”
-  ) {
-    return "full";
-  }
-  // 否则，与全局播放器的分段状态同步
-  return musicPlayerStore.currentSegment;
-});
-
-// 异步数据获取
-const fetchTrackDetails = async () => {
-  if (!trackId) {
-    console.error("Track ID is missing from the route parameters.");
+const fetchSfxDetails = async () => {
+  if (isNaN(sfxId)) {
+    console.error("Invalid SFX ID provided.");
     error.value = true;
+    loading.value = false;
     return;
   }
 
   loading.value = true;
   error.value = false;
   try {
-    const response = await tracksApi.getTrackDetail(trackId);
-    // 在赋值之前，先检查 response.data 是否存在
+    const response = await sfxApi.getSfxDetail(sfxId);
     if (response.data) {
-      track.value = response.data;
+      sfx.value = response.data;
     } else {
-      // 如果没有数据，将 track.value 设为 null
-      track.value = null;
+      sfx.value = null;
       error.value = true;
     }
   } catch (e) {
     error.value = true;
-    console.error("Failed to fetch track details:", e);
+    console.error("Failed to fetch SFX details:", e);
   } finally {
     loading.value = false;
   }
 };
 
-// 播放/暂停逻辑
-const togglePlayAndSetTrack = () => {
-  if (!track.value) return;
+const togglePlayAndSetSfx = () => {
+  if (!sfx.value) return;
 
-  // 在访问 trackId 之前，进行类型断言
   if (
-    (musicPlayerStore.currentTrack as Tracks)?.trackId ===
-      track.value.trackId &&
-    musicPlayerStore.mediaType === "track" // 增加判断，确保类型一致
+    // 仅在当前媒体类型为 sfx 时进行比较，并断言类型
+    (musicPlayerStore.currentTrack as Sfx)?.sfxId === sfx.value.sfxId &&
+    musicPlayerStore.mediaType === "sfx"
   ) {
     musicPlayerStore.togglePlayPause();
   } else {
-    musicPlayerStore.setTrack(track.value);
+    musicPlayerStore.setSfx(sfx.value);
   }
-};
-
-// 选择分段的逻辑
-const selectSegmentOption = (segment: string) => {
-  if (!track.value) return;
-
-  // 1. 设置当前播放歌曲为详情页歌曲，并确保播放
-  // 在访问 trackId 之前，进行类型断言
-  if (
-    (musicPlayerStore.currentTrack as Tracks)?.trackId !==
-      track.value.trackId ||
-    musicPlayerStore.mediaType === "sfx" || // 增加判断，如果当前播放的是音效，则需要切换
-    !musicPlayerStore.isPlaying
-  ) {
-    musicPlayerStore.setTrack(track.value);
-  }
-
-  // 2. 更新全局播放器的分段状态
-  musicPlayerStore.setSegment(segment);
 };
 
 onMounted(() => {
-  // 在调用 API 之前检查 ID 是否有效
-  if (isNaN(trackId)) {
-    console.error("Invalid track ID provided.");
-    error.value = true;
-    loading.value = false;
-    return;
-  }
-  fetchTrackDetails();
+  fetchSfxDetails();
 });
 </script>
 
 <style scoped>
+/* 使用与 music/[id].vue 一致的样式 */
 .page-container {
   min-height: 100vh;
   background-color: #0d0d1a;
   color: #fff;
-  padding-top: 80px; /* 留出顶部 Header 的空间 */
-  padding-bottom: 100px; /* 留出底部播放器面板的空间 */
+  padding-top: 80px;
+  padding-bottom: 100px;
 }
 
 .search-bar-container {
@@ -436,44 +344,6 @@ onMounted(() => {
 
 .meta-section {
   padding: 20px 0;
-}
-
-.license-info {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.license-label {
-  font-weight: bold;
-  font-size: 1.1em;
-}
-
-.license-options {
-  display: flex;
-  gap: 10px;
-}
-
-.option {
-  padding: 8px 15px;
-  border: 1px solid #444;
-  border-radius: 50px;
-  cursor: pointer;
-  transition:
-    background-color 0.3s,
-    border-color 0.3s;
-}
-
-.option:hover {
-  border-color: #ff8c62;
-}
-
-.option.active {
-  background-color: #ff8c62;
-  color: #0d0d1a;
-  border-color: #ff8c62;
-  font-weight: bold;
 }
 
 .track-description {

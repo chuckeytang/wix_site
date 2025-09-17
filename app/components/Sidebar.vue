@@ -32,7 +32,7 @@ const componentMap = {
   RangeSliderFilter,
 };
 
-// 1. 核心改动：定义 props 来接收父组件传入的配置
+// 1. 定义 props 来接收父组件传入的配置
 const props = defineProps({
   config: {
     type: Array,

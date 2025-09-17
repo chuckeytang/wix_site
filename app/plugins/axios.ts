@@ -6,6 +6,7 @@ import type {
   InternalAxiosRequestConfig,
   AxiosRequestHeaders,
 } from "axios";
+import { useAuthStore } from "~/stores/auth";
 
 // 声明 NuxtApp 接口，以便 TypeScript 知道 $http 属性的存在
 declare module "#app" {
@@ -40,12 +41,17 @@ export default defineNuxtPlugin((nuxtApp) => {
     (config: InternalAxiosRequestConfig) => {
       // 可以在这里添加认证 token
       // Nuxt 3 中推荐使用 useCookie 或 useStorage
-      const token = null; // 假设从某个地方获取 token，例如 useCookie('my_auth_token').value;
+      // 获取 authStore 实例
+      const authStore = useAuthStore();
+      const token = authStore.accessToken; // 从 Pinia store 中获取 token
+
+      // 如果 token 存在，添加到请求头中
       if (token) {
         // 检查 headers 是否存在，以确保类型安全
         if (!config.headers) {
           config.headers = {} as AxiosRequestHeaders;
         }
+        // 添加 Authorization 请求头
         config.headers.Authorization = `Bearer ${token}`;
       }
 

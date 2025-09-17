@@ -1,0 +1,78 @@
+import request from "./http";
+import type { AjaxResult } from "~/types/ajax";
+import type { LoginData, RegisterData, WixTokenResponse } from "~/types/auth";
+
+/**
+ * 认证和用户相关的 API 接口
+ */
+export const authApi = {
+  /**
+   * 用户登录接口 (邮箱/密码)
+   * @param data 包含邮箱和密码的登录数据
+   * @returns 登录结果的 Promise，通常包含 token 信息
+   */
+  login(data: LoginData): Promise<AjaxResult<any>> {
+    return request.post("/site/wix/member/login", data);
+  },
+
+  /**
+   * 用户注册接口
+   * @param data 包含邮箱和密码的注册数据
+   * @returns 注册结果的 Promise
+   */
+  register(data: RegisterData): Promise<AjaxResult<any>> {
+    return request.post("/site/wix/member/register", data);
+  },
+
+  /**
+   * 获取访客令牌接口
+   * @returns 包含访客 token 的 Promise
+   */
+  getVisitorToken(): Promise<AjaxResult<WixTokenResponse>> {
+    return request.get("/site/wix/member/getVisitorToken");
+  },
+
+  /**
+   * 刷新访客令牌接口
+   * @param refreshToken 访客刷新令牌
+   * @returns 包含新 token 的 Promise
+   */
+  refreshVisitorToken(
+    refreshToken: string
+  ): Promise<AjaxResult<WixTokenResponse>> {
+    return request.post(
+      `/site/wix/member/refreshVisitorToken?refreshToken=${refreshToken}`
+    );
+  },
+
+  /**
+   * Email verification API
+   * @param data Contains the verification code and state token
+   */
+  verifyEmail(data: {
+    code: string;
+    stateToken: string;
+  }): Promise<AjaxResult<any>> {
+    return request.post("/site/wix/member/verifyEmail", data);
+  },
+
+  /**
+   * Deactivates a member's account
+   */
+  deactivate(): Promise<AjaxResult<any>> {
+    return request.delete("/site/wix/member/deactivate");
+  },
+
+  /**
+   * 处理Wix授权回调，向后端发送授权码以获取最终令牌
+   * @param data 包含授权码、状态参数和Wix用户ID
+   * @returns 登录成功的Promise，包含最终的JWT令牌
+   */
+  handleWixCallback(data: {
+    code: string;
+    state: string;
+    wixUserId: string;
+  }): Promise<AjaxResult<any>> {
+    return request.post("/site/wix/member/callback", data);
+  },
+};

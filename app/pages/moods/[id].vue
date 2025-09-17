@@ -54,7 +54,9 @@
             <p class="description">
               {{ moodDetail.description || "No description available." }}
             </p>
-            <p class="track-count">{{ totalTracks }} 个免版税音乐音轨</p>
+            <p class="track-count">
+              {{ totalTracks }} Royalty-Free Music Tracks
+            </p>
           </div>
           <div class="mood-intro-image-container">
             <img
@@ -94,8 +96,8 @@
                 {{ isSidebarOpen ? "Hide Filters" : "Show Filters" }}
               </button>
               <div class="sort-and-view-options">
-                <div class="sort-dropdown" @click.stop="toggleSortDropdown">
-                  <div class="dropdown-header">
+                <div class="sort-dropdown" ref="dropdownRef">
+                  <div class="dropdown-header" @click.stop="toggleSortDropdown">
                     <span class="current-sort">{{ currentSort?.label }}</span>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -229,6 +231,7 @@ import { moodsApi } from "~/api/moods";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
 import type { Moods } from "~/types/moods";
 import type { Tracks, PaginationResult } from "~/types/tracks";
+import { useSort, type SortOption } from "~/composables/useSort";
 
 const route = useRoute();
 const router = useRouter();
@@ -240,14 +243,7 @@ const loading = ref(true);
 const error = ref(false);
 
 const isSidebarOpen = ref<boolean>(false);
-const isDropdownOpen = ref<boolean>(false);
 const currentView = ref<string>("list");
-const sortOptions = [
-  { value: "popular", label: "popular" },
-  { value: "newest", label: "newest" },
-  { value: "oldest", label: "oldest" },
-];
-const currentSort = ref(sortOptions[0]);
 
 const tracks = ref<Tracks[]>([]);
 const tracksLoading = ref<boolean>(false);
@@ -259,6 +255,21 @@ const totalTracks = ref<number>(0);
 const totalPages = computed(() => {
   return Math.ceil(totalTracks.value / pageSize.value);
 });
+
+// 使用组合式函数封装排序逻辑
+const handleSortChange = () => {
+  currentPage.value = 1; // 排序变化时重置到第一页
+  fetchTracks();
+};
+
+const {
+  isDropdownOpen,
+  currentSort,
+  sortOptions,
+  toggleSortDropdown,
+  selectSortOption,
+  dropdownRef,
+} = useSort(handleSortChange);
 
 interface FilterItem {
   id: string;
@@ -312,17 +323,6 @@ const playAllTracks = () => {
 
 const setView = (viewType: string) => {
   currentView.value = viewType;
-};
-
-const toggleSortDropdown = () => {
-  isDropdownOpen.value = !isDropdownOpen.value;
-};
-
-const selectSortOption = (option: { value: string; label: string }) => {
-  currentSort.value = option;
-  isDropdownOpen.value = false;
-  currentPage.value = 1;
-  fetchTracks();
 };
 
 const handlePageChange = (newPage: number) => {
@@ -383,8 +383,8 @@ const fetchTracks = async () => {
       minDuration: filters.durationRange[0],
       maxDuration: filters.durationRange[1],
       artist: filters.author.length > 0 ? filters.author.join(",") : undefined,
-      sortValue: currentSort.value?.value,
-      sortLabel: currentSort.value?.label,
+      orderByColumn: currentSort.value?.orderByColumn,
+      isAsc: currentSort.value?.isAsc,
     };
     const response: PaginationResult<Tracks> = await moodsApi.getMoodsMusic(
       id,
@@ -410,7 +410,7 @@ const fetchAndSetFilterConfig = async () => {
       if (options.genres && options.genres.length > 0) {
         newConfig.push({
           id: "genres",
-          title: "风格",
+          title: "Genres",
           componentType: "SimpleCheckboxFilter",
           props: {
             items: options.genres.map((g: { name: string; count: number }) => ({
@@ -424,7 +424,7 @@ const fetchAndSetFilterConfig = async () => {
       if (options.moods && options.moods.length > 0) {
         newConfig.push({
           id: "moods",
-          title: "情绪",
+          title: "Moods",
           componentType: "SimpleCheckboxFilter",
           props: {
             items: options.moods.map((m: { name: string; count: number }) => ({
@@ -449,7 +449,7 @@ const fetchAndSetFilterConfig = async () => {
       ) {
         newConfig.push({
           id: "durationRange",
-          title: "持续时间",
+          title: "Duration",
           componentType: "RangeSliderFilter",
           props: {
             min: options.minDuration,
@@ -461,7 +461,7 @@ const fetchAndSetFilterConfig = async () => {
       if (options.artists && options.artists.length > 0) {
         newConfig.push({
           id: "author",
-          title: "音乐家",
+          title: "Author",
           componentType: "SimpleCheckboxFilter",
           props: {
             items: options.artists.map(

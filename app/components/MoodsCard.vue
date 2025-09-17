@@ -1,8 +1,49 @@
 <template>
-  <div class="moods-card" @click = "handleCardClick()">
+  <div class="moods-card" @click="handleCardClick()">
     <div class="card-image-container">
       <div class="play-button-overlay">
-        <button class="play-button">▶</button>
+        <button class="play-button" @click.stop="handlePlayMood()">
+          <svg viewBox="0 0 36 36" class="circular-progress-bar">
+            <path
+              class="circle-bg"
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
+            <path
+              class="circle"
+              :stroke-dasharray="`${currentProgress}, 100`"
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
+          </svg>
+          <svg
+            v-if="!localIsPlaying"
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <svg
+            v-else
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="6" y="4" width="4" height="16"></rect>
+            <rect x="14" y="4" width="4" height="16"></rect>
+          </svg>
+        </button>
       </div>
       <img :src="moodlist.coverImageUrl" :alt="moodlist.name" />
     </div>
@@ -13,8 +54,10 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps } from "vue";
+import { defineProps, defineEmits, computed } from "vue";
 import type { Moods } from "~/types/moods";
+import { useMusicPlayerStore } from "~/stores/musicPlayer";
+import type { Tracks } from "~/types/tracks";
 
 const props = defineProps({
   moodlist: {
@@ -23,15 +66,42 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['select-card']);
+const emit = defineEmits(["select-card", "play-mood"]);
+
+const musicPlayerStore = useMusicPlayerStore();
+
+// 监听全局播放状态，更新此卡片的 UI
+const localIsPlaying = computed(() => {
+  return (
+    musicPlayerStore.currentSourceId === props.moodlist.moodId &&
+    musicPlayerStore.isPlaying
+  );
+});
+
+// 计算当前播放进度
+const currentProgress = computed(() => {
+  if (localIsPlaying.value) {
+    return musicPlayerStore.currentProgress;
+  }
+  return 0;
+});
 
 const handleCardClick = () => {
-  emit('select-card', props.moodlist.moodId);
+  emit("select-card", props.moodlist.moodId);
+};
+
+const handlePlayMood = () => {
+  if (localIsPlaying.value) {
+    // 如果已经在播放，则暂停
+    musicPlayerStore.togglePlayPause();
+  } else {
+    // 如果不在播放，则通知父组件播放此情绪
+    emit("play-mood", props.moodlist.moodId);
+  }
 };
 </script>
 
 <style scoped>
-/* 使用 moods-card 作为最外层容器，避免与 genres-card 冲突 */
 .moods-card {
   border-radius: 8px;
   overflow: hidden;
@@ -49,7 +119,6 @@ const handleCardClick = () => {
 
 .card-image-container {
   width: 100%;
-  /* 关键：使用 padding-bottom 实现正方形宽高比 (1:1) */
   padding-bottom: 100%;
   position: relative;
   transition: filter 0.3s ease-in-out;
@@ -61,15 +130,12 @@ const handleCardClick = () => {
   left: 0;
   width: 100%;
   height: 100%;
-  /* 确保图片完全覆盖，并裁剪多余部分 */
   object-fit: cover;
 }
 
-/* 底部标题内容区 */
 .card-content {
-  background-color: rgba(255, 255, 255, 0.05); /* 淡雅的半透明白色背景 */
+  background-color: rgba(255, 255, 255, 0.05);
   padding: 10px;
-  /* 居中对齐 */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -80,10 +146,9 @@ const handleCardClick = () => {
   margin: 0;
   font-size: 1.2rem;
   font-weight: 700;
-  color: #fff; /* 确保标题颜色清晰可见 */
+  color: #fff;
 }
 
-/* 悬停时的播放按钮覆盖层 */
 .play-button-overlay {
   position: absolute;
   top: 0;
@@ -108,8 +173,8 @@ const handleCardClick = () => {
 }
 
 .play-button {
-  background-color: #fff; /* 按钮背景色 */
-  color: #1a1a1a;
+  background-color: transparent;
+  color: #fff;
   border: none;
   border-radius: 50%;
   width: 60px;
@@ -120,9 +185,43 @@ const handleCardClick = () => {
   align-items: center;
   cursor: pointer;
   transition: transform 0.2s ease-in-out;
+  position: relative;
 }
 
 .play-button:hover {
   transform: scale(1.1);
+}
+
+.play-button svg:not(.circular-progress-bar) {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.circular-progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(0deg);
+}
+
+.circle-bg {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.5;
+  opacity: 0.3;
+}
+
+.circle {
+  fill: none;
+  stroke: #ff8c62;
+  stroke-width: 2.5;
+  transition: stroke-dasharray 0.3s;
 }
 </style>

@@ -139,7 +139,6 @@ const handleSearch = (query: string) => {
 };
 
 const handleCardClick = (playlistId: number) => {
-  console.log("Card clicked with ID:", playlistId);
   router.push({
     path: `/playlists/${playlistId}`,
   });

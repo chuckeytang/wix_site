@@ -11,26 +11,32 @@
           <li><NuxtLink to="/genres">GENRES</NuxtLink></li>
           <li><NuxtLink to="/moods">MOODS</NuxtLink></li>
           <li><NuxtLink to="/playlists">PLAYLISTS</NuxtLink></li>
+          <li><NuxtLink to="/sfx">SFX</NuxtLink></li>
           <li><NuxtLink to="/checkout">CHECKOUT</NuxtLink></li>
           <li><NuxtLink to="/sfx">SFX</NuxtLink></li>
         </ul>
       </nav>
       <div class="user-actions">
-        <button @click="handleLogin">Login</button>
+        <button @click="showLoginDialog = true">Login</button>
         <button @click="handleCart">
           <span class="cart-icon">🛒</span>
         </button>
       </div>
     </div>
   </header>
+  <LoginDialog v-if="showLoginDialog" @close="showLoginDialog = false" />
 </template>
 
 <script setup>
 import { NuxtLink } from "#components";
 import { ref, onMounted, onUnmounted } from "vue";
+import LoginDialog from "./LoginDialog.vue";
 
 const isHidden = ref(false);
 let lastScrollY = 0;
+
+// 控制登录对话框显示的状态
+const showLoginDialog = ref(false);
 
 const handleScroll = () => {
   const currentScrollY = window.scrollY;
@@ -63,11 +69,6 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener("scroll", handleScroll);
 });
-
-const handleLogin = () => {
-  // Redirect to Wix login URL
-  console.log("Redirecting to Wix login...");
-};
 
 const handleCart = () => {
   // Redirect to Wix cart/checkout page

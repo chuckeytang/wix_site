@@ -1,6 +1,7 @@
 // stores/musicPlayer.js
 import { defineStore } from "pinia";
 import type { Tracks } from "~/types/tracks";
+import type { Sfx } from "~/types/sfx";
 
 export const useMusicPlayerStore = defineStore("musicPlayer", {
   state: () => ({
@@ -12,7 +13,17 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
     /**
      * 当前正在播放的完整歌曲对象，包含所有详细信息，用于面板展示。
      */
-    currentTrack: null as Tracks | null,
+    currentTrack: null as Tracks | Sfx | null,
+
+    /**
+     * 当前播放媒体的类型。
+     */
+    mediaType: "track" as "track" | "sfx",
+
+    /**
+     * 当前播放列表的来源ID（流派ID, 情绪ID, 歌单ID）。
+     */
+    currentSourceId: undefined as number | undefined,
 
     /**
      * 当前播放列表（通常是来自列表页面的 tracks 数组）。
@@ -59,8 +70,9 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
      * @param playlist 歌曲列表
      * @param track 初始播放的歌曲对象 (可选)
      */
-    setPlaylist(playlist: Tracks[], track?: Tracks) {
+    setPlaylist(playlist: Tracks[], track?: Tracks, sourceId?: number) {
       this.currentPlaylist = playlist;
+      this.currentSourceId = sourceId;
       if (track) {
         this.setTrack(track);
       }
@@ -83,12 +95,33 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
         this.currentTrackIndex = -1;
       }
 
-      if (this.currentTrack?.trackId !== track.trackId) {
+      if (
+        this.currentPlayingId !== track.trackId ||
+        this.mediaType !== "track"
+      ) {
         this.currentTrack = track;
         this.currentPlayingId = track.trackId!;
+        this.mediaType = "track"; // 设置媒体类型
         this.currentTime = 0;
         this.duration = track.duration;
         this.currentSegment = "full";
+      }
+      this.isPlaying = true;
+    },
+
+    /**
+     * 设置当前正在播放的完整音效对象。
+     * @param sfx 完整的音效对象
+     */
+    setSfx(sfx: Sfx) {
+      // 检查是否重复点击，避免不必要的重新加载
+      if (this.currentPlayingId !== sfx.sfxId || this.mediaType !== "sfx") {
+        this.currentTrack = sfx;
+        this.currentPlayingId = sfx.sfxId!;
+        this.mediaType = "sfx"; // 设置媒体类型
+        this.currentTime = 0;
+        this.duration = sfx.duration;
+        this.currentSegment = "full"; // 音效没有分段，默认为 full
       }
       this.isPlaying = true;
     },
@@ -126,10 +159,6 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
     togglePlayPause() {
       if (this.currentTrack) {
         this.isPlaying = !this.isPlaying;
-        if (!this.isPlaying) {
-          this.currentPlayingId = undefined;
-          this.currentTrack = null;
-        }
       }
     },
 
@@ -140,10 +169,6 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
     setIsPlaying(state: boolean) {
       if (this.currentTrack) {
         this.isPlaying = state;
-        if (!state) {
-          this.currentPlayingId = undefined;
-          this.currentTrack = null;
-        }
       }
     },
 
@@ -170,9 +195,6 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
     seekTo(progress: number) {
       if (this.currentTrack) {
         this.currentTime = this.duration * progress;
-        // 注意：这里我们只更新了 store 状态，实际的 seek 操作由 MusicPlayerPanel 里的 watch 负责
-        // 然后触发 seekToProgress 状态，通知组件进行 seek
-        console.log("current Time:", this.currentTime);
         this.seekToProgress = progress;
       }
     },
@@ -194,5 +216,11 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
   getters: {
     // 检查是否有歌曲在播放
     isGloballyPlaying: (state) => !!state.currentPlayingId && state.isPlaying,
+    currentProgress(): number {
+      if (this.duration > 0) {
+        return (this.currentTime / this.duration) * 100;
+      }
+      return 0;
+    },
   },
 });

@@ -70,7 +70,7 @@
                 {{ isSidebarOpen ? "Hide Filters" : "Show Filters" }}
               </button>
               <div class="sort-and-view-options">
-                <div class="sort-dropdown">
+                <div class="sort-dropdown" ref="dropdownRef">
                   <div class="dropdown-header" @click.stop="toggleSortDropdown">
                     <span class="current-sort">{{ currentSort?.label }}</span>
                     <svg
@@ -205,6 +205,7 @@ import Pagination from "~/components/Pagination.vue";
 import MusicPlayerPanel from "~/components/MusicPlayerPanel.vue";
 import Sidebar from "~/components/Sidebar.vue";
 import { useRoute, useRouter } from "vue-router";
+import { useSort, type SortOption } from "~/composables/useSort";
 
 // 导入 API 和类型
 import { tracksApi, playlistsApi } from "~/api";
@@ -217,7 +218,6 @@ const musicPlayerStore = useMusicPlayerStore();
 
 // 状态
 const isSidebarOpen = ref<boolean>(false);
-const isDropdownOpen = ref<boolean>(false);
 const currentView = ref<string>("list");
 
 // 定义筛选器配置项的类型
@@ -240,13 +240,6 @@ type FiltersState = {
   durationRange: [number, number];
   author: string[];
 };
-
-const sortOptions = [
-  { value: "popular", label: "popular" },
-  { value: "newest", label: "newest" },
-  { value: "oldest", label: "oldest" },
-];
-const currentSort = ref(sortOptions[0]);
 
 // 数据状态
 const playlists = ref<Playlists[]>([]);
@@ -279,6 +272,21 @@ const filters = reactive<FiltersState>({
   author: [],
 });
 
+// 使用组合式函数封装排序逻辑
+const handleSortChange = () => {
+  currentPage.value = 1; // 排序变化时重置到第一页
+  fetchTracks();
+};
+
+const {
+  isDropdownOpen,
+  currentSort,
+  sortOptions,
+  toggleSortDropdown,
+  selectSortOption,
+  dropdownRef,
+} = useSort(handleSortChange);
+
 // 节流函数，防止频繁调用 fetchTracks
 const debouncedFetchTracks = debounce(() => {
   currentPage.value = 1; // 筛选条件变化时重置到第一页
@@ -296,16 +304,6 @@ const toggleSidebar = () => {
 const setView = (viewType: string) => {
   currentView.value = viewType;
   console.log("当前视图模式:", currentView.value);
-};
-
-const toggleSortDropdown = () => {
-  isDropdownOpen.value = !isDropdownOpen.value;
-};
-
-const selectSortOption = (option: { value: string; label: string }) => {
-  currentSort.value = option;
-  isDropdownOpen.value = false;
-  // TODO: 根据排序选项重新获取音乐列表
 };
 
 // 异步数据获取
@@ -346,7 +344,8 @@ const fetchTracks = async () => {
       // 音乐家也是多选框，转换为逗号分隔的字符串
       artist: filters.author.length > 0 ? filters.author.join(",") : undefined,
       // 排序选项
-      sort: currentSort.value?.value,
+      orderByColumn: currentSort.value?.orderByColumn,
+      isAsc: currentSort.value?.isAsc,
     };
 
     console.log("正在获取音乐列表，查询参数:", query);
@@ -394,7 +393,7 @@ const fetchAndSetFilterConfig = async () => {
       if (options.genres && options.genres.length > 0) {
         newConfig.push({
           id: "genres",
-          title: "风格",
+          title: "Genres",
           componentType: "SimpleCheckboxFilter",
           props: {
             items: options.genres.map((g: { name: string; count: number }) => ({
@@ -410,7 +409,7 @@ const fetchAndSetFilterConfig = async () => {
       if (options.moods && options.moods.length > 0) {
         newConfig.push({
           id: "moods",
-          title: "情绪",
+          title: "Moods",
           componentType: "SimpleCheckboxFilter",
           props: {
             items: options.moods.map((m: { name: string; count: number }) => ({
@@ -439,7 +438,7 @@ const fetchAndSetFilterConfig = async () => {
       ) {
         newConfig.push({
           id: "durationRange",
-          title: "持续时间",
+          title: "Duration",
           componentType: "RangeSliderFilter",
           props: {
             min: options.minDuration,
@@ -453,7 +452,7 @@ const fetchAndSetFilterConfig = async () => {
       if (options.artists && options.artists.length > 0) {
         newConfig.push({
           id: "author",
-          title: "音乐家",
+          title: "Author",
           componentType: "SimpleCheckboxFilter",
           props: {
             items: options.artists.map(
@@ -476,7 +475,6 @@ const fetchAndSetFilterConfig = async () => {
 };
 
 onMounted(() => {
-  console.log("Music page mounted");
   fetchPlaylists();
   fetchAndSetFilterConfig();
   fetchTracks();

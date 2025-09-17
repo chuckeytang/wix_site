@@ -4,17 +4,24 @@
       <div class="panel-content">
         <div class="waveform-row">
           <WaveformPlayer
-            :audio-url="playerStore.currentTrack?.audioFileUrl"
+            :audio-url="audioUrl"
             :is-playing="playerStore.isPlaying"
             @update-progress="handleUpdateProgress"
             @ready="handleReady"
+            @waveform-click="handleWaveformClick"
+            :can-control="true"
             ref="waveformPlayerRef"
           />
         </div>
 
         <div class="controls-row">
           <div class="control-group">
-            <button class="control-btn prev-btn" @click="handlePrevButton()">
+            <button
+              class="control-btn prev-btn"
+              :disabled="isSfx"
+              :class="{ disabled: isSfx }"
+              @click="handlePrevButton()"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -71,8 +78,8 @@
             </button>
             <button
               class="control-btn next-btn"
-              :disabled="isDetailPage"
-              :class="{ disabled: isDetailPage }"
+              :disabled="isSfx"
+              :class="{ disabled: isSfx }"
               @click="playerStore.playNextTrack()"
             >
               <svg
@@ -102,7 +109,7 @@
             >
           </div>
 
-          <div class="segment-group">
+          <div class="segment-group" v-if="playerStore.mediaType === 'track'">
             <button
               v-for="seg in segments"
               :key="seg.value"
@@ -121,8 +128,8 @@
               /
               <span class="total-duration">{{ formatDuration(duration) }}</span>
             </div>
-            <span class="bpm-info"
-              >{{ playerStore.currentTrack?.bpm }} BPM</span
+            <span class="bpm-info" v-if="isMusicTrack"
+              >{{ (playerStore.currentTrack as Tracks)?.bpm }} BPM</span
             >
           </div>
 
@@ -194,10 +201,7 @@
 
           <div class="preview-download-group">
             <button class="preview-btn">Preview</button>
-            <button
-              class="download-btn"
-              @click="handleDownload(playerStore.currentTrack!)"
-            >
+            <button class="download-btn" @click="handleDownload()">
               Download
             </button>
           </div>
@@ -208,11 +212,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from "vue";
+import { ref, watch, onMounted, computed } from "vue";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
 import WaveformPlayer from "~/components/WaveformPlayer.vue";
-import { tracksApi } from "~/api";
+import { tracksApi, sfxApi } from "~/api";
 import type { Tracks } from "~/types/tracks";
+import type { Sfx } from "~/types/sfx";
 
 const playerStore = useMusicPlayerStore();
 const waveformPlayerRef = ref<InstanceType<typeof WaveformPlayer> | null>(null);
@@ -228,23 +233,60 @@ const segments = [
   { value: "60s", label: "60s" },
 ];
 
-// 使用 useRoute 和 computed 判断当前是否为详情页
+const isMusicTrack = computed(
+  () => playerStore.mediaType === "track" && playerStore.currentTrack
+);
+const isSfx = computed(
+  () => !!(playerStore.mediaType === "sfx" && playerStore.currentTrack)
+);
+
+// 动态获取当前播放的音频 URL
+const audioUrl = computed(() => {
+  if (!playerStore.currentTrack) return "";
+  // 仅在音乐曲目类型时，才处理分段预览
+  if (playerStore.mediaType === "track") {
+    const track = playerStore.currentTrack as Tracks;
+    console.log("segemnt", playerStore.currentSegment, track);
+    switch (playerStore.currentSegment) {
+      case "15s":
+        return track.previewUrl15s;
+      case "30s":
+        return track.previewUrl30s;
+      case "60s":
+        return track.previewUrl60s;
+      case "full":
+      default:
+        // 如果是 full 或其他情况，返回完整音频 URL
+        return track.audioFileUrl;
+    }
+  } else {
+    // 如果是音效（sfx），直接返回 audioFileUrl
+    return (playerStore.currentTrack as Sfx).audioFileUrl;
+  }
+});
+
 const route = useRoute();
 const isDetailPage = computed(() => {
   return route.path.startsWith("/music/");
 });
 
-// 监听全局分段状态，并同步到本地 UI 和 WaveformPlayer
 watch(
-  () => playerStore.currentSegment,
-  (newSegment) => {
-    // 同步到本地状态，用于更新按钮样式
-    currentSegment.value = newSegment;
-    // 调用 WaveformPlayer 的 setSegment 方法
-    if (waveformPlayerRef.value) {
-      waveformPlayerRef.value.setSegment(newSegment);
+  [() => playerStore.currentPlayingId, () => playerStore.currentSegment],
+  ([newId, newSegment], [oldId, oldSegment]) => {
+    // 只有当歌曲或分段变化时才重新加载音频
+    if (newId !== oldId || newSegment !== oldSegment) {
+      if (waveformPlayerRef.value && playerStore.currentTrack) {
+        const urlToLoad = audioUrl.value;
+        if (urlToLoad) {
+          console.log(`Loading new audio: ${urlToLoad}`);
+          // 先暂停并重置进度，再加载新的音频
+          waveformPlayerRef.value.pause();
+          waveformPlayerRef.value.loadAudio(urlToLoad);
+        }
+      }
     }
-  }
+  },
+  { immediate: true }
 );
 
 // 这个监听器将处理所有来自 store 的播放/暂停指令
@@ -258,8 +300,10 @@ watch(
       if (newVal) {
         // 播放前，先将 Wavesurfer seek 到当前进度
         const relativeProgress = playerStore.currentTime / playerStore.duration;
-        waveformPlayerRef.value.seekTo(relativeProgress);
-        waveformPlayerRef.value.play();
+        if (!isNaN(relativeProgress)) {
+          waveformPlayerRef.value.seekTo(relativeProgress);
+          waveformPlayerRef.value.play();
+        }
       } else {
         waveformPlayerRef.value.pause();
       }
@@ -273,24 +317,18 @@ watch(
   (newProgress) => {
     if (newProgress !== null && waveformPlayerRef.value) {
       // 调用 Wavesurfer 的 seekTo 方法
-      waveformPlayerRef.value.seekTo(newProgress);
-      // 同步完成后，立即重置 store 中的状态，避免重复触发
-      playerStore.clearSeekToProgress();
-    }
-  }
-);
-
-// 监听歌曲变化，加载新波形图
-watch(
-  () => playerStore.currentTrack,
-  (newTrack, oldTrack) => {
-    if (newTrack && newTrack.trackId !== oldTrack?.trackId) {
-      if (waveformPlayerRef.value) {
-        waveformPlayerRef.value.loadAudio(newTrack.audioFileUrl);
+      if (!isNaN(newProgress)) {
+        waveformPlayerRef.value.seekTo(newProgress);
+        // 同步完成后，立即重置 store 中的状态，避免重复触发
+        playerStore.clearSeekToProgress();
       }
     }
   }
 );
+
+const handleWaveformClick = (relativePosition: number) => {
+  playerStore.seekTo(relativePosition);
+};
 
 // 进度更新事件处理
 const handleUpdateProgress = (progress: number) => {
@@ -302,24 +340,30 @@ const handleUpdateProgress = (progress: number) => {
   }
 };
 
-// 只有当 WaveformPlayer 准备好时，才开始播放
+// 唯一的播放触发点：当 Wavesurfer 准备好时，根据全局状态决定是否播放
 const handleReady = () => {
   if (waveformPlayerRef.value) {
-    if (playerStore.isPlaying && playerStore.duration > 0) {
-      console.log("Waveform ready, starting playback.");
-      const relativeProgress = playerStore.currentTime / playerStore.duration;
-      waveformPlayerRef.value.seekTo(relativeProgress);
-      waveformPlayerRef.value.play();
+    // 1. 同步 Wavesurfer 报告的总时长到全局状态
+    playerStore.setDuration(waveformPlayerRef.value.getDuration());
 
-      // 在 ready 时，根据当前选中的分段，重新设置波形图
-      waveformPlayerRef.value.setSegment(currentSegment.value);
+    // 2. 检查全局播放状态，如果为 true，则开始播放
+    if (playerStore.isPlaying) {
+      console.log("Waveform ready, starting playback.");
+      // 播放前，先将 Wavesurfer seek 到全局进度
+      const relativeProgress = playerStore.currentTime / playerStore.duration;
+      console.log("relativeProgress", relativeProgress);
+      // 真正开始播放
+      if (!isNaN(relativeProgress)) {
+        waveformPlayerRef.value.seekTo(relativeProgress);
+        waveformPlayerRef.value.play();
+      }
     }
   }
 };
 
 // 时长格式化
 const formatDuration = (seconds: number): string => {
-  if (isNaN(seconds)) return "0:00";
+  if (isNaN(seconds) || seconds === null) return "0:00";
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
   return `${minutes}:${remainingSeconds < 10 ? "0" : ""}${remainingSeconds}`;
@@ -329,9 +373,6 @@ const formatDuration = (seconds: number): string => {
 const handleSegmentChange = (segment: string) => {
   playerStore.setSegment(segment); // 更新全局分段状态
   currentSegment.value = segment;
-  if (waveformPlayerRef.value) {
-    waveformPlayerRef.value.setSegment(segment);
-  }
 };
 
 // 音量控制
@@ -342,17 +383,26 @@ const handleVolumeChange = () => {
 };
 
 // 下载
-const handleDownload = async (track: Tracks) => {
-  if (!track.audioFileUrl) {
-    console.error("Audio file URL is not available.");
+const handleDownload = async () => {
+  if (!playerStore.currentTrack) {
+    console.error("No track or sfx is currently playing.");
     return;
   }
+
   try {
-    const blob = await tracksApi.downloadTrackProxy(track.trackId!);
+    let blob: Blob;
+    if (playerStore.mediaType === "track") {
+      const track = playerStore.currentTrack as Tracks;
+      blob = await tracksApi.downloadTrackProxy(track.trackId!);
+    } else {
+      const sfx = playerStore.currentTrack as Sfx;
+      blob = await sfxApi.downloadSfxProxy(sfx.sfxId!);
+    }
+
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `${track.title}.mp3`);
+    link.setAttribute("download", `${playerStore.currentTrack.title}.mp3`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -366,21 +416,25 @@ const handleDownload = async (track: Tracks) => {
 // 处理上一首按钮的点击事件
 const handlePrevButton = () => {
   if (isDetailPage.value) {
-    // 如果在详情页，则重新播放当前歌曲
-    if (waveformPlayerRef.value) {
-      // 停止当前播放，将进度归零，然后重新播放
-      waveformPlayerRef.value.pause();
-      waveformPlayerRef.value.seekTo(0);
-      waveformPlayerRef.value.play();
-    }
-    // 更新 store 的状态
-    playerStore.updateTime(0);
+    // 详情页，重新播放当前歌曲
+    playerStore.setTrack(playerStore.currentTrack as Tracks); // 这一步会触发 watch 重新加载音频
     playerStore.setIsPlaying(true);
   } else {
-    // 如果在列表页，调用 store 的上一首功能
     playerStore.playPrevTrack();
   }
 };
+
+onMounted(() => {
+  // 从 store 初始化本地状态
+  currentTime.value = playerStore.currentTime;
+  duration.value = playerStore.duration;
+  currentSegment.value = playerStore.currentSegment;
+});
+
+// 在组件卸载时，将本地状态同步回 store
+onBeforeUnmount(() => {
+  playerStore.updateTime(currentTime.value);
+});
 </script>
 
 <style scoped>

@@ -1,7 +1,7 @@
 <template>
   <div class="music-card-list">
     <div class="left-section">
-      <button class="play-button" @click="togglePlayAndSetTrack">
+      <button class="play-button" @click="handlePlayButtonClick()">
         <svg viewBox="0 0 36 36" class="circular-progress-bar">
           <path
             class="circle-bg"
@@ -56,6 +56,9 @@
       :is-playing="localIsPlaying"
       @ready="handleReady"
       @waveform-click="handleWaveformClick"
+      @play="handlePlay"
+      @pause="handlePause"
+      :can-control="false"
       ref="waveformPlayerRef"
     />
 
@@ -145,34 +148,24 @@ const route = useRoute();
 
 // 使用 computed 属性来同步本地播放状态和全局状态
 const localIsPlaying = computed(() => {
-  const result =
-    musicPlayerStore.currentTrack?.trackId === props.track.trackId &&
-    musicPlayerStore.isPlaying;
-  return result;
+  const isPlayingTrack =
+    musicPlayerStore.mediaType === "track" &&
+    (musicPlayerStore.currentTrack as Tracks)?.trackId === props.track.trackId;
+
+  return isPlayingTrack && musicPlayerStore.isPlaying;
 });
 
 // 使用 computed 属性来同步本地进度和全局进度
 const globalProgress = computed(() => {
-  if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
+  // 确保是当前播放的音乐曲目
+  if (
+    musicPlayerStore.mediaType === "track" &&
+    (musicPlayerStore.currentTrack as Tracks)?.trackId === props.track.trackId
+  ) {
     return (musicPlayerStore.currentTime / musicPlayerStore.duration) * 100;
   }
   return 0;
 });
-
-watch(
-  () => musicPlayerStore.currentSegment,
-  (newSegment) => {
-    if (!waveformPlayerRef.value) return;
-
-    if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
-      // 1. 如果是当前播放的歌曲，则应用全局分段设置
-      waveformPlayerRef.value.setSegment(newSegment);
-    } else {
-      // 2. 如果不是当前播放的歌曲，则取消分段设置
-      waveformPlayerRef.value.setSegment("full");
-    }
-  }
-);
 
 watch(
   () => musicPlayerStore.currentPlayingId,
@@ -193,7 +186,9 @@ watch(
   (newProgress) => {
     // 只有当是当前播放歌曲时才同步波形图
     if (localIsPlaying.value && waveformPlayerRef.value) {
-      waveformPlayerRef.value.seekTo(newProgress / 100);
+      if (!isNaN(newProgress)) {
+        waveformPlayerRef.value.seekTo(newProgress / 100);
+      }
     }
   }
 );
@@ -205,23 +200,51 @@ const formatDuration = (seconds: number): string => {
   return `${minutes}:${remainingSeconds < 10 ? "0" : ""}${remainingSeconds}`;
 };
 
-// 播放/暂停的逻辑，首先设置全局 Store
-const togglePlayAndSetTrack = () => {
-  // ⭐ 新增：只有在列表页才设置播放列表
-  if (route.path === "/music") {
-    // 这里需要获取父组件传来的整个 tracks 列表。
-    // 由于 musicCard 没有这个 prop，所以需要一个事件来从父组件获取。
-    // 另一种更简单的方式是直接在列表页的点击事件中调用 setPlaylist。
-  }
-
-  if (musicPlayerStore.currentTrack?.trackId === props.track.trackId) {
-    // 如果点击的是当前正在播放的歌曲，则切换播放/暂停状态
+// 统一处理播放按钮点击事件
+const handlePlayButtonClick = () => {
+  // 确保是当前播放的音乐曲目
+  if (
+    musicPlayerStore.mediaType === "track" &&
+    (musicPlayerStore.currentTrack as Tracks)?.trackId === props.track.trackId
+  ) {
     musicPlayerStore.togglePlayPause();
   } else {
-    // 如果点击了新歌曲，则设置新歌曲为当前歌曲并播放
-    console.log("播放track", props.track.trackId);
     musicPlayerStore.setTrack(props.track);
   }
+};
+
+// 处理波形图点击，仅将事件传递给 store
+const handleWaveformClick = (relativePosition: number) => {
+  // 确保是当前播放的音乐曲目
+  if (
+    musicPlayerStore.mediaType === "track" &&
+    (musicPlayerStore.currentTrack as Tracks)?.trackId === props.track.trackId
+  ) {
+    musicPlayerStore.seekTo(relativePosition);
+  } else {
+    musicPlayerStore.setTrack(props.track);
+    setTimeout(() => {
+      musicPlayerStore.seekTo(relativePosition);
+    }, 20);
+  }
+};
+
+// 监听 waveform 发出的 play 事件，并更新 store 状态
+const handlePlay = () => {
+  // 确保不是在播放音效，并且不是同一首歌曲
+  const isDifferentTrack =
+    musicPlayerStore.mediaType !== "track" ||
+    (musicPlayerStore.currentTrack as Tracks)?.trackId !== props.track.trackId;
+
+  if (isDifferentTrack) {
+    musicPlayerStore.setTrack(props.track);
+  }
+  musicPlayerStore.setIsPlaying(true);
+};
+
+// 监听 waveform 发出的 pause 事件，并更新 store 状态
+const handlePause = () => {
+  musicPlayerStore.setIsPlaying(false);
 };
 
 // 处理下载逻辑
@@ -249,13 +272,6 @@ const handleDownload = async () => {
   } catch (error) {
     console.error("Failed to download the audio file:", error);
   }
-};
-
-// 处理波形图点击
-const handleWaveformClick = (relativePosition: number) => {
-  console.log("musiccard点击");
-  musicPlayerStore.setTrack(props.track);
-  musicPlayerStore.seekTo(relativePosition);
 };
 
 const handleReady = () => {

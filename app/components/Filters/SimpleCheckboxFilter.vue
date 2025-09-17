@@ -16,7 +16,6 @@
 <script setup>
 import { computed } from "vue";
 
-console.log("SimpleCheckboxFilter.vue setup 被调用");
 const props = defineProps(["items", "modelValue", "description"]);
 const emit = defineEmits(["update:modelValue"]);
 
