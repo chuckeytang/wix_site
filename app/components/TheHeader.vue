@@ -12,6 +12,7 @@
           <li><NuxtLink to="/moods">MOODS</NuxtLink></li>
           <li><NuxtLink to="/playlists">PLAYLISTS</NuxtLink></li>
           <li><NuxtLink to="/checkout">CHECKOUT</NuxtLink></li>
+          <li><NuxtLink to="/sfx">SFX</NuxtLink></li>
         </ul>
       </nav>
       <div class="user-actions">
@@ -25,6 +26,7 @@
 </template>
 
 <script setup>
+import { NuxtLink } from "#components";
 import { ref, onMounted, onUnmounted } from "vue";
 
 const isHidden = ref(false);
@@ -113,6 +115,7 @@ const handleCart = () => {
   margin: 0;
   padding: 0;
   align-items: center;
+  column-gap: 60px;
 }
 
 .main-nav a {
@@ -164,5 +167,9 @@ const handleCart = () => {
 
 .cart-icon {
   font-size: 32px;
+}
+
+.main-nav{
+  margin-right: 50px;
 }
 </style>
