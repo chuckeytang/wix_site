@@ -89,7 +89,7 @@
           Failed to load tracks.
         </div>
         <div v-else-if="tracks.length === 0" class="no-results-state">
-          没有找到与“{{ searchQuery }}”相关的音乐。
+          no music related to “{{ searchQuery }}” was found.
         </div>
         <template v-else>
           <div class="music-grid-container">

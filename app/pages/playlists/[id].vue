@@ -20,13 +20,13 @@
           <div class="container">
             <span class="breadcrumb-item">
               <NuxtLink to="/music" class="breadcrumb-link"
-                >免版税音乐</NuxtLink
+                >Royalty-free music</NuxtLink
               >
             </span>
             <span>></span>
             <span class="breadcrumb-item">
               <NuxtLink to="/playlists" class="breadcrumb-link"
-                >播放列表</NuxtLink
+                >Playlist</NuxtLink
               >
             </span>
             <span>></span>
