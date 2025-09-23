@@ -185,7 +185,8 @@ const handleIframeMessage = async (event) => {
   // 验证消息来源，防止跨站脚本攻击
   if (
     event.origin !== "https://www.wix.com" &&
-    !event.origin.includes("wixapis.com")
+    !event.origin.includes("wixapis.com") &&
+    event.origin !== "https://login.verscape.com"
   ) {
     return;
   }
@@ -256,10 +257,7 @@ const handleSubmit = async () => {
         wixUserId.value = response.data.wixUserId; // 存储Wix用户ID
         showAuthLoader.value = true; // 显示加载状态
 
-        // 拼接完整的 iframe 回调 URL
-        // 您需要将 'https://www.verscape.com/auth/callback' 替换为您的实际回调页面URL
-        const redirectUrl = `https://www.verscape.com/auth/callback`;
-        const finalAuthUrl = `${response.data.authUrl}&redirectUrl=${encodeURIComponent(redirectUrl)}`;
+        const finalAuthUrl = response.data.authUrl;
         console.log("Final Authorization URL:", finalAuthUrl);
 
         // 动态创建隐藏的iframe并加载最终授权URL
@@ -312,9 +310,7 @@ const handleVerifyCode = async () => {
         wixUserId.value = response.data.wixUserId;
         showAuthLoader.value = true;
 
-        // 拼接完整的 iframe 回调 URL
-        const redirectUrl = `https://www.verscape.com/auth/callback`;
-        const finalAuthUrl = `${response.data.authUrl}&redirectUrl=${encodeURIComponent(redirectUrl)}`;
+        const finalAuthUrl = response.data.authUrl;
 
         const iframe = document.createElement("iframe");
         iframe.style.display = "none";

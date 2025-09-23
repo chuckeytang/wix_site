@@ -141,7 +141,7 @@
             </svg>
             Add to Cart
           </button>
-          <button class="action-btn">
+          <button class="action-btn" @click="handleShowLicenseModal">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -165,6 +165,11 @@
     </div>
 
     <MusicPlayerPanel />
+    <LicenseModal
+      :isVisible="showLicenseModal"
+      :trackTitle="track?.title"
+      @close="showLicenseModal = false"
+    />
   </div>
 </template>
 
@@ -177,6 +182,7 @@ import { useMusicPlayerStore } from "~/stores/musicPlayer";
 import TheHeader from "~/components/TheHeader.vue";
 import SearchBar from "~/components/SearchBar.vue";
 import MusicPlayerPanel from "~/components/MusicPlayerPanel.vue";
+import LicenseModal from "~/components/LicenseModal.vue";
 
 // 路由信息
 const route = useRoute();
@@ -187,6 +193,8 @@ const router = useRouter();
 const track = ref<Tracks | null>(null);
 const loading = ref(true);
 const error = ref(false);
+
+const showLicenseModal = ref(false);
 
 const musicPlayerStore = useMusicPlayerStore();
 const localIsPlaying = computed(() => {
@@ -203,6 +211,11 @@ const localIsPlaying = computed(() => {
 
   return false;
 });
+
+const handleShowLicenseModal = () => {
+  console.log("handleShowLicenseModal");
+  showLicenseModal.value = true;
+};
 
 const handleSearch = (query: string) => {
   if (query) {
