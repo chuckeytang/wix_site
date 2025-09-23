@@ -1,4 +1,4 @@
-<template>
+y zhao<template>
   <section class="search-section">
     <div class="container search-container">
       <div class="search-input-wrapper" :class="{ 'is-focused': isFocused }">

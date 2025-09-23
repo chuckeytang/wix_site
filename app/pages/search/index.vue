@@ -12,7 +12,7 @@
         <div class="container_2 prompt-flex-wrapper">
           <p class="prompt-text">
             <span class="prompt-emoji">💡 </span>
-            提示：尝试用更清晰的情绪、参考或音乐细节来调整您的搜索，以获取更精准的结果。
+            tips:try adjusting your search with clearer mood, reference, or musical detail to get more precise results.
           </p>
           <!-- 视图切换控件移动到这里 -->
           <div class="view-toggle">
@@ -71,7 +71,7 @@
           Failed to load tracks.
         </div>
         <div v-else-if="tracks.length === 0" class="no-results-state">
-          没有找到与“{{ searchQuery }}”相关的音乐。
+          no music related to “{{ searchQuery }}” was found.
         </div>
         <template v-else>
           <MusicCard
@@ -89,7 +89,7 @@
           Failed to load tracks.
         </div>
         <div v-else-if="tracks.length === 0" class="no-results-state">
-          没有找到与“{{ searchQuery }}”相关的音乐。
+          no music related to “{{ searchQuery }}” was found.
         </div>
         <template v-else>
           <div class="music-grid-container">
@@ -270,8 +270,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  /* ⭐ 新增：确保文本在需要时不会过度收缩 */
   flex-shrink: 0;
+  margin-left: 140px;
 }
 
 .prompt-emoji {
