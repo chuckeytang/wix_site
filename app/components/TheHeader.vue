@@ -12,14 +12,20 @@
           <li><NuxtLink to="/moods">MOODS</NuxtLink></li>
           <li><NuxtLink to="/playlists">PLAYLISTS</NuxtLink></li>
           <li><NuxtLink to="/sfx">SFX</NuxtLink></li>
-          <li><NuxtLink to="/checkout">CHECKOUT</NuxtLink></li>
-          <li><NuxtLink to="/sfx">SFX</NuxtLink></li>
+          <li><NuxtLink to="/price">PRICE</NuxtLink></li>
         </ul>
       </nav>
       <div class="user-actions">
         <button @click="showLoginDialog = true">Login</button>
         <button @click="handleCart">
           <span class="cart-icon">🛒</span>
+        </button>
+        <button>
+          <img
+            src="/icons/user.svg"
+            alt="用户画像"
+            class="user-svg-icon"
+          />
         </button>
       </div>
     </div>
@@ -168,6 +174,13 @@ const handleCart = () => {
 
 .cart-icon {
   font-size: 32px;
+}
+
+.user-svg-icon{
+  height: 32px;
+  width: auto;
+  position: relative;
+  top: 6px;
 }
 
 .main-nav{
