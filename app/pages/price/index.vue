@@ -37,8 +37,6 @@
 
 <script setup>
 import { NuxtLink } from '#components';
-// 导入字体，防止在某些环境中丢失
-import 'https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700;900&display=swap';
 </script>
 
 <style scoped>

@@ -344,6 +344,10 @@ watch(isLoginMode, (newVal) => {
 </script>
 
 <style scoped>
+:root {
+  --sidebar-width: 450px; 
+  /* 确保这个变量在全局或此处被正确定义和访问 */
+}
 .dialog-overlay {
   position: fixed;
   top: 0;
@@ -351,25 +355,28 @@ watch(isLoginMode, (newVal) => {
   width: 100%;
   height: 100%;
   /* 调整背景色，使其更透明，以便能看到后面的模糊内容 */
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
-  justify-content: center;
-  align-items: center;
+  justify-content: flex-end;
+  align-items: flex-start;
   z-index: 2000;
   backdrop-filter: blur(5px);
+  transition: opacity 0.3s ease;
 }
 
 .dialog-content {
-  background-color: rgba(13, 13, 26, 0.6); /* 使用半透明背景色 */
-  color: var(--text-color);
+  width: var(--sidebar-width); 
+  height: 100%; 
   padding: 40px;
-  border-radius: 10px;
-  width: 90%;
-  max-width: 450px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  border-radius: 0; 
+  background-color: rgba(13, 13, 26, 1); 
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5); 
   position: relative;
-  text-align: center; /* 居中所有内容 */
+  text-align: center; 
   box-sizing: border-box;
+  transform: translateX(0); 
+  transition: transform 0.3s ease-out; 
+  overflow-y: auto; 
 }
 
 .close-button {
@@ -382,6 +389,7 @@ watch(isLoginMode, (newVal) => {
   font-size: 2rem;
   cursor: pointer;
   transition: color 0.3s;
+  z-index: 10;
 }
 .close-button:hover {
   color: var(--primary-color);
@@ -408,7 +416,7 @@ watch(isLoginMode, (newVal) => {
   border-radius: 5px;
   color: var(--text-color); /* 确保输入框文字为白色 */
   font-size: 1rem;
-  text-align: center; /* 输入文字居中 */
+  text-align: left; /* 输入文字居中 */
 }
 
 /* 调整 placeholder 样式 */

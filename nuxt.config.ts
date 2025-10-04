@@ -34,4 +34,14 @@ export default defineNuxtConfig({
     port: parseInt(process.env.NUXT_PUBLIC_PORT || "3000"),
     host: "0.0.0.0", // 允许外部访问
   },
+    app: {
+    head: {
+      link: [
+        { 
+          rel: 'stylesheet', 
+          href: 'https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700;900&display=swap' 
+        }
+      ]
+    }
+  },
 });

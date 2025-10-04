@@ -16,11 +16,10 @@
         </ul>
       </nav>
       <div class="user-actions">
-        <button @click="showLoginDialog = true">Login</button>
         <button @click="handleCart">
           <span class="cart-icon">🛒</span>
         </button>
-        <button>
+        <button @click="showLoginDialog = true">
           <img
             src="/icons/user.svg"
             alt="用户画像"
@@ -30,12 +29,14 @@
       </div>
     </div>
   </header>
-  <LoginDialog v-if="showLoginDialog" @close="showLoginDialog = false" />
+  <Transition name="slide-right">
+    <LoginDialog v-if="showLoginDialog" @close="showLoginDialog = false" />
+  </Transition>
 </template>
 
 <script setup>
 import { NuxtLink } from "#components";
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, Transition } from "vue";
 import LoginDialog from "./LoginDialog.vue";
 
 const isHidden = ref(false);
@@ -185,5 +186,21 @@ const handleCart = () => {
 
 .main-nav{
   margin-right: 50px;
+}
+
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: all 0.3s ease-in-out;
+}
+
+.slide-right-enter-from .dialog-content,
+.slide-right-leave-to .dialog-content {
+  /* 让内容向右侧移动侧边栏自身的宽度，使其滑出视口 */
+  transform: translateX(var(--sidebar-width));
+}
+
+.slide-right-enter-from,
+.slide-right-leave-to {
+  opacity: 0;
 }
 </style>
