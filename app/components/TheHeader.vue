@@ -38,12 +38,14 @@
 import { NuxtLink } from "#components";
 import { ref, onMounted, onUnmounted, Transition } from "vue";
 import LoginDialog from "./LoginDialog.vue";
+import { useRouter } from 'vue-router';
 
 const isHidden = ref(false);
 let lastScrollY = 0;
 
 // 控制登录对话框显示的状态
 const showLoginDialog = ref(false);
+const router = useRouter();
 
 const handleScroll = () => {
   const currentScrollY = window.scrollY;
@@ -78,8 +80,9 @@ onUnmounted(() => {
 });
 
 const handleCart = () => {
+  console.log('/cart');
+  router.push('/cart');
   // Redirect to Wix cart/checkout page
-  console.log("Redirecting to Wix cart...");
 };
 </script>
 
