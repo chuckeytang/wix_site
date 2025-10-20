@@ -1,78 +1,42 @@
 import request from "./http";
 import type { AjaxResult } from "~/types/ajax";
-import type { LoginData, RegisterData, WixTokenResponse } from "~/types/auth";
+import type { LoginData, RegisterData } from "~/types/auth"; // 假设你更新了这些类型，特别是 RegisterData 需要包含 nickname
 
 /**
  * 认证和用户相关的 API 接口
+ * 路径从 /site/wix/member/ 更改为 /site/auth/
  */
 export const authApi = {
   /**
-   * 用户登录接口 (邮箱/密码)
-   * @param data 包含邮箱和密码的登录数据
-   * @returns 登录结果的 Promise，通常包含 token 信息
+   * 用户登录接口 (邮箱 + 密码)
    */
-  login(data: LoginData): Promise<AjaxResult<any>> {
-    return request.post("/site/wix/member/login", data);
+  login(data: LoginData): Promise<AjaxResult<string>> {
+    // 这里的 data.email 现在是正确的，因为它在 LoginData 中直接定义了
+    return request.post("/site/auth/login", {
+      email: data.email,
+      password: data.password,
+    });
   },
 
   /**
-   * 用户注册接口
-   * @param data 包含邮箱和密码的注册数据
+   * 用户注册接口 (邮箱/昵称 + 密码)
+   * @param data 包含邮箱、昵称和密码的注册数据
    * @returns 注册结果的 Promise
    */
   register(data: RegisterData): Promise<AjaxResult<any>> {
-    return request.post("/site/wix/member/register", data);
-  },
-
-  /**
-   * 获取访客令牌接口
-   * @returns 包含访客 token 的 Promise
-   */
-  getVisitorToken(): Promise<AjaxResult<WixTokenResponse>> {
-    return request.get("/site/wix/member/getVisitorToken");
-  },
-
-  /**
-   * 刷新访客令牌接口
-   * @param refreshToken 访客刷新令牌
-   * @returns 包含新 token 的 Promise
-   */
-  refreshVisitorToken(
-    refreshToken: string
-  ): Promise<AjaxResult<WixTokenResponse>> {
-    return request.post(
-      `/site/wix/member/refreshVisitorToken?refreshToken=${refreshToken}`
-    );
+    // 假设 RegisterData 包含 email, nickname, password
+    return request.post("/site/auth/register", data);
   },
 
   /**
    * Email verification API
-   * @param data Contains the verification code and state token
+   * @param data Contains the email and verification code/token
+   * @returns 成功时返回 string 类型的 token
    */
   verifyEmail(data: {
+    email: string;
     code: string;
-    stateToken: string;
-  }): Promise<AjaxResult<any>> {
-    return request.post("/site/wix/member/verifyEmail", data);
-  },
-
-  /**
-   * Deactivates a member's account
-   */
-  deactivate(): Promise<AjaxResult<any>> {
-    return request.delete("/site/wix/member/deactivate");
-  },
-
-  /**
-   * 处理Wix授权回调，向后端发送授权码以获取最终令牌
-   * @param data 包含授权码、状态参数和Wix用户ID
-   * @returns 登录成功的Promise，包含最终的JWT令牌
-   */
-  handleWixCallback(data: {
-    code: string;
-    state: string;
-    wixUserId: string;
-  }): Promise<AjaxResult<any>> {
-    return request.post("/site/wix/member/callback", data);
+  }): Promise<AjaxResult<string>> {
+    return request.post("/site/auth/verifyEmail", data);
   },
 };

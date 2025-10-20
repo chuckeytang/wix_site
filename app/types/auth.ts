@@ -1,20 +1,17 @@
 // types/auth.d.ts
+/**
+ * 用户登录请求数据结构（邮箱/密码）
+ */
 export interface LoginData {
-  loginId?: {
-    email?: string;
-  };
-  password?: string;
+  email: string;
+  password: string;
 }
 
+/**
+ * 用户注册请求数据结构（邮箱/昵称/密码）
+ */
 export interface RegisterData {
-  loginId?: {
-    email?: string;
-  };
-  password?: string;
-}
-
-export interface WixTokenResponse {
-  accessToken: string;
-  refreshToken: string;
-  // 其他字段...
+  email: string;
+  nickname: string;
+  password: string;
 }
