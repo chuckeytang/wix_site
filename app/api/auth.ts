@@ -39,4 +39,29 @@ export const authApi = {
   }): Promise<AjaxResult<string>> {
     return request.post("/site/auth/verifyEmail", data);
   },
+
+  /**
+   * 生成 Google 认证 URL 并执行重定向
+   * @param config 包含 Client ID 和后端回调 URL 的配置
+   */
+  startGoogleLogin(config: {
+    clientId: string;
+    redirectUri: string;
+    scope: string;
+  }): void {
+    // 构造 Google 授权 URL
+    const authUrl = "https://accounts.google.com/o/oauth2/v2/auth";
+    const params = new URLSearchParams({
+      client_id: config.clientId,
+      redirect_uri: config.redirectUri,
+      response_type: "code", // 授权码模式
+      scope: config.scope, // 'profile email'
+      access_type: "offline", // 获取 refresh token (可选)
+      prompt: "consent", // 每次都显示同意屏幕 (可选，首次使用即可)
+      state: "unique_state_token_for_security", // 建议使用 UUID 或 CSRF Token
+    });
+
+    // 直接重定向用户浏览器到 Google 授权页面
+    window.location.href = `${authUrl}?${params.toString()}`;
+  },
 };

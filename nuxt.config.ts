@@ -25,6 +25,23 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       appBaseApi: process.env.NUXT_PUBLIC_APP_BASE_API,
+
+      // Google OAuth 配置
+      googleOauth: {
+        // 你的 Google Client ID，从环境变量或直接赋值获取
+        clientId:
+          process.env.NUXT_PUBLIC_GOOGLE_CLIENT_ID ||
+          "757481063169-ro4ei1tahlafdccmmshjh78tvpbueim1.apps.googleusercontent.com",
+
+        // 你的后端回调地址 (必须和 GCP 配置的一致)
+        // 假设你的后端地址是你的主 API 地址
+        redirectUri:
+          (process.env.NUXT_PUBLIC_APP_BASE_API || "http://localhost:8080") +
+          "/site/auth/google/callback",
+
+        // 请求的权限范围
+        scope: "email profile",
+      },
     },
   },
   elementPlus: {
@@ -34,14 +51,14 @@ export default defineNuxtConfig({
     port: parseInt(process.env.NUXT_PUBLIC_PORT || "3000"),
     host: "0.0.0.0", // 允许外部访问
   },
-    app: {
+  app: {
     head: {
       link: [
-        { 
-          rel: 'stylesheet', 
-          href: 'https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700;900&display=swap' 
-        }
-      ]
-    }
+        {
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700;900&display=swap",
+        },
+      ],
+    },
   },
 });

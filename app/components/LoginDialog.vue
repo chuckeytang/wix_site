@@ -97,7 +97,7 @@
         <span class="or-text">OR</span>
       </div>
       <div class="social-login-options">
-        <button class="social-button google">
+        <button class="social-button google" @click="handleGoogleLogin">
           <img src="/icons/google-icon.svg" alt="Google" />
           CONTINUE WITH GOOGLE
         </button>
@@ -112,6 +112,7 @@ import { ref, watch } from "vue";
 import { authApi } from "~/api/auth";
 import { useAuthStore } from "~/stores/auth";
 
+const config = useRuntimeConfig();
 const isLoginMode = ref(true);
 const email = ref("");
 const nickname = ref("");
@@ -208,6 +209,37 @@ const handleSubmit = async () => {
 const handleForgotPassword = () => {
   // TODO: 实现密码找回流程
   console.log("Redirecting to forgot password page...");
+};
+
+const handleGoogleLogin = () => {
+  if (loading.value) return;
+
+  try {
+    // 从 Nuxt Runtime Config 中安全获取 Google 配置
+    const googleConfig = config.public.googleOauth;
+
+    if (!googleConfig || !googleConfig.clientId || !googleConfig.redirectUri) {
+      errorMessage.value = "Google OAuth configuration missing.";
+      console.error("Missing Google OAuth Config", googleConfig);
+      return;
+    }
+
+    // 假设你在 Nuxt Config 中暴露了以下公共配置
+    const { clientId, redirectUri, scope } = googleConfig;
+
+    // 调用 auth.ts 中的辅助函数进行重定向
+    authApi.startGoogleLogin({
+      clientId: clientId,
+      redirectUri: redirectUri,
+      // 这里的 scope 应该是 'email profile' 或你在 Nuxt Config 中设置的值
+      scope: scope || "email profile",
+    });
+
+    // 注意：重定向发生后，这个对话框组件会卸载，流程控制权交给 Google。
+  } catch (error) {
+    console.error("Error starting Google login:", error);
+    errorMessage.value = "Failed to initiate Google login.";
+  }
 };
 
 watch(isLoginMode, (newVal) => {
