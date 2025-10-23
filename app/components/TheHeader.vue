@@ -19,13 +19,16 @@
         <button @click="handleCart">
           <span class="cart-icon">🛒</span>
         </button>
-        <button @click="showLoginDialog = true">
-          <img
-            src="/icons/user.svg"
-            alt="用户画像"
-            class="user-svg-icon"
-          />
-        </button>
+        <template v-if="isAuthenticated">
+          <button @click="handleLogout">
+            <img src="/icons/logout.svg" alt="Logout" class="user-svg-icon" />
+          </button>
+        </template>
+        <template v-else>
+          <button @click="showLoginDialog = true">
+            <img src="/icons/user.svg" alt="User Login" class="user-svg-icon" />
+          </button>
+        </template>
       </div>
     </div>
   </header>
@@ -38,7 +41,8 @@
 import { NuxtLink } from "#components";
 import { ref, onMounted, onUnmounted, Transition } from "vue";
 import LoginDialog from "./LoginDialog.vue";
-import { useRouter } from 'vue-router';
+import { useRouter } from "vue-router";
+import { useAuthStore } from "~/stores/auth";
 
 const isHidden = ref(false);
 let lastScrollY = 0;
@@ -46,6 +50,11 @@ let lastScrollY = 0;
 // 控制登录对话框显示的状态
 const showLoginDialog = ref(false);
 const router = useRouter();
+const authStore = useAuthStore();
+
+// 监听认证状态
+const isAuthenticated = computed(() => authStore.isAuthenticated);
+authStore.loadToken();
 
 const handleScroll = () => {
   const currentScrollY = window.scrollY;
@@ -80,9 +89,15 @@ onUnmounted(() => {
 });
 
 const handleCart = () => {
-  console.log('/cart');
-  router.push('/cart');
+  console.log("/cart");
+  router.push("/cart");
   // Redirect to Wix cart/checkout page
+};
+
+const handleLogout = () => {
+  authStore.logout();
+  // 登出后刷新当前页面，或跳转到首页
+  router.go(0); // 刷新页面
 };
 </script>
 
@@ -180,14 +195,14 @@ const handleCart = () => {
   font-size: 32px;
 }
 
-.user-svg-icon{
+.user-svg-icon {
   height: 32px;
   width: auto;
   position: relative;
   top: 6px;
 }
 
-.main-nav{
+.main-nav {
   margin-right: 50px;
 }
 
