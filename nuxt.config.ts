@@ -36,7 +36,7 @@ export default defineNuxtConfig({
         // 你的后端回调地址 (必须和 GCP 配置的一致)
         // 假设你的后端地址是你的主 API 地址
         redirectUri:
-          (process.env.NUXT_PUBLIC_API_DOMAIN || "https://api.verscape.com") +
+          (process.env.NUXT_PUBLIC_API_DOMAIN || "https://api.verscape-tech.com") +
           "/site/auth/google/callback",
 
         // 请求的权限范围
