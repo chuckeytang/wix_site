@@ -12,8 +12,8 @@
             checked 
           />
           <div class="option-details">
-            <span class="type-title">一次性购买</span>
-            <span class="price-display">US$ {{ subtotal.toFixed(2) }}</span>
+            <span class="type-title">One-time purchase</span>
+            <span class="price-display" v-if="false">US$ {{ subtotal.toFixed(2) }}</span>
           </div>
         </label>
   
@@ -36,18 +36,18 @@
           @click="handleCheckout"
           :disabled="totalItems === 0"
         >
-          进行结算
+          proceed to checkout
         </button>
   
       </div>
       
       <div class="price-details">
         <div class="detail-row">
-          <span>商品小计 ({{ totalItems }} 项)</span>
+          <span>Subtotal of Goods ({{ totalItems }} items)</span>
           <span>US$ {{ subtotal.toFixed(2) }}</span>
         </div>
         <div class="detail-row total-row">
-          <span>总计</span>
+          <span>total</span>
           <span>US$ {{ subtotal.toFixed(2) }}</span>
         </div>
       </div>
