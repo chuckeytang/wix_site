@@ -119,7 +119,7 @@
             </svg>
             Favorite
           </button>
-          <button class="action-btn">
+          <button class="action-btn" @click="handleAddToCart">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -140,6 +140,31 @@
               <polyline points="10 9 9 9 8 9"></polyline>
             </svg>
             Add to Cart
+          </button>
+          <button
+            class="action-btn primary-action"
+            @click="handleInstantCheckout"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8z"
+              ></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            Checkout Now
           </button>
           <button class="action-btn" @click="handleShowLicenseModal">
             <svg
@@ -177,12 +202,14 @@
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { tracksApi } from "~/api";
+import { cartsApi } from "~/api/carts";
 import type { Tracks } from "~/types/tracks";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
 import TheHeader from "~/components/TheHeader.vue";
 import SearchBar from "~/components/SearchBar.vue";
 import MusicPlayerPanel from "~/components/MusicPlayerPanel.vue";
 import LicenseModal from "~/components/LicenseModal.vue";
+import type { CartItems } from "~/types/cartItems";
 
 // 路由信息
 const route = useRoute();
@@ -193,6 +220,8 @@ const router = useRouter();
 const track = ref<Tracks | null>(null);
 const loading = ref(true);
 const error = ref(false);
+const config = useRuntimeConfig();
+const publishableKey = config.public.stripePk as string;
 
 const showLicenseModal = ref(false);
 
@@ -331,6 +360,110 @@ const selectSegmentOption = (segment: string) => {
 
   // 2. 更新全局播放器的分段状态
   musicPlayerStore.setSegment(segment);
+};
+
+/**
+ * 处理添加到购物车
+ */
+const handleAddToCart = async () => {
+  if (!track.value?.trackId) {
+    alert("音乐信息不完整，无法添加到购物车。");
+    return;
+  }
+
+  // 1. 构建请求体
+  const itemToAdd: Partial<CartItems> = {
+    productType: "track",
+    productId: track.value.trackId,
+    // 授权选项：这里需要根据您的业务模型确定。
+    // 如果音乐只有一个价格，可以固定为 'standard'。
+    licenseOption: "standard",
+    quantity: 1,
+    // priceAtAddition: // 价格字段让后端去查询，确保准确性
+  };
+
+  try {
+    const result = await cartsApi.addItemToCart(itemToAdd);
+
+    if (result.code === 200) {
+      alert(`${track.value.title} 已成功添加到购物车！`);
+      // 可以在这里触发全局状态更新，显示购物车数量
+      // 例如: useCartStore().fetchCartCount();
+    } else {
+      alert(`添加到购物车失败: ${result.msg || "未知错误"}`);
+    }
+  } catch (error) {
+    console.error("添加到购物车请求失败:", error);
+    alert(`添加到购物车失败: ${error || "未知错误"}`);
+  }
+};
+
+/**
+ * 模拟完整的立即购买流程：清空购物车 -> 创建订单 -> 发起支付
+ */
+const handleInstantCheckout = async () => {
+  if (!track.value?.trackId) {
+    alert("音乐信息不完整，无法购买。");
+    return;
+  }
+
+  // 1. 构建请求体：仅包含当前商品信息
+  const buyItem = {
+    productType: "track",
+    productId: track.value.trackId,
+    licenseOption: "standard", // 使用固定的标准授权
+  };
+
+  // 2. 调用新的后端 API 提交订单 (单品购买)
+  let newOrder: any;
+  try {
+    const orderResult = await cartsApi.instantBuy(buyItem);
+    if (orderResult.code !== 200 || !orderResult.data) {
+      alert(`提交订单失败: ${orderResult.msg || "未知错误"}`);
+      return;
+    }
+    newOrder = orderResult.data;
+    console.log("单品订单创建成功:", newOrder);
+  } catch (error) {
+    console.error("添加到购物车请求失败:", error);
+    alert(`添加到购物车失败: ${error || "未知错误"}`);
+    return;
+  }
+
+  // 3. **调用后端 API 创建 Stripe Payment Intent**
+  let clientSecret: string;
+  try {
+    const paymentIntentResult = await cartsApi.createPaymentIntent(
+      newOrder.orderId
+    );
+    if (
+      paymentIntentResult.code !== 200 ||
+      !paymentIntentResult.data?.clientSecret
+    ) {
+      alert(`创建支付意图失败: ${paymentIntentResult.msg || "后端错误"}`);
+      return;
+    }
+    clientSecret = paymentIntentResult.data.clientSecret;
+    console.log("Payment Intent 创建成功，Client Secret:", clientSecret);
+  } catch (error) {
+    console.error("创建支付意图请求失败:", error);
+    alert("支付服务连接失败。");
+    return;
+  }
+
+  alert(
+    `订单创建成功，即将跳转到 Stripe 支付页面。Client Secret: ${clientSecret}`
+  );
+
+  // **A. (推荐) 使用路由跳转到专用支付页面**
+  router.push({
+    path: "/checkout",
+    query: {
+      orderId: newOrder.orderId,
+      clientSecret: clientSecret,
+      pk: publishableKey,
+    },
+  });
 };
 
 onMounted(() => {
@@ -558,5 +691,19 @@ onMounted(() => {
 
 .action-btn:hover svg {
   color: #ff8c62;
+}
+
+.action-btn.primary-action {
+  background-color: #ff8c62; /* 使用主题色 */
+  color: #0d0d1a;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+.action-btn.primary-action:hover {
+  background-color: #e67a54;
+}
+.action-btn.primary-action svg {
+  color: #0d0d1a !important;
 }
 </style>

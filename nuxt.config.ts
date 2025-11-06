@@ -24,6 +24,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
+      stripePk: process.env.NUXT_PUBLIC_STRIPE_PK,
       appBaseApi: process.env.NUXT_PUBLIC_APP_BASE_API,
 
       // Google OAuth 配置
@@ -36,8 +37,8 @@ export default defineNuxtConfig({
         // 你的后端回调地址 (必须和 GCP 配置的一致)
         // 假设你的后端地址是你的主 API 地址
         redirectUri:
-          (process.env.NUXT_PUBLIC_API_DOMAIN || "https://api.verscape-tech.com") +
-          "/site/auth/google/callback",
+          (process.env.NUXT_PUBLIC_API_DOMAIN ||
+            "https://api.verscape-tech.com") + "/site/auth/google/callback",
 
         // 请求的权限范围
         scope: "email profile",

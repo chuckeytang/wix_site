@@ -15,6 +15,7 @@
     "@nuxt/image": "^1.11.0",
     "@nuxt/scripts": "^0.11.10",
     "@pinia/nuxt": "^0.11.2",
+    "@stripe/stripe-js": "^7.9.0",
     "@unhead/vue": "^2.0.14",
     "@vueform/slider": "^2.1.10",
     "@vueuse/core": "^13.6.0",
