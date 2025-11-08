@@ -56,6 +56,7 @@ import { useCartStore } from "~/stores/cart";
 import CartItem from "~/components/cart/CartItem.vue";
 import CartSummary from "~/components/cart/CartSummary.vue";
 import CheckoutModal from "~/components/CheckoutModal.vue";
+import { tracksApi } from "~/api";
 
 const cartStore = useCartStore();
 
