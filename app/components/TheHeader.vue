@@ -91,7 +91,6 @@ onUnmounted(() => {
 const handleCart = () => {
   console.log("/cart");
   router.push("/cart");
-  // Redirect to Wix cart/checkout page
 };
 
 const handleLogout = () => {

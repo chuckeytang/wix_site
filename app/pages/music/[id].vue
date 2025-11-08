@@ -119,7 +119,10 @@
             </svg>
             Favorite
           </button>
-          <button class="action-btn" @click="handleAddToCart">
+          <button
+            class="action-btn"
+            @click="handleShowLicenseModal('add_to_cart')"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -166,7 +169,10 @@
             </svg>
             Checkout Now
           </button>
-          <button class="action-btn" @click="handleShowLicenseModal">
+          <button
+            class="action-btn"
+            @click="handleShowLicenseModal('view_terms')"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -192,7 +198,9 @@
     <MusicPlayerPanel />
     <LicenseModal
       :isVisible="showLicenseModal"
-      :trackTitle="track?.title"
+      :trackTitle="track?.title || 'Track'"
+      :trackId="trackId"
+      :productType="'track'"
       @close="showLicenseModal = false"
     />
 
@@ -255,7 +263,7 @@ const localIsPlaying = computed(() => {
   return false;
 });
 
-const handleShowLicenseModal = () => {
+const handleShowLicenseModal = (action: "add_to_cart" | "view_terms") => {
   console.log("handleShowLicenseModal");
   showLicenseModal.value = true;
 };
@@ -374,42 +382,6 @@ const selectSegmentOption = (segment: string) => {
 
   // 2. 更新全局播放器的分段状态
   musicPlayerStore.setSegment(segment);
-};
-
-/**
- * 处理添加到购物车
- */
-const handleAddToCart = async () => {
-  if (!track.value?.trackId) {
-    alert("音乐信息不完整，无法添加到购物车。");
-    return;
-  }
-
-  // 1. 构建请求体
-  const itemToAdd: Partial<CartItems> = {
-    productType: "track",
-    productId: track.value.trackId,
-    // 授权选项：这里需要根据您的业务模型确定。
-    // 如果音乐只有一个价格，可以固定为 'standard'。
-    licenseOption: "standard",
-    quantity: 1,
-    // priceAtAddition: // 价格字段让后端去查询，确保准确性
-  };
-
-  try {
-    const result = await cartsApi.addItemToCart(itemToAdd);
-
-    if (result.code === 200) {
-      alert(`${track.value.title} 已成功添加到购物车！`);
-      // 可以在这里触发全局状态更新，显示购物车数量
-      // 例如: useCartStore().fetchCartCount();
-    } else {
-      alert(`添加到购物车失败: ${result.msg || "未知错误"}`);
-    }
-  } catch (error) {
-    console.error("添加到购物车请求失败:", error);
-    alert(`添加到购物车失败: ${error || "未知错误"}`);
-  }
 };
 
 /**

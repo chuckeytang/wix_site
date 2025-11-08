@@ -85,7 +85,7 @@
             </svg>
             Favorite
           </button>
-          <button class="action-btn">
+          <button class="action-btn" @click="handleAddToCart">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -107,7 +107,7 @@
             </svg>
             Add to Cart
           </button>
-          <button class="action-btn">
+          <button class="action-btn" @click="handleShowLicenseModal">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -131,18 +131,38 @@
     </div>
 
     <MusicPlayerPanel />
+
+    <LicenseModal
+      :isVisible="showLicenseModal"
+      :trackTitle="sfx?.title || 'SFX'"
+      :trackId="sfxId"
+      :productType="'sfx'"
+      @close="showLicenseModal = false"
+    />
+
+    <CheckoutModal
+      :isVisible="showCheckoutModal"
+      :clientSecret="checkoutClientSecret"
+      :orderId="checkoutOrderId"
+      :returnPath="checkoutReturnPath"
+      @close="showCheckoutModal = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
+import { cartsApi } from "~/api/carts";
+import type { CartItems } from "~/types/cartItems";
 import { sfxApi } from "~/api";
 import type { Sfx } from "~/types/sfx";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
 import TheHeader from "~/components/TheHeader.vue";
 import SearchBar from "~/components/SearchBar.vue";
 import MusicPlayerPanel from "~/components/MusicPlayerPanel.vue";
+import LicenseModal from "~/components/LicenseModal.vue";
+import CheckoutModal from "~/components/CheckoutModal.vue";
 
 const route = useRoute();
 const sfxId = Number(route.params.id);
@@ -151,6 +171,14 @@ const router = useRouter();
 const sfx = ref<Sfx | null>(null);
 const loading = ref(true);
 const error = ref(false);
+
+const showLicenseModal = ref(false);
+const showCheckoutModal = ref(false);
+const checkoutClientSecret = ref<string | null>(null);
+const checkoutOrderId = ref<number | null>(null);
+const checkoutReturnPath = ref<string | null>(null);
+const config = useRuntimeConfig();
+const publishableKey = config.public.stripePk as string;
 
 const musicPlayerStore = useMusicPlayerStore();
 const localIsPlaying = computed(() => {
@@ -161,6 +189,10 @@ const localIsPlaying = computed(() => {
     musicPlayerStore.isPlaying
   );
 });
+
+const handleShowLicenseModal = () => {
+  showLicenseModal.value = true;
+};
 
 const handleSearch = (query: string) => {
   if (query) {
@@ -237,6 +269,75 @@ const togglePlayAndSetSfx = () => {
 onMounted(() => {
   fetchSfxDetails();
 });
+
+/**
+ * 处理添加到购物车 (仅弹出许可模态框)
+ */
+const handleAddToCart = () => {
+  // 音效页和音乐页统一，点击 Add to Cart 弹出许可模态框
+  handleShowLicenseModal();
+};
+
+/**
+ * 立即购买逻辑 (同步自 music/[id].vue)
+ */
+const handleInstantCheckout = async () => {
+  if (!sfx.value?.sfxId) {
+    alert("SFX information is missing.");
+    return;
+  }
+
+  const returnPath = route.fullPath;
+
+  // 1. 构建请求体
+  const buyItem = {
+    productType: "sfx",
+    productId: sfx.value.sfxId,
+    licenseOption: "standard",
+  };
+
+  // 2. 提交订单
+  let newOrder: any;
+  try {
+    const orderResult = await cartsApi.instantBuy(buyItem);
+    if (orderResult.code !== 200 || !orderResult.data) {
+      alert(`提交订单失败: ${orderResult.msg || "未知错误"}`);
+      return;
+    }
+    newOrder = orderResult.data;
+    console.log("单品订单创建成功:", newOrder);
+  } catch (error) {
+    console.error("Instant Buy request failed:", error);
+    alert(`Instant Buy failed: ${error || "Unknown error"}`);
+    return;
+  }
+
+  // 3. 创建 Payment Intent
+  let clientSecret: string;
+  try {
+    const paymentIntentResult = await cartsApi.createPaymentIntent(
+      newOrder.orderId
+    );
+    if (
+      paymentIntentResult.code !== 200 ||
+      !paymentIntentResult.data?.clientSecret
+    ) {
+      alert(`创建支付意图失败: ${paymentIntentResult.msg || "后端错误"}`);
+      return;
+    }
+    clientSecret = paymentIntentResult.data?.clientSecret;
+  } catch (error) {
+    console.error("Create Payment Intent failed:", error);
+    alert("Payment service connection failed.");
+    return;
+  }
+
+  // 4. 设置状态并显示模态框
+  checkoutClientSecret.value = clientSecret;
+  checkoutOrderId.value = newOrder.orderId;
+  checkoutReturnPath.value = returnPath;
+  showCheckoutModal.value = true;
+};
 </script>
 
 <style scoped>

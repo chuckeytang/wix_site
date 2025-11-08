@@ -2,50 +2,66 @@
   <div v-if="isVisible" class="modal-overlay" @click.self="emit('close')">
     <div class="modal-content">
       <header class="modal-header">
-        <h2 class="modal-title">许可 {{ trackTitle }}</h2>
+        <h2 class="modal-title">Licensing for {{ trackTitle }}</h2>
         <button class="close-button" @click="emit('close')">×</button>
       </header>
       <div class="modal-body">
-        <h3 class="section-title">单曲许可选项</h3>
+        <h3 class="section-title">Single Track License Options</h3>
 
         <div class="license-option standard">
           <div class="details">
-            <h4 class="option-title">标准</h4>
+            <h4 class="option-title">Standard License</h4>
             <p class="option-description">
-              1条音轨下载 · 商业工作 · 发布面向客户的内容 · 5个社交渠道已盈利
+              1 Track Download · Commercial Work · Customer-facing content · 5
+              Monetized Social Channels
             </p>
           </div>
           <div class="price">
-            <div><span class="price-value">CA$1.99</span>/首</div>
-            <button class="add-to-cart-button">添加到购物车</button>
+            <div><span class="price-value">CA$1.99</span>/track</div>
+            <button
+              class="add-to-cart-button"
+              @click="handleLicenseAddToCart('standard', 1.99)"
+            >
+              Add to Cart
+            </button>
           </div>
         </div>
 
         <div class="license-option premium">
           <div class="details">
-            <h4 class="option-title">Premium 许可</h4>
+            <h4 class="option-title">Premium License</h4>
             <p class="option-description small-font">
-              1条音轨下载 · 电视和广播、VOD/OTT · 应用程序、游戏和电影 ·
-              工业用途 · 无限量社交渠道已盈利
+              1 Track Download · TV & Radio, VOD/OTT · Apps, Games & Films ·
+              Industrial Use · Unlimited Monetized Social Channels
             </p>
           </div>
           <div class="price">
-            <div><span class="price-value">CA$3.99</span>/首</div>
-            <button class="add-to-cart-button">添加到购物车</button>
+            <div><span class="price-value">CA$3.99</span>/track</div>
+            <button
+              class="add-to-cart-button"
+              @click="handleLicenseAddToCart('premium', 3.99)"
+            >
+              Add to Cart
+            </button>
           </div>
         </div>
 
         <div class="license-option commercial">
           <div class="details">
-            <h4 class="option-title">商业</h4>
+            <h4 class="option-title">Commercial License</h4>
             <p class="option-description">
-              1条音轨下载 · 扩展专业版内容包含 Premium 中的所有内容 ·
-              无限量社交渠道已盈利
+              1 Track Download · Extended Pro Content including all Premium
+              features · Unlimited Monetized Social Channels
             </p>
           </div>
           <div class="price">
-            <div><span class="price-value">CA$5.99</span>/首</div>
-            <button class="add-to-cart-button">添加到购物车</button>
+            <div><span class="price-value">CA$5.99</span>/track</div>
+            <button
+              class="add-to-cart-button"
+              @click="handleLicenseAddToCart('commercial', 5.99)"
+            >
+              Add to Cart
+            </button>
           </div>
         </div>
       </div>
@@ -54,18 +70,67 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps({
-  isVisible: {
-    type: Boolean,
-    required: true,
-  },
-  trackTitle: {
-    type: String,
-    default: "...",
-  },
-});
+import { cartsApi } from "~/api/carts";
+import type { CartItems } from "~/types/cartItems";
+import { useRouter } from "vue-router";
+import { useCartStore } from "~/stores/cart";
+
+const props = defineProps<{
+  isVisible: boolean;
+  trackTitle: string;
+  trackId: number;
+  productType: "track" | "sfx" | "plan";
+}>();
 
 const emit = defineEmits(["close"]);
+const router = useRouter();
+const cartStore = useCartStore();
+
+/**
+ * 处理从许可模态框中添加到购物车
+ * @param licenseOption 授权类型 (e.g., 'standard')
+ * @param price 价格 (用于前端显示反馈，后端仍会查价)
+ */
+const handleLicenseAddToCart = async (licenseOption: string, price: number) => {
+  if (licenseOption !== "standard") {
+    // 弹出英文提示，说明该功能暂未开放
+    alert(
+      `The ${licenseOption} license is currently not available for purchase. Please select the Standard License.`
+    );
+    return;
+  }
+
+  // 1. 构建请求体 (保持不变)
+  const itemToAdd: Partial<CartItems> = {
+    productType: props.productType,
+    productId: props.trackId,
+    licenseOption: licenseOption,
+    quantity: 1,
+  };
+
+  try {
+    const result = await cartsApi.addItemToCart(itemToAdd);
+
+    if (result.code === 200) {
+      // ----------------------------------------------------
+      // 刷新购物车状态
+      // ----------------------------------------------------
+      console.log(`Successfully added to cart. Syncing state...`);
+      await cartStore.loadCart(); // 调用 Store 中的 Action 来刷新数据
+
+      // 提示用户并设置延迟
+      alert(`Track added to cart!`);
+
+      emit("close");
+    } else {
+      alert(`Failed to add to cart: ${result.msg || "Unknown error"}`);
+    }
+  } catch (error) {
+    console.error("Add to cart request failed:", error);
+    // 假设错误是网络或登录问题
+    alert(`Add to cart request failed: ${error}`);
+  }
+};
 </script>
 
 <style scoped>
