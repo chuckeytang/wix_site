@@ -30,7 +30,7 @@ export default defineNuxtPlugin((nuxtApp) => {
   // 创建 Axios 实例 (集成您 http.ts 中的创建逻辑)
   const service: AxiosInstance = axios.create({
     baseURL: baseURL,
-    timeout: 10000, // 请求超时时间
+    timeout: 30000, // 请求超时时间
     headers: {
       "Content-Type": "application/json",
     },

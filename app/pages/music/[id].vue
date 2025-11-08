@@ -195,6 +195,14 @@
       :trackTitle="track?.title"
       @close="showLicenseModal = false"
     />
+
+    <CheckoutModal
+      :isVisible="showCheckoutModal"
+      :clientSecret="checkoutClientSecret"
+      :orderId="checkoutOrderId"
+      :returnPath="checkoutReturnPath"
+      @close="showCheckoutModal = false"
+    />
   </div>
 </template>
 
@@ -210,11 +218,17 @@ import SearchBar from "~/components/SearchBar.vue";
 import MusicPlayerPanel from "~/components/MusicPlayerPanel.vue";
 import LicenseModal from "~/components/LicenseModal.vue";
 import type { CartItems } from "~/types/cartItems";
+import CheckoutModal from "~/components/CheckoutModal.vue";
 
 // 路由信息
 const route = useRoute();
 const trackId = Number(route.params.id);
 const router = useRouter();
+
+const showCheckoutModal = ref(false);
+const checkoutClientSecret = ref<string | null>(null);
+const checkoutOrderId = ref<number | null>(null);
+const checkoutReturnPath = ref<string | null>(null);
 
 // 状态管理
 const track = ref<Tracks | null>(null);
@@ -407,6 +421,8 @@ const handleInstantCheckout = async () => {
     return;
   }
 
+  const returnPath = route.fullPath;
+
   // 1. 构建请求体：仅包含当前商品信息
   const buyItem = {
     productType: "track",
@@ -455,15 +471,11 @@ const handleInstantCheckout = async () => {
     `订单创建成功，即将跳转到 Stripe 支付页面。Client Secret: ${clientSecret}`
   );
 
-  // **A. (推荐) 使用路由跳转到专用支付页面**
-  router.push({
-    path: "/checkout",
-    query: {
-      orderId: newOrder.orderId,
-      clientSecret: clientSecret,
-      pk: publishableKey,
-    },
-  });
+  // 4. 成功后，设置状态并显示模态框
+  checkoutClientSecret.value = clientSecret;
+  checkoutOrderId.value = newOrder.orderId;
+  checkoutReturnPath.value = returnPath;
+  showCheckoutModal.value = true;
 };
 
 onMounted(() => {
