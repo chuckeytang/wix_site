@@ -11,11 +11,8 @@ export default defineNuxtPlugin({
   enforce: "pre",
   async setup(nuxtApp) {
     const config = useRuntimeConfig();
-    const publishableKey = config.public.stripePk as string;
-    const appBaseApi = config.public.appBaseApi as string;
-
-    console.log("publishableKey:", publishableKey);
-    console.error("appBaseApi:", appBaseApi);
+    const publishableKey =
+      "pk_test_51PaKwyRrZLjTtQNHCtY8DJrOo0TYPZ1FFKEFcVTGy4qohNVEu8d8hp4qAHzpAwVpjEXLO9FBK7AblDxRAAUWiJqc006wK3R7gG";
 
     if (!publishableKey) {
       console.error("Stripe Publishable Key 未配置！");
