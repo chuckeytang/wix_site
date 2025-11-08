@@ -14,8 +14,7 @@ export default defineNuxtPlugin({
     const publishableKey = config.public.stripePk as string;
     const appBaseApi = config.public.appBaseApi as string;
 
-    console.error("publishableKey:", publishableKey); // Log 1: 检查密钥是否拿到
-    console.error("appBaseApi:", appBaseApi);
+    console.log("publishableKey:", publishableKey);
 
     if (!publishableKey) {
       console.error("Stripe Publishable Key 未配置！");
