@@ -118,4 +118,14 @@ export const tracksApi = {
       return Promise.reject(error);
     }
   },
+
+  /**
+   * 检查用户是否对指定的音乐曲目拥有下载授权
+   * @param trackId 音乐曲目ID
+   * @returns 包含授权状态的 Promise
+   */
+  checkTrackLicense(trackId: number): Promise<AjaxResult<any>> {
+    // 调用新的后端检查接口
+    return request.get(`/site/tracks/check-license/${trackId}`);
+  },
 };

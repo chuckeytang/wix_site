@@ -7,8 +7,7 @@ export const useAuthStore = defineStore("auth", {
   state: () => ({
     user: null,
     accessToken: null as string | null,
-    // refresh token 可以在后端或前端管理
-    // 但出于安全考虑，通常只将 access token 存储在前端
+    showLoginDialog: false as boolean,
   }),
   getters: {
     isAuthenticated: (state) => !!state.accessToken,
@@ -18,6 +17,12 @@ export const useAuthStore = defineStore("auth", {
       state.accessToken ? `Bearer ${state.accessToken}` : null,
   },
   actions: {
+    openLoginDialog() {
+      this.showLoginDialog = true;
+    },
+    closeLoginDialog() {
+      this.showLoginDialog = false;
+    },
     // 设置 token 和用户信息
     setToken(token: string) {
       this.accessToken = token;
@@ -44,6 +49,7 @@ export const useAuthStore = defineStore("auth", {
       if (process.client) {
         localStorage.removeItem(TOKEN_STORAGE_KEY);
       }
+      this.closeLoginDialog();
     },
   },
 });

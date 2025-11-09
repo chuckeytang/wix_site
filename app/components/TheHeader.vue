@@ -25,7 +25,7 @@
           </button>
         </template>
         <template v-else>
-          <button @click="showLoginDialog = true">
+          <button @click="authStore.openLoginDialog()">
             <img src="/icons/user.svg" alt="User Login" class="user-svg-icon" />
           </button>
         </template>
@@ -33,7 +33,7 @@
     </div>
   </header>
   <Transition name="slide-right">
-    <LoginDialog v-if="showLoginDialog" @close="showLoginDialog = false" />
+    <LoginDialog v-if="showLoginDialog" @close="authStore.closeLoginDialog()" />
   </Transition>
 </template>
 
@@ -48,7 +48,7 @@ const isHidden = ref(false);
 let lastScrollY = 0;
 
 // 控制登录对话框显示的状态
-const showLoginDialog = ref(false);
+const showLoginDialog = computed(() => authStore.showLoginDialog);
 const router = useRouter();
 const authStore = useAuthStore();
 

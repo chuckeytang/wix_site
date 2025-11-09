@@ -129,6 +129,8 @@
 <script setup lang="ts">
 import { ref, defineProps, watch } from "vue";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
+import { useAuthStore } from "~/stores/auth";
+import { cartsApi } from "~/api/carts";
 import { tracksApi } from "~/api";
 import WaveformPlayer from "./WaveformPlayer.vue";
 import type { Tracks } from "~/types/tracks";
@@ -142,9 +144,13 @@ const props = defineProps({
 });
 
 const musicPlayerStore = useMusicPlayerStore();
+const authStore = useAuthStore();
 const progress = ref(0);
 const waveformPlayerRef = ref<InstanceType<typeof WaveformPlayer> | null>(null);
-const route = useRoute();
+const router = useRouter();
+
+// 监听认证状态
+const isAuthenticated = computed(() => authStore.isAuthenticated);
 
 // 使用 computed 属性来同步本地播放状态和全局状态
 const localIsPlaying = computed(() => {
@@ -249,18 +255,63 @@ const handlePause = () => {
 
 // 处理下载逻辑
 const handleDownload = async () => {
-  if (!props.track.audioFileUrl) {
-    console.error("Audio file URL is not available.");
+  const trackId = props.track.trackId;
+  if (!trackId) {
+    console.error("Track ID is not available.");
     return;
   }
 
-  try {
-    const blob = await tracksApi.downloadTrackProxy(props.track.trackId!);
+  // 1. 检查是否登录
+  if (!isAuthenticated.value) {
+    // 未登录：弹出登录对话框
+    authStore.openLoginDialog();
+    return;
+  }
 
+  // 2. 已登录：检查授权 (通过调用后端 API)
+  try {
+    // 💡 注意：前端需要一个新的 API 来检查授权。
+    // 我们假设 tracksApi 中有一个 checkLicense 接口，返回 { hasLicense: boolean }
+    // 如果没有，我们复用 cartsApi 中的一个请求来判断权限。
+
+    // 假设后端有一个接口 `/site/tracks/check-license/{trackId}` 返回权限状态
+    const licenseCheckResponse = await tracksApi.checkTrackLicense(trackId);
+
+    if (licenseCheckResponse.hasLicense) {
+      // 2a. 有授权：执行下载
+      await executeDownload(trackId);
+    } else {
+      // 2b. 无授权：弹出 LicenseModal (这里需要通知 MusicList 或父组件)
+      // ⚠️ MusicCard 无法直接弹出 LicenseModal，需要通过 emit 或全局 store/event bus 通知父组件
+      alert("License not found. Please purchase the track.");
+      // 假设我们在这里重定向到详情页，让用户点击购买
+      router.push(`/music/${trackId}`);
+    }
+  } catch (error: any) {
+    // 如果后端返回 403 Forbidden，也可以捕获并跳转/提示购买
+    if (error.response && error.response.status === 403) {
+      alert("You do not have a license for this track.");
+      router.push(`/music/${trackId}`);
+    } else {
+      console.error("Download check failed:", error);
+      alert("Download verification failed. Please try again.");
+    }
+  }
+};
+
+// 实际下载执行函数 (原 handleDownload 逻辑)
+const executeDownload = async (trackId: number) => {
+  // 获取当前组件的 track 对象
+  const track = props.track;
+
+  try {
+    const blob = await tracksApi.downloadTrackProxy(trackId);
+
+    // 创建临时 URL 并触发下载
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `${props.track.title}.mp3`);
+    link.setAttribute("download", `${track.title}.mp3`);
 
     document.body.appendChild(link);
     link.click();
@@ -271,6 +322,7 @@ const handleDownload = async () => {
     console.log("Download started successfully.");
   } catch (error) {
     console.error("Failed to download the audio file:", error);
+    alert("Failed to start download. Check if you have purchased this item.");
   }
 };
 
