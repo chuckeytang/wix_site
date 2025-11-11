@@ -19,28 +19,35 @@
         <button @click="handleCart">
           <span class="cart-icon">🛒</span>
         </button>
-        <template v-if="isAuthenticated">
-          <button @click="handleLogout">
-            <img src="/icons/logout.svg" alt="Logout" class="user-svg-icon" />
-          </button>
-        </template>
-        <template v-else>
-          <button @click="authStore.openLoginDialog()">
-            <img src="/icons/user.svg" alt="User Login" class="user-svg-icon" />
-          </button>
-        </template>
+        <button @click="authStore.openLoginDialog()">
+          <img 
+            src="/icons/user.svg" 
+            :alt="isAuthenticated ? 'User Menu' : 'User Login'" 
+            class="user-svg-icon" 
+          />
+        </button>
       </div>
     </div>
   </header>
-  <Transition name="slide-right">
-    <LoginDialog v-if="showLoginDialog" @close="authStore.closeLoginDialog()" />
-  </Transition>
+<Transition name="slide-right">
+  <LoginDialog 
+    v-if="showLoginDialog && !isAuthenticated" 
+    @close="authStore.closeLoginDialog()" 
+  />
+  
+  <UserMenuDialog 
+    v-else-if="showLoginDialog && isAuthenticated" 
+    @close="authStore.closeLoginDialog()" 
+    @logout="handleLogout" 
+  />
+</Transition>
 </template>
 
 <script setup>
 import { NuxtLink } from "#components";
 import { ref, onMounted, onUnmounted, Transition } from "vue";
 import LoginDialog from "./LoginDialog.vue";
+import UserMenuDialog from "./UserMenuDialog.vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "~/stores/auth";
 
