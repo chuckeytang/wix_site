@@ -41,7 +41,7 @@
   /* 整个页面的深色背景和白色文字 (参考暗色系图片) */
   .cart-page {
     /* 假设背景色是深色 (如 #1a1a1a 或类似) */
-    background-color: #1a1a1a; 
+    background-color: #12121e; 
     color: #ffffff;
     min-height: calc(100vh - var(--header-height) - var(--footer-height, 0px)); /* 确保至少占满屏幕高度 */
     display: flex;
@@ -60,7 +60,7 @@
   /* 购物车图标样式 */
   .cart-icon-wrapper {
     margin-bottom: 20px;
-    color: #ff9900; /* 使用暗色系图片中的橙色作为点缀色 */
+    color: #ff8c62; /* 使用暗色系图片中的橙色作为点缀色 */
   }
   
   .cart-icon {
@@ -86,7 +86,7 @@
   /* 按钮样式 (参考暗色系图片的下载按钮，使用橙色) */
   .browse-button {
     display: inline-block;
-    background-color: #ff9900; /* 主色调橙色 */
+    background-color: #ff8c62; /* 主色调橙色 */
     color: #1a1a1a; /* 按钮内部的深色文字 */
     text-decoration: none;
     font-weight: bold;
@@ -97,6 +97,6 @@
   }
   
   .browse-button:hover {
-    background-color: #e68a00; /* 鼠标悬停时稍微变深 */
+    background-color: #ff8c62cc; /* 鼠标悬停时稍微变深 */
   }
   </style>

@@ -212,7 +212,7 @@ const handleCheckout = async () => {
 /* 结算按钮 */
 .checkout-button {
   width: 100%;
-  background-color: #ff9900;
+  background-color: #ff8c62;
   color: #1a1a1a;
   font-weight: bold;
   padding: 15px 0;
@@ -225,7 +225,7 @@ const handleCheckout = async () => {
 }
 
 .checkout-button:hover:not(:disabled) {
-  background-color: #e68a00;
+  background-color: #ff8c62;
 }
 
 .checkout-button:disabled {

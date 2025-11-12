@@ -27,7 +27,7 @@ onMounted(async () => {
 <style scoped>
 /* 统一的页面背景和 Header 间距 */
 .cart-page-wrapper {
-  background-color: #1a1a1a;
+  background-color: #12121e;
   min-height: 100vh;
   padding-top: 80px; /* 留出 header 空间 */
 }

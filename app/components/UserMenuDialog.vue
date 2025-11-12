@@ -10,31 +10,31 @@
         <ul class="menu-list">
           <li @click="close">
             <NuxtLink to="/account/plan" class="menu-item">
-              您的会员计划
+              Membership program
               <span class="chevron">></span>
             </NuxtLink>
           </li>
           <li @click="close">
             <NuxtLink to="/account/orders" class="menu-item">
-              订单
+              Order
               <span class="chevron">></span>
             </NuxtLink>
           </li>
           <li @click="close">
             <NuxtLink to="/account/contact" class="menu-item">
-              联系信息
+              contact information
               <span class="chevron">></span>
             </NuxtLink>
           </li>
           <li @click="close">
             <NuxtLink to="/account/settings" class="menu-item">
-              设置
+              setting
               <span class="chevron">></span>
             </NuxtLink>
           </li>
           <li @click="close">
             <NuxtLink to="/account/history" class="menu-item">
-              活动历史记录
+              Activity History
               <span class="chevron">></span>
             </NuxtLink>
           </li>
@@ -42,11 +42,9 @@
   
         <div class="logout-wrapper">
           <button class="logout-button" @click="handleLogout">
-            登出
+            logout
           </button>
         </div>
-  
-        <button class="chat-button">💬</button>
         
       </div>
     </div>
@@ -54,18 +52,18 @@
   
   <script setup>
   import { computed } from 'vue';
-  import { useAuthStore } from '~/stores/auth'; // 假设您的 Pinia Store 路径
+  import { useAuthStore } from '~/stores/auth';
   
   const emit = defineEmits(['close', 'logout']);
   const authStore = useAuthStore();
   
 
   const userName = computed(() => {
-    return authStore.user?.nickname || authStore.user?.name || '用户'; 
+    return authStore.user?.nickname || authStore.user?.name || 'user'; 
   });
   
   const close = () => {
-    emit('close'); // 通知父组件关闭侧边栏
+    emit('close');
   };
   
   const handleLogout = () => {
@@ -76,7 +74,7 @@
   <style scoped>
 
   :root {
-    --sidebar-width: 450px;
+    --sidebar-width: 660px;
     --primary-color: #ff8c62; /* 主题橙色 */
     --secondary-color: #e96d47; /* 按钮橙色 */
     --text-color: #ffffff; /* 白色文字 */
@@ -122,13 +120,9 @@
     z-index: 10;
   }
   
-  /* ---------------------------------------------------- */
-  /* 用户菜单特有样式 */
-  /* ---------------------------------------------------- */
-  
   .user-info-header {
     padding: 0 0 30px; 
-    margin-bottom: 20px; /* 姓名下方与菜单的间距 */
+    margin-bottom: 20px;
     text-align: left;
   }
   
@@ -154,15 +148,16 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 18px 0; /* 增加上下间距 */
+    padding: 18px 0;
+    margin: 0 18px;
     text-decoration: none;
     color: var(--text-color);
     font-size: 1.1em;
     font-weight: 400;
-    border-top: 1px solid var(--border-color); /* 顶部线条 */
+    border-top: 1px solid var(--border-color);
     transition: color 0.2s;
+    width: 100%;
   }
-  /* 列表最后一个元素取消底部边框，但这里用 border-top 更好处理 */
   
   .menu-item:hover {
     color: var(--primary-color);
@@ -172,10 +167,8 @@
     font-weight: bold;
     color: var(--light-gray);
   }
-  
-  /* 登出按钮样式 */
+
   .logout-wrapper {
-    /* 调整位置，使其靠近底部但不是绝对底部 */
     margin-top: 60px; 
     padding: 20px 0;
     text-align: center;
@@ -184,7 +177,7 @@
   .logout-button {
     width: 100%;
     padding: 14px;
-    background-color: rgba(255, 255, 255, 0.1); /* 浅灰色背景 */
+    background-color: rgba(255, 255, 255, 0.1);
     border: none;
     border-radius: 30px; 
     color: var(--text-color);
@@ -198,7 +191,6 @@
     background-color: rgba(255, 255, 255, 0.2);
   }
   
-  /* 浮动聊天按钮 */
   .chat-button {
     position: absolute;
     bottom: 20px;

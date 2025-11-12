@@ -163,7 +163,7 @@ const handleRecommendationAddToCart = (track) => {
 
 .info-icon {
   font-size: 0.7em;
-  color: #ff9900;
+  color: #ff8c62;
   margin-left: 10px;
   cursor: pointer;
 }
@@ -205,8 +205,8 @@ const handleRecommendationAddToCart = (track) => {
 
 .add-btn {
   background-color: transparent;
-  border: 1px solid #ff9900;
-  color: #ff9900;
+  border: 1px solid #ff8c62;
+  color: #ff8c62;
   padding: 6px 15px;
   border-radius: 4px;
   cursor: pointer;
@@ -215,7 +215,7 @@ const handleRecommendationAddToCart = (track) => {
 }
 
 .add-btn:hover {
-  background-color: #ff9900;
+  background-color: #ff8c62;
   color: #1a1a1a;
 }
 </style>
