@@ -1,6 +1,7 @@
 import request from "./http";
 import type { AjaxResult } from "~/types/ajax";
-import type { LoginData, RegisterData } from "~/types/auth"; // 假设你更新了这些类型，特别是 RegisterData 需要包含 nickname
+import type { LoginData, RegisterData } from "~/types/auth";
+import type { Users } from "~/types/users";
 
 /**
  * 认证和用户相关的 API 接口
@@ -63,5 +64,13 @@ export const authApi = {
 
     // 直接重定向用户浏览器到 Google 授权页面
     window.location.href = `${authUrl}?${params.toString()}`;
+  },
+
+  /**
+   * 获取当前登录用户的详细信息
+   * @returns 包含用户详细信息的 Promise
+   */
+  getInfo(): Promise<AjaxResult<Users>> {
+    return request.get("/site/auth/getInfo");
   },
 };

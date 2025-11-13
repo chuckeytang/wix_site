@@ -20,34 +20,20 @@
           <span class="cart-icon">🛒</span>
         </button>
         <button @click="authStore.openLoginDialog()">
-          <img 
-            src="/icons/user.svg" 
-            :alt="isAuthenticated ? 'User Menu' : 'User Login'" 
-            class="user-svg-icon" 
+          <img
+            src="/icons/user.svg"
+            :alt="isAuthenticated ? 'User Menu' : 'User Login'"
+            class="user-svg-icon"
           />
         </button>
       </div>
     </div>
   </header>
-<Transition name="slide-right">
-  <LoginDialog 
-    v-if="showLoginDialog && !isAuthenticated" 
-    @close="authStore.closeLoginDialog()" 
-  />
-  
-  <UserMenuDialog 
-    v-else-if="showLoginDialog && isAuthenticated" 
-    @close="authStore.closeLoginDialog()" 
-    @logout="handleLogout" 
-  />
-</Transition>
 </template>
 
 <script setup>
 import { NuxtLink } from "#components";
 import { ref, onMounted, onUnmounted, Transition } from "vue";
-import LoginDialog from "./LoginDialog.vue";
-import UserMenuDialog from "./UserMenuDialog.vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "~/stores/auth";
 
@@ -55,7 +41,6 @@ const isHidden = ref(false);
 let lastScrollY = 0;
 
 // 控制登录对话框显示的状态
-const showLoginDialog = computed(() => authStore.showLoginDialog);
 const router = useRouter();
 const authStore = useAuthStore();
 
@@ -98,12 +83,6 @@ onUnmounted(() => {
 const handleCart = () => {
   console.log("/cart");
   router.push("/cart");
-};
-
-const handleLogout = () => {
-  authStore.logout();
-  // 登出后刷新当前页面，或跳转到首页
-  router.go(0); // 刷新页面
 };
 </script>
 

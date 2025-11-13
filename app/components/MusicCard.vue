@@ -268,34 +268,48 @@ const handleDownload = async () => {
     return;
   }
 
-  // 2. 已登录：检查授权 (通过调用后端 API)
+  // 2. 检查授权 (通过调用后端 API)
   try {
-    // 💡 注意：前端需要一个新的 API 来检查授权。
-    // 我们假设 tracksApi 中有一个 checkLicense 接口，返回 { hasLicense: boolean }
-    // 如果没有，我们复用 cartsApi 中的一个请求来判断权限。
-
-    // 假设后端有一个接口 `/site/tracks/check-license/{trackId}` 返回权限状态
+    // 接口 `/site/tracks/check-license/{trackId}` 返回权限状态
     const licenseCheckResponse = await tracksApi.checkTrackLicense(trackId);
+    // 检查响应数据中是否有授权标志
+    const hasLicense = licenseCheckResponse.data?.hasLicense ?? false;
 
-    if (licenseCheckResponse.hasLicense) {
+    if (hasLicense) {
       // 2a. 有授权：执行下载
       await executeDownload(trackId);
     } else {
-      // 2b. 无授权：弹出 LicenseModal (这里需要通知 MusicList 或父组件)
-      // ⚠️ MusicCard 无法直接弹出 LicenseModal，需要通过 emit 或全局 store/event bus 通知父组件
-      alert("License not found. Please purchase the track.");
-      // 假设我们在这里重定向到详情页，让用户点击购买
-      router.push(`/music/${trackId}`);
+      // 2b. 无授权：弹出 LicenseModal (通过 store 通知全局组件)
+      authStore.openLicenseModal(
+        trackId,
+        props.track.title, // 假设 track 对象有 title 字段
+        "track"
+      );
+      console.log(`User needs license for track ID: ${trackId}`);
     }
   } catch (error: any) {
-    // 如果后端返回 403 Forbidden，也可以捕获并跳转/提示购买
-    if (error.response && error.response.status === 403) {
-      alert("You do not have a license for this track.");
-      router.push(`/music/${trackId}`);
-    } else {
-      console.error("Download check failed:", error);
-      alert("Download verification failed. Please try again.");
+    // 拦截器没有处理的错误 (如网络错误，或 403 授权不足)
+    console.error("Download check failed:", error);
+
+    // 检查是否为授权不足（已登录，但没有购买权限）
+    const isLicenseMissing =
+      (error as any).responseCode === 403 || error.response?.status === 403;
+
+    if (isLicenseMissing) {
+      // 已登录但无权限，弹出 LicenseModal
+      authStore.openLicenseModal(
+        trackId,
+        props.track.title, // 假设 track 对象有 title 字段
+        "track"
+      );
+      console.log(
+        "User is logged in but missing license. Opening license modal."
+      );
+      return; // 结束流程
     }
+
+    // 提示其他一般性错误
+    console.log("Download verification failed. Please try again.");
   }
 };
 

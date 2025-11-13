@@ -3,7 +3,6 @@
     <section class="cart-list-section">
       <h1 class="cart-title">
         In your shopping cart.({{ cartStore.totalItems }})
-        <span class="info-icon">ⓘ</span>
       </h1>
 
       <div class="item-list">
@@ -14,6 +13,7 @@
         />
       </div>
 
+      <!-- TODO: 未来功能
       <h2 class="recommend-title">Recommended for You</h2>
       <div v-if="loadingRecommendations" class="loading-message">
         Loading recommendations...
@@ -30,6 +30,7 @@
           </button>
         </div>
       </div>
+      -->
     </section>
 
     <aside class="cart-summary-section">

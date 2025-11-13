@@ -8,6 +8,10 @@ export const useAuthStore = defineStore("auth", {
     user: null,
     accessToken: null as string | null,
     showLoginDialog: false as boolean,
+    showLicenseModal: false as boolean, // 控制 License Modal 是否显示
+    trackIdForLicense: null as number | null, // 存储需要授权的 trackId
+    trackTitleForLicense: null as string | null, // 存储需要授权的 trackTitle
+    productTypeForLicense: null as "track" | "sfx" | "plan" | null,
   }),
   getters: {
     isAuthenticated: (state) => !!state.accessToken,
@@ -22,6 +26,20 @@ export const useAuthStore = defineStore("auth", {
     },
     closeLoginDialog() {
       this.showLoginDialog = false;
+    },
+    openLicenseModal(
+      trackId: number,
+      trackTitle: string,
+      productType: "track" | "sfx" | "plan"
+    ) {
+      this.trackIdForLicense = trackId;
+      this.trackTitleForLicense = trackTitle;
+      this.productTypeForLicense = productType;
+      this.showLicenseModal = true;
+    },
+    closeLicenseModal() {
+      this.showLicenseModal = false;
+      this.trackIdForLicense = null;
     },
     // 设置 token 和用户信息
     setToken(token: string) {

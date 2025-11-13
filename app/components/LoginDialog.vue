@@ -316,14 +316,32 @@ watch(isLoginMode, (newVal) => {
   height: 100%;
   padding: 40px;
   border-radius: 0;
-  background-color: rgba(13, 13, 26, 1);
-  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+  background-color: transparent;
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: -5px 0 30px rgba(0, 0, 0, 0.3);
   position: relative;
   text-align: center;
   box-sizing: border-box;
   transform: translateX(0);
   transition: transform 0.3s ease-out;
   overflow-y: auto;
+}
+
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  z-index: 2000;
+  backdrop-filter: blur(5px);
+  transition: opacity 0.3s ease;
 }
 
 .close-button {

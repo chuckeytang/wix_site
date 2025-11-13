@@ -8,21 +8,27 @@ import type {
 } from "axios";
 import { useAuthStore } from "~/stores/auth";
 
+interface Toast {
+  error(message: string): void;
+}
+
 // 声明 NuxtApp 接口，以便 TypeScript 知道 $http 属性的存在
 declare module "#app" {
   interface NuxtApp {
+    $toast: Toast;
     $http: AxiosInstance;
   }
 }
-
 // 声明 ComponentCustomProperties 接口，以便在 Options API 组件中使用 this.$http
 declare module "@vue/runtime-core" {
   interface ComponentCustomProperties {
-    $http: AxiosInstance;
+    $toast: Toast;
   }
 }
 
 export default defineNuxtPlugin((nuxtApp) => {
+  type NuxtAppWithToast = typeof nuxtApp & { $toast?: Toast };
+  const app: NuxtAppWithToast = nuxtApp;
   // 在 Nuxt 插件中调用 useRuntimeConfig 是安全的
   const config = useRuntimeConfig();
   const baseURL = config.public.appBaseApi; // 使用运行时配置中的基础 URL
@@ -70,16 +76,67 @@ export default defineNuxtPlugin((nuxtApp) => {
       const res = response.data; // 获取响应的 data 部分
       // 进行应用层错误码检查 (例如您的 res.code !== 200)
       if (res && typeof res === "object" && "code" in res && res.code !== 200) {
+        // 额外的认证/权限检查 (针对非 HTTP 状态码的后端应用层错误码)
+        // 假设后端在应用层返回 401 或类似错误码表示认证问题
+        const authStore = useAuthStore();
+        if (res.code === 401 || res.msg.includes("认证失败")) {
+          // 统一处理认证失败，防止业务代码继续执行
+          console.error("API 响应错误: 认证失败，全局处理中...");
+          // 提示用户
+          // 假设我们有一个全局的 $toast 或 $alert 服务
+          if (app.$toast) {
+            app.$toast.error("登录已过期，请重新登录。");
+          } else {
+            alert("登录已过期，请重新登录。");
+          }
+
+          authStore.logout();
+          authStore.openLoginDialog();
+
+          // 阻止 Promise 链继续执行
+          return Promise.reject(
+            new Error(res.msg || "Authentication required.")
+          );
+        }
+
         console.error("API 响应错误:", res.msg);
-        return Promise.reject(new Error(res.msg || "Error"));
+        const customError = new Error(res.msg || "Error");
+        (customError as any).responseCode = res.code;
+        console.log(customError);
+
+        return Promise.reject(customError);
       } else {
-        // 这里返回完整的 response 对象，而不是 response.data
-        // 数据的提取将由 http.ts 中的代理方法来处理
         return response;
       }
     },
     (error: any) => {
       console.error("响应拦截器错误:", error.message);
+
+      const authStore = useAuthStore();
+      const status = error.response?.status;
+
+      // HTTP 状态码 401 (Unauthorized) 统一处理
+      if (status === 401) {
+        // 确认是 401 错误，进行全局处理
+        console.error("HTTP 401 Unauthorized，全局处理中...");
+
+        // 提示用户
+        // 假设我们有一个全局的 $toast 或 $alert 服务
+        if (app.$toast) {
+          app.$toast.error("登录已过期，请重新登录。");
+        } else {
+          alert("登录已过期，请重新登录。");
+        }
+
+        authStore.logout();
+        authStore.openLoginDialog();
+
+        // 阻止 Promise 链继续执行
+        // 返回一个被拒绝的 Promise，这样在 MusicCard.vue 中就不会进入 .catch 块
+        return Promise.reject(new Error("Authentication required."));
+      }
+
+      // 对于其他错误 (如 403, 500, 网络错误)，原样抛出，让业务代码自行处理
       return Promise.reject(error);
     }
   );

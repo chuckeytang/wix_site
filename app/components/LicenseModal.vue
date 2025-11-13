@@ -27,7 +27,7 @@
           </div>
         </div>
 
-        <div class="license-option premium">
+        <div class="license-option premium disabled-option">
           <div class="details">
             <h4 class="option-title">Premium License</h4>
             <p class="option-description small-font">
@@ -37,16 +37,13 @@
           </div>
           <div class="price">
             <div><span class="price-value">CA$3.99</span>/track</div>
-            <button
-              class="add-to-cart-button"
-              @click="handleLicenseAddToCart('premium', 3.99)"
-            >
-              Add to Cart
+            <button class="add-to-cart-button disabled" disabled @click.stop>
+              Unavailable
             </button>
           </div>
         </div>
 
-        <div class="license-option commercial">
+        <div class="license-option commercial disabled-option">
           <div class="details">
             <h4 class="option-title">Commercial License</h4>
             <p class="option-description">
@@ -56,11 +53,8 @@
           </div>
           <div class="price">
             <div><span class="price-value">CA$5.99</span>/track</div>
-            <button
-              class="add-to-cart-button"
-              @click="handleLicenseAddToCart('commercial', 5.99)"
-            >
-              Add to Cart
+            <button class="add-to-cart-button disabled" disabled @click.stop>
+              Unavailable
             </button>
           </div>
         </div>
@@ -74,6 +68,7 @@ import { cartsApi } from "~/api/carts";
 import type { CartItems } from "~/types/cartItems";
 import { useRouter } from "vue-router";
 import { useCartStore } from "~/stores/cart";
+import { useAuthStore } from "~/stores/auth";
 
 const props = defineProps<{
   isVisible: boolean;
@@ -85,6 +80,7 @@ const props = defineProps<{
 const emit = defineEmits(["close"]);
 const router = useRouter();
 const cartStore = useCartStore();
+const authStore = useAuthStore();
 
 /**
  * 处理从许可模态框中添加到购物车
@@ -92,15 +88,21 @@ const cartStore = useCartStore();
  * @param price 价格 (用于前端显示反馈，后端仍会查价)
  */
 const handleLicenseAddToCart = async (licenseOption: string, price: number) => {
+  // 1. 检查是否选择了 Standard License (确保其他选项被禁用)
   if (licenseOption !== "standard") {
-    // 弹出英文提示，说明该功能暂未开放
-    alert(
-      `The ${licenseOption} license is currently not available for purchase. Please select the Standard License.`
-    );
+    // 因为按钮已被禁用，理论上不会执行到这里，但作为安全检查
+    console.warn(`License option ${licenseOption} is temporarily disabled.`);
     return;
   }
 
-  // 1. 构建请求体 (保持不变)
+  // 2. 再次检查登录状态 (如果用户在登录过期后直接打开此模态框)
+  if (!authStore.isAuthenticated) {
+    authStore.closeLicenseModal(); // 关闭当前模态框
+    authStore.openLoginDialog(); // 弹出登录框
+    return;
+  }
+
+  // 3. 构建请求体 (保持不变)
   const itemToAdd: Partial<CartItems> = {
     productType: props.productType,
     productId: props.trackId,
@@ -112,9 +114,7 @@ const handleLicenseAddToCart = async (licenseOption: string, price: number) => {
     const result = await cartsApi.addItemToCart(itemToAdd);
 
     if (result.code === 200) {
-      // ----------------------------------------------------
       // 刷新购物车状态
-      // ----------------------------------------------------
       console.log(`Successfully added to cart. Syncing state...`);
       await cartStore.loadCart(); // 调用 Store 中的 Action 来刷新数据
 
@@ -146,32 +146,32 @@ const handleLicenseAddToCart = async (licenseOption: string, price: number) => {
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  backdrop-filter: blur(8px);
 }
 
 /* 模态框主体内容 */
 .modal-content {
-  background-color: #212121;
-  color: #fff;
-  border-radius: 12px;
   width: 90%;
   max-width: 600px;
-  max-height: 90vh;
-  overflow-y: auto;
+  background-color: #1a1a1a;
+  border-radius: 10px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
+  padding: 30px;
+  color: #fff;
+  position: relative;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
   border-bottom: 1px solid #333;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
 }
 
 .modal-title {
-  font-size: 1.5em;
+  font-size: 1.8em;
   font-weight: bold;
 }
 
@@ -259,5 +259,24 @@ const handleLicenseAddToCart = async (licenseOption: string, price: number) => {
 
 .add-to-cart-button:hover {
   background-color: #e67a54;
+}
+
+.disabled-option {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #1a1a1a;
+}
+.disabled-option:hover {
+  border-color: #333; /* 禁用 hover 效果 */
+  background-color: #1a1a1a;
+}
+.add-to-cart-button.disabled {
+  background-color: #444; /* 置灰按钮背景 */
+  color: #aaa;
+  cursor: not-allowed;
+  pointer-events: all; /* 保持指针事件，但通过 disabled 属性控制行为 */
+}
+.add-to-cart-button.disabled:hover {
+  background-color: #444; /* 禁用 hover 变色 */
 }
 </style>

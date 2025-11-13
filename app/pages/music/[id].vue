@@ -196,13 +196,6 @@
     </div>
 
     <MusicPlayerPanel />
-    <LicenseModal
-      :isVisible="showLicenseModal"
-      :trackTitle="track?.title || 'Track'"
-      :trackId="trackId"
-      :productType="'track'"
-      @close="showLicenseModal = false"
-    />
 
     <CheckoutModal
       :isVisible="showCheckoutModal"
@@ -224,14 +217,14 @@ import { useMusicPlayerStore } from "~/stores/musicPlayer";
 import TheHeader from "~/components/TheHeader.vue";
 import SearchBar from "~/components/SearchBar.vue";
 import MusicPlayerPanel from "~/components/MusicPlayerPanel.vue";
-import LicenseModal from "~/components/LicenseModal.vue";
-import type { CartItems } from "~/types/cartItems";
+import { useAuthStore } from "~/stores/auth";
 import CheckoutModal from "~/components/CheckoutModal.vue";
 
 // 路由信息
 const route = useRoute();
 const trackId = Number(route.params.id);
 const router = useRouter();
+const authStore = useAuthStore();
 
 const showCheckoutModal = ref(false);
 const checkoutClientSecret = ref<string | null>(null);
@@ -244,8 +237,6 @@ const loading = ref(true);
 const error = ref(false);
 const config = useRuntimeConfig();
 const publishableKey = config.public.stripePk as string;
-
-const showLicenseModal = ref(false);
 
 const musicPlayerStore = useMusicPlayerStore();
 const localIsPlaying = computed(() => {
@@ -265,7 +256,14 @@ const localIsPlaying = computed(() => {
 
 const handleShowLicenseModal = (action: "add_to_cart" | "view_terms") => {
   console.log("handleShowLicenseModal");
-  showLicenseModal.value = true;
+  // 传递完整的授权信息
+  if (track.value) {
+    authStore.openLicenseModal(
+      track.value.trackId!,
+      track.value.title,
+      "track"
+    );
+  }
 };
 
 const handleSearch = (query: string) => {

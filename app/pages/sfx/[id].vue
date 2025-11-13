@@ -132,14 +132,6 @@
 
     <MusicPlayerPanel />
 
-    <LicenseModal
-      :isVisible="showLicenseModal"
-      :trackTitle="sfx?.title || 'SFX'"
-      :trackId="sfxId"
-      :productType="'sfx'"
-      @close="showLicenseModal = false"
-    />
-
     <CheckoutModal
       :isVisible="showCheckoutModal"
       :clientSecret="checkoutClientSecret"
@@ -161,18 +153,18 @@ import { useMusicPlayerStore } from "~/stores/musicPlayer";
 import TheHeader from "~/components/TheHeader.vue";
 import SearchBar from "~/components/SearchBar.vue";
 import MusicPlayerPanel from "~/components/MusicPlayerPanel.vue";
-import LicenseModal from "~/components/LicenseModal.vue";
+import { useAuthStore } from "~/stores/auth";
 import CheckoutModal from "~/components/CheckoutModal.vue";
 
 const route = useRoute();
 const sfxId = Number(route.params.id);
 const router = useRouter();
+const authStore = useAuthStore();
 
 const sfx = ref<Sfx | null>(null);
 const loading = ref(true);
 const error = ref(false);
 
-const showLicenseModal = ref(false);
 const showCheckoutModal = ref(false);
 const checkoutClientSecret = ref<string | null>(null);
 const checkoutOrderId = ref<number | null>(null);
@@ -191,7 +183,9 @@ const localIsPlaying = computed(() => {
 });
 
 const handleShowLicenseModal = () => {
-  showLicenseModal.value = true;
+  if (sfx.value) {
+    authStore.openLicenseModal(sfx.value.sfxId!, sfx.value.title, "sfx");
+  }
 };
 
 const handleSearch = (query: string) => {
