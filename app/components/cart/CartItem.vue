@@ -57,6 +57,8 @@ import { defineProps, computed } from "vue";
 import { useCartStore } from "~/stores/cart";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
 import type { CartItems } from "~/types/cartItems";
+import type { Tracks } from "~/types/tracks";
+import type { Sfx } from "~/types/sfx";
 
 // ----------------------------------------------------
 // Props：接收单个购物车商品数据
@@ -66,6 +68,38 @@ const props = defineProps({
     type: Object as () => CartItems, // 使用 Pinia Store 中定义的 CartItem 接口
     required: true,
   },
+});
+
+const localIsPlaying = computed(() => {
+  // 核心修复：Store 中只有一个 currentTrack 属性，无需 || currentSfx
+  const currentMedia = musicPlayerStore.currentTrack; 
+
+  // 1. 检查全局播放器是否正在播放
+  if (!musicPlayerStore.isPlaying || !currentMedia) {
+    return false;
+  }
+
+  // 2. 检查播放的媒体类型是否与当前项目匹配
+  const isCorrectType = musicPlayerStore.mediaType === props.item.productType;
+  if (!isCorrectType) {
+    return false;
+  }
+
+  // 3. 检查播放的媒体ID是否与当前项目的ID匹配
+  let currentMediaId: number | undefined;
+
+  if (musicPlayerStore.mediaType === 'track') {
+    // 强制转换为 Tracks 类型以访问 trackId
+    currentMediaId = (currentMedia as Tracks).trackId;
+  } else if (musicPlayerStore.mediaType === 'sfx') {
+    // 强制转换为 Sfx 类型以访问 sfxId
+    currentMediaId = (currentMedia as Sfx).sfxId;
+  }
+  
+  const itemProductId = props.item.productId;
+
+  // 这里的比较是安全的，因为我们已经通过 mediaType 确定了 ID 的来源。
+  return currentMediaId === itemProductId;
 });
 
 const cartStore = useCartStore();
@@ -95,10 +129,32 @@ const displayPrice = computed(() => {
 
 // 处理播放按钮点击 (假设：点击后在全局播放器中播放此曲目)
 const handlePlayClick = (item: CartItems) => {
-  const product = item.track || item.sfx;
-  if (product) {
-    console.log(`Playing: ${productTitle.value}`);
-    // 💡 实际中应根据 item.productType 调用 setTrack 或 setSfx
+  // 1. 如果当前项目正在播放，则切换为暂停
+  if (localIsPlaying.value) {
+    musicPlayerStore.togglePlayPause();
+    return;
+  }
+
+  // 2. 否则，检查是否是当前暂停的媒体，如果是则恢复播放
+  // 优化判断逻辑：使用 currentPlayingId 检查是否是当前媒体
+  if (
+    !musicPlayerStore.isPlaying &&
+    musicPlayerStore.mediaType === item.productType &&
+    musicPlayerStore.currentPlayingId === item.productId
+  ) {
+    musicPlayerStore.togglePlayPause();
+    return;
+  }
+  
+  // 3. 否则，设置新曲目并播放
+  if (item.productType === 'track' && item.track) {
+    // 直接调用 setTrack，Store 会处理类型
+    musicPlayerStore.setTrack(item.track as Tracks); 
+  } else if (item.productType === 'sfx' && item.sfx) {
+    // 直接调用 setSfx
+    musicPlayerStore.setSfx(item.sfx as Sfx);
+  } else {
+    console.error("无法播放此项目：产品类型或数据缺失", item);
   }
 };
 
