@@ -70,6 +70,8 @@ const props = defineProps({
   },
 });
 
+console.log("购物车项目数据:", props.item);
+
 const localIsPlaying = computed(() => {
   // 核心修复：Store 中只有一个 currentTrack 属性，无需 || currentSfx
   const currentMedia = musicPlayerStore.currentTrack; 
