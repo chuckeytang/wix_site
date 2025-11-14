@@ -151,6 +151,7 @@ const handlePlayClick = (item: CartItems) => {
   // 3. 否则，设置新曲目并播放
   if (item.productType === 'track' && item.track) {
     // 直接调用 setTrack，Store 会处理类型
+    console.log("CartItem: 正在调用 musicPlayerStore.setTrack，传入的 track 数据：", item.track);
     musicPlayerStore.setTrack(item.track as Tracks); 
   } else if (item.productType === 'sfx' && item.sfx) {
     // 直接调用 setSfx
