@@ -8,15 +8,8 @@
         </p>
 
         <p class="detail-text">
-          Download will start automatically in 2 seconds.
-        </p>
-        <p class="detail-text">
           Redirecting to track page in {{ countdown }}s...
         </p>
-
-        <div v-if="downloading" class="loading-indicator">
-          <span class="spinner"></span> Downloading {{ trackTitle }}...
-        </div>
       </template>
 
       <template
