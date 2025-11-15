@@ -1,21 +1,58 @@
 <template>
   <div class="cart-item-row">
     <div class="item-details">
-      <button class="play-icon-btn" @click="handlePlayClick(item)">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+      <button
+          class="play-icon-btn"
+          @click="handlePlayClick"
+          :disabled="isLoadingDetails" 
         >
-          <polygon points="5 3 19 12 5 21 5 3"></polygon>
-        </svg>
-      </button>
+          <svg
+            v-if="isLoadingDetails"
+            class="spinner"
+            width="24"
+            height="24"
+            viewBox="0 0 50 50"
+          >
+            <circle
+              cx="25"
+              cy="25"
+              r="20"
+              fill="none"
+              stroke-width="5"
+            ></circle>
+          </svg>
+
+          <svg
+            v-else-if="localIsPlaying"
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="6" y="4" width="4" height="16"></rect>
+            <rect x="14" y="4" width="4" height="16"></rect>
+          </svg>
+
+          <svg
+            v-else
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+        </button>
 
       <span class="track-name">{{ productTitle }}</span>
     </div>
@@ -53,9 +90,10 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, computed } from "vue";
+import { defineProps, computed, ref } from "vue";
 import { useCartStore } from "~/stores/cart";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
+import { tracksApi, sfxApi } from "~/api";
 import type { CartItems } from "~/types/cartItems";
 import type { Tracks } from "~/types/tracks";
 import type { Sfx } from "~/types/sfx";
@@ -106,6 +144,7 @@ const localIsPlaying = computed(() => {
 
 const cartStore = useCartStore();
 const musicPlayerStore = useMusicPlayerStore(); // 假设播放器Store
+const isLoadingDetails = ref(false);
 
 /**
  * 获取曲目或音效的标题
@@ -130,34 +169,42 @@ const displayPrice = computed(() => {
 // ----------------------------------------------------
 
 // 处理播放按钮点击 (假设：点击后在全局播放器中播放此曲目)
-const handlePlayClick = (item: CartItems) => {
-  // 1. 如果当前项目正在播放，则切换为暂停
+// 处理播放按钮点击
+const handlePlayClick = async () => {
+  // 1. 如果当前项目正在播放，则切换为暂停 (这部分逻辑保留)
   if (localIsPlaying.value) {
     musicPlayerStore.togglePlayPause();
     return;
   }
 
-  // 2. 否则，检查是否是当前暂停的媒体，如果是则恢复播放
-  // 优化判断逻辑：使用 currentPlayingId 检查是否是当前媒体
-  if (
-    !musicPlayerStore.isPlaying &&
-    musicPlayerStore.mediaType === item.productType &&
-    musicPlayerStore.currentPlayingId === item.productId
-  ) {
-    musicPlayerStore.togglePlayPause();
-    return;
-  }
-  
-  // 3. 否则，设置新曲目并播放
-  if (item.productType === 'track' && item.track) {
-    // 直接调用 setTrack，Store 会处理类型
-    console.log("CartItem: 正在调用 musicPlayerStore.setTrack，传入的 track 数据：", item.track);
-    musicPlayerStore.setTrack(item.track as Tracks); 
-  } else if (item.productType === 'sfx' && item.sfx) {
-    // 直接调用 setSfx
-    musicPlayerStore.setSfx(item.sfx as Sfx);
-  } else {
-    console.error("无法播放此项目：产品类型或数据缺失", item);
+  // 2. 否则，开始获取数据并播放
+  isLoadingDetails.value = true;
+  try {
+    const { productType, productId } = props.item;
+
+    if (productType === "track") {
+      // 2a. 获取【完整】音乐详情
+      const response = await tracksApi.getTrackDetail(productId);
+      if (response.data) {
+        musicPlayerStore.setTrack(response.data); // 调用全局播放
+      } else {
+        throw new Error("Track data not found");
+      }
+    } else if (productType === "sfx") {
+      // 2b. 获取【完整】音效详情
+      // (假设你有一个 sfxApi.getSfxDetail 接口)
+      const response = await sfxApi.getSfxDetail(productId); 
+      if (response.data) {
+        musicPlayerStore.setSfx(response.data); // 调用全局播放
+      } else {
+        throw new Error("SFX data not found");
+      }
+    }
+  } catch (error) {
+    console.error("无法播放此项目:", error);
+  } finally {
+    // 3. 无论成功与否，结束加载状态
+    isLoadingDetails.value = false;
   }
 };
 
@@ -260,5 +307,55 @@ const handleRemove = () => {
 
 .remove-btn:hover {
   color: #ff0000; /* 悬停时使用红色 */
+}
+
+/* 修复：防止图标切换时按钮大小变化导致页面跳动 */
+.play-icon-btn {
+  /* 你的 padding 是 5px, 图标是 24px, 总宽/高 = 24 + 5*2 = 34px */
+  width: 34px; 
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 禁用时的样式 */
+.play-icon-btn:disabled {
+  color: #555; /* 灰色 */
+  cursor: not-allowed;
+}
+
+/* 修复：悬停时，仅在未禁用时变色 */
+.play-icon-btn:hover:not(:disabled) {
+  color: #ff9900;
+}
+
+/* 加载中 Spinner 动画 */
+.spinner {
+  animation: rotate 2s linear infinite;
+}
+.spinner circle {
+  stroke: #ff9900; /* 使用你的悬停色 */
+  stroke-linecap: round;
+  animation: dash 1.5s ease-in-out infinite;
+}
+@keyframes rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@keyframes dash {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
+  }
 }
 </style>
