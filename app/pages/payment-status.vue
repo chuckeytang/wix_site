@@ -42,8 +42,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-// 导入 Tracks API，用于调用下载代理接口
-import { tracksApi } from "~/api";
 
 // 1. 使用 blank 布局
 definePageMeta({
@@ -68,39 +66,10 @@ const status = ref<
   | "requires_payment_method"
 >("loading");
 const statusMessage = ref("Verifying transaction status...");
-const downloading = ref(false);
-const trackTitle = ref("your track");
 const countdown = ref(2);
 
 // --- 核心下载和跳转逻辑 ---
-const startAutoDownloadAndRedirect = async (trackId: number) => {
-  downloading.value = true;
-
-  // 1. 触发下载代理 API
-  try {
-    const blob = await tracksApi.downloadTrackProxy(trackId);
-
-    // 2. 触发浏览器下载
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    // 假设您在后端或前端能获取到音乐名称，这里使用通用名称
-    link.setAttribute("download", `purchased_track_${trackId}.mp3`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-
-    console.log("Download started successfully.");
-    downloading.value = false;
-  } catch (error) {
-    console.error("Auto download failed:", error);
-    statusMessage.value =
-      "Download failed. Please check your purchase history.";
-    downloading.value = false;
-  }
-
-  // 3. 倒计时跳转
+const startAutoRedirect = async (trackId: number) => {
   setTimeout(() => {
     if (redirectPath.value) {
       router.push(redirectPath.value);
@@ -128,16 +97,7 @@ onMounted(async () => {
   const redirectStatus = route.query.redirect_status as string | undefined;
 
   if (redirectStatus === "succeeded") {
-    status.value = "succeeded";
-
-    if (orderTrackId) {
-      // 立即开始下载和跳转
-      await startAutoDownloadAndRedirect(Number(orderTrackId));
-    } else {
-      statusMessage.value =
-        "Success! No track ID found for automatic download. Redirecting to home.";
-      setTimeout(goToHome, 3000);
-    }
+    await startAutoRedirect(Number(orderTrackId));
   } else if (redirectStatus === "processing") {
     status.value = "processing";
     statusMessage.value =
