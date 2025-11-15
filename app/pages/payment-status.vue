@@ -50,7 +50,7 @@ definePageMeta({
 
 const route = useRoute();
 const router = useRouter();
-const orderTrackId = route.query.trackId as string | undefined;
+const orderId = route.query.orderId as string | undefined;
 const redirectPath = ref(
   route.query.returnPath
     ? decodeURIComponent(route.query.returnPath as string)
@@ -68,26 +68,6 @@ const status = ref<
 const statusMessage = ref("Verifying transaction status...");
 const countdown = ref(2);
 
-// --- 核心下载和跳转逻辑 ---
-const startAutoRedirect = async (trackId: number) => {
-  setTimeout(() => {
-    if (redirectPath.value) {
-      router.push(redirectPath.value);
-    } else {
-      // 否则，回退到音乐详情页
-      router.push(`/music/${trackId}`);
-    }
-  }, 2000);
-
-  // 4. 倒计时显示
-  const timer = setInterval(() => {
-    countdown.value -= 1;
-    if (countdown.value <= 0) {
-      clearInterval(timer);
-    }
-  }, 1000);
-};
-
 // --- 路由方法 ---
 const goToHome = () => router.push("/");
 const goToOrderHistory = () => router.push("/profile/orders");
@@ -97,7 +77,13 @@ onMounted(async () => {
   const redirectStatus = route.query.redirect_status as string | undefined;
 
   if (redirectStatus === "succeeded") {
-    await startAutoRedirect(Number(orderTrackId));
+    router.push({
+      path:"/order-success",
+      query:{
+        orderId:orderId,
+        returnPath:redirectPath.value,
+      },
+    });
   } else if (redirectStatus === "processing") {
     status.value = "processing";
     statusMessage.value =
