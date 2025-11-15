@@ -86,6 +86,7 @@
         </svg>
       </button>
     </div>
+    <MusicPlayerPanel />
   </div>
 </template>
 
@@ -97,6 +98,7 @@ import { tracksApi, sfxApi } from "~/api";
 import type { CartItems } from "~/types/cartItems";
 import type { Tracks } from "~/types/tracks";
 import type { Sfx } from "~/types/sfx";
+import MusicPlayerPanel from "../MusicPlayerPanel.vue";
 
 // ----------------------------------------------------
 // Props：接收单个购物车商品数据
