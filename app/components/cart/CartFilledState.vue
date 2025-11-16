@@ -2,7 +2,7 @@
   <div class="cart-filled-state container">
     <section class="cart-list-section">
       <h1 class="cart-title">
-        In your shopping cart.({{ cartStore.totalItems }})
+        In your shopping cart
       </h1>
 
       <div class="item-list">

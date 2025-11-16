@@ -45,12 +45,14 @@ import { useRoute, useRouter } from 'vue-router';
 import { ref, onMounted, computed } from "vue";
 import { ordersApi } from '~/api/orders'; // [保留] 导入真实 API
 import type { OrderDetails } from '~/types/orders'; // [保留] 导入真实类型
+import { useAuthStore } from '~/stores/auth';
 
 const route = useRoute();
 const router = useRouter();
 const loading = ref(true); // [保留] 真实的状态
 const error = ref<string | null>(null); // [保留] 真实的状态
 const order = ref<OrderDetails | null>(null); // [保留] 真实的状态
+const authStore = useAuthStore();
 
 definePageMeta({
   layout: "blank",
@@ -73,6 +75,7 @@ const returnPathName = computed(() => {
 
 // --- [保留] 真实的 onMounted API 调用 ---
 onMounted(async () => {
+  authStore.loadToken();
   const orderId = route.query.orderId as string | undefined;
 
   if (!orderId) {

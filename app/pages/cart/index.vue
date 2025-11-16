@@ -7,14 +7,6 @@
     <template v-else>
       <CartFilledState />
     </template>
-
-    <button 
-      v-if="!loading"
-      @click="simulateSuccessfulPayment"
-      class="test-success-button"
-    >
-    (TEST)模拟支付成功
-    </button>
   </div>
 </template>
 
@@ -33,18 +25,6 @@ onMounted(async () => {
   await cartStore.loadCart();
   loading.value = false;
 });
-
-const simulateSuccessfulPayment = () =>{
-  const currentPath = route.fullPath;
-  router.push({
-    path:"/payment-status",
-    query:{
-      redirect_status:"succeeded",
-      orderId:"TEST-ORDER-123",
-      returnPath:currentPath,
-    },
-  });
-}
 </script>
 
 <style scoped>
