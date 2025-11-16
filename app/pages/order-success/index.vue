@@ -1,94 +1,100 @@
 <template>
-    <div class="order-success-page">
-        <div class="success-card">
-            <template v-if="orders">
-                <h1 class="title success-title">Order successful!</h1>
-                <p class="order-id">Order-ID:{{ orders.id }}</p>
+  <div class="order-success-page">
+    <div class="success-card">
+      
+      <template v-if="loading">
+        <h1 class="title">⏳ Loading Order...</h1>
+        <p class="status-message">Fetching your purchase details...</p>
+        <div class="spinner-large"></div>
+      </template>
 
-                <div class="items-list">
-                    <div
-                        v-for="item in orders.items"
-                        :key="item.productId"
-                        class="item-row"
-                    >
-                        <span class="item-title">{{ item.title }}</span>
-                            <button
-                                class="download-button"
-                                @click="handleDownload(item.productId)"
-                                :disabled="downloadingId === item.productId"
-                                >
-                                <span
-                                    v-if="downloadingId === item.productId"
-                                    class="spinner-small"
-                                ></span>
-                                <span v-else>Download</span>
-                            </button>
-                    </div>
-                </div>
-                <div class="total-summary">
-                <span>Total</span>
-                <span class="total-price"
-                    >US$ {{ orders.totalAmount.toFixed(2) }}</span
-                >
-                </div>
+      <template v-else-if="error">
+        <h1 class="title fail-title">❌ Error Loading Order</h1>
+        <p class="status-message">{{ error }}</p>
+        <button class="action-button primary-button" @click="handleReturn">
+          Go to Homepage
+        </button>
+      </template>
 
-                <button class="action-button primary-button" @click="handleReturn">
-                    {{ returnPathName }}
-                </button>
-            </template>
+      <template v-else-if="order">
+        <h1 class="title success-title">Order successful!</h1>
+        
+        <p class="order-id">Order-ID: {{ order.orderId }}</p>
+
+        <div class="items-list">
+          <p class="item-title">(... 订单项目列表将显示在这里 ...)</p>
         </div>
+
+        <div class="total-summary">
+          <span>Total</span>
+          <span class="total-price"
+            >US$ {{ order.totalAmount.toFixed(2) }}</span
+          >
+        </div>
+
+        <button class="action-button primary-button" @click="handleReturn">
+          {{ returnPathName }}
+        </button>
+      </template>
     </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
 import { ref, onMounted, computed } from "vue";
+import { ordersApi } from '~/api/orders'; // [保留] 导入真实 API
+import type { OrderDetails } from '~/types/orders'; // [保留] 导入真实类型
 
 const route = useRoute();
 const router = useRouter();
+const loading = ref(true); // [保留] 真实的状态
+const error = ref<string | null>(null); // [保留] 真实的状态
+const order = ref<OrderDetails | null>(null); // [保留] 真实的状态
+
 definePageMeta({
   layout: "blank",
 });
 
-const returnPath = ref(route.query.returnPath || "/");
-const handleDownload = (productId:any) => {
-  if (downloadingId.value) return;
-  downloadingId.value = productId;
-  setTimeout(() => {
-    downloadingId.value = null;
-  }, 2000);
-};
+// [删除] 假数据 const orders = ref(...) 已被删除
+// [删除] 假下载 handleDownload 和 downloadingId 已被删除
 
-const orders = ref({
-  id: "MOCK-12345",
-  totalAmount: 39.98,
-  items: [
-    {
-      productId: 101,
-      productType: "track",
-      title: "Epic Cinematic Journey",
-    },
-    {
-      productId: 102,
-      productType: "track",
-      title: "Happy Upbeat Corporate Pop",
-    },
-    {
-      productId: 505,
-      productType: "sfx",
-      title: "Big Explosion Sound",
-    },
-  ],
-});
-const downloadingId = ref<number | null>(null); // 保留这个来测试按钮 UI
+const returnPath = ref(route.query.returnPath as any|| "/");
 
+// --- (返回按钮的逻辑) ---
 const handleReturn = () => {
   router.push(returnPath.value);
 };
 const returnPathName = computed(() => {
   if (returnPath.value === "/cart") return "Back to Cart";
   if (returnPath.value === "/") return "Back to Homepage";
-  return "Continue Browsing"; // 一个通用的名字
+  return "Continue Browsing";
+});
+
+// --- [保留] 真实的 onMounted API 调用 ---
+onMounted(async () => {
+  const orderId = route.query.orderId as string | undefined;
+
+  if (!orderId) {
+    error.value = "No Order ID provided.";
+    loading.value = false;
+    return;
+  }
+
+  try {
+    // [关键] 我们调用了你 api/orders.ts 中的 getOrderDetail 函数
+    const response = await ordersApi.getOrderDetail(Number(orderId));
+
+    if (response.code === 200 && response.data) {
+      order.value = response.data; // [关键] 填充了 'order' (单数) 变量
+    } else {
+      throw new Error(response.msg || "Failed to fetch order details");
+    }
+  } catch (err: any) {
+    error.value = err.message || "An unknown error occurred";
+  } finally {
+    loading.value = false; // 停止加载
+  }
 });
 </script>
 
@@ -215,5 +221,15 @@ const returnPathName = computed(() => {
 .primary-button:hover {
   background-color: #e67a54;
   transform: translateY(-2px);
+}
+
+.spinner-large {
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 4px solid #ff8c62;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
 }
 </style>
