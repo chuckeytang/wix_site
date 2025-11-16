@@ -207,6 +207,21 @@
           </div>
         </div>
       </div>
+      <button class="panel-toggle-btn" @click="handleHidePanel">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
     </div>
   </transition>
 </template>
@@ -239,7 +254,10 @@ const isMusicTrack = computed(
 const isSfx = computed(
   () => !!(playerStore.mediaType === "sfx" && playerStore.currentTrack)
 );
-
+const handleHidePanel = () => {
+  // 它只做一件事：调用我们在 store 中创建的那个 action
+  playerStore.stopAndHidePlayer();
+};
 // 动态获取当前播放的音频 URL
 const audioUrl = computed(() => {
   if (!playerStore.currentTrack) return "";

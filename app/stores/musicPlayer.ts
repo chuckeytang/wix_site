@@ -212,6 +212,15 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
     setSegment(segment: string) {
       this.currentSegment = segment;
     },
+
+    stopAndHidePlayer(){
+      this.isPlaying = false;
+      this.currentTrack = null;
+      this.currentPlayingId = undefined;
+      this.currentTime = 0;
+      this.duration = 0;
+      this.currentSegment = "full";
+    },
   },
   getters: {
     // 检查是否有歌曲在播放
