@@ -65,8 +65,11 @@
           ></path>
         </svg>
       </button>
-      <button class="action-btn icon-more">
+      <button class="action-btn icon-more" 
+          @click="handleQuickAddToCart"
+          :disabled="isCartLoading">
         <svg
+          v-if="!isCartLoading"
           xmlns="http://www.w3.org/2000/svg"
           width="24"
           height="24"
@@ -90,6 +93,7 @@ import { useMusicPlayerStore } from "~/stores/musicPlayer.js";
 import { tracksApi } from "~/api";
 import WaveformPlayer from "./WaveformPlayer.vue";
 import type { Tracks } from "~/types/tracks";
+import { useAddToCart } from '~/composables/useAddToCart';
 
 const props = defineProps({
   track: {
@@ -100,6 +104,9 @@ const props = defineProps({
 
 const musicPlayerStore = useMusicPlayerStore();
 const waveformPlayerRef = ref<InstanceType<typeof WaveformPlayer> | null>(null);
+
+const { isLoading: isCartLoading, handleAddToCart } = useAddToCart();
+const QUICK_LICENSE_OPTION = 'standard';
 
 // 使用 computed 属性来同步本地播放状态和全局状态
 const localIsPlaying = computed(() => {
@@ -174,6 +181,29 @@ const handleWaveformClick = (relativePosition: number) => {
     setTimeout(() => {
       musicPlayerStore.seekTo(relativePosition);
     }, 20);
+  }
+};
+
+/**
+ * 处理“更多选项”按钮，实现快捷添加到购物车功能
+ */
+ const handleQuickAddToCart = async () => {
+  const trackId = props.track.trackId;
+  if (!trackId) {
+    console.error("Track ID is not available for cart.");
+    return;
+  }
+  
+  // 调用封装的组合式函数来执行添加到购物车逻辑
+  const success = await handleAddToCart({
+    productId: trackId,
+    productType: 'track',
+    licenseOption: QUICK_LICENSE_OPTION,
+    trackTitle: props.track.title,
+  });
+
+  if (success) {
+    console.log(`Quick add to cart successful for: ${props.track.title}`);
   }
 };
 

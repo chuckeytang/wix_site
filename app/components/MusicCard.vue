@@ -69,15 +69,12 @@
       </div>
     </div>
 
-    <!-- <div class="category-tags">
-      <span v-for="(tag, index) in track.tags" :key="index" class="tag">{{
-        tag
-      }}</span>
-    </div> -->
-
     <div class="right-column-group">
       <div class="action-buttons">
-        <button class="action-btn">
+        <button class="action-btn"
+            @click="handleQuickAddToCart"
+            :disabled="isCartLoading"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -134,6 +131,7 @@ import { cartsApi } from "~/api/carts";
 import { tracksApi } from "~/api";
 import WaveformPlayer from "./WaveformPlayer.vue";
 import type { Tracks } from "~/types/tracks";
+import { useAddToCart } from '~/composables/useAddToCart';
 
 const props = defineProps({
   track: {
@@ -148,6 +146,7 @@ const authStore = useAuthStore();
 const progress = ref(0);
 const waveformPlayerRef = ref<InstanceType<typeof WaveformPlayer> | null>(null);
 const router = useRouter();
+const { isLoading: isCartLoading, handleAddToCart } = useAddToCart();
 
 // 监听认证状态
 const isAuthenticated = computed(() => authStore.isAuthenticated);
@@ -172,6 +171,30 @@ const globalProgress = computed(() => {
   }
   return 0;
 });
+
+const QUICK_LICENSE_OPTION = 'standard'; 
+
+/**
+ * 处理“添加到购物车”快捷按钮的点击事件
+ */
+const handleQuickAddToCart = async () => {
+  const trackId = props.track.trackId;
+  if (!trackId) {
+    console.error("Track ID is not available for cart.");
+    return;
+  }
+  
+  const success = await handleAddToCart({
+    productId: trackId,
+    productType: 'track', // 硬编码为 track
+    licenseOption: QUICK_LICENSE_OPTION,
+    trackTitle: props.track.title,
+  });
+
+  if (success) {
+    console.log(`Quick add to cart successful for: ${props.track.title}`);
+  }
+};
 
 watch(
   () => musicPlayerStore.currentPlayingId,

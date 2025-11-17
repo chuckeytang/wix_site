@@ -58,12 +58,8 @@ definePageMeta({
   layout: "blank",
 });
 
-// [删除] 假数据 const orders = ref(...) 已被删除
-// [删除] 假下载 handleDownload 和 downloadingId 已被删除
-
 const returnPath = ref(route.query.returnPath as any|| "/");
 
-// --- (返回按钮的逻辑) ---
 const handleReturn = () => {
   router.push(returnPath.value);
 };
@@ -73,7 +69,6 @@ const returnPathName = computed(() => {
   return "Continue Browsing";
 });
 
-// --- [保留] 真实的 onMounted API 调用 ---
 onMounted(async () => {
   authStore.loadToken();
   const orderId = route.query.orderId as string | undefined;
