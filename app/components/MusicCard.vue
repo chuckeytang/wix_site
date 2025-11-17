@@ -71,10 +71,7 @@
 
     <div class="right-column-group">
       <div class="action-buttons">
-        <button class="action-btn"
-            @click="handleQuickAddToCart"
-            :disabled="isCartLoading"
-        >
+        <button class="action-btn">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -91,7 +88,10 @@
             ></path>
           </svg>
         </button>
-        <button class="action-btn">
+        <button class="action-btn"
+            @click="handleQuickAddToCart"
+            :disabled="isCartLoading"
+            >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
