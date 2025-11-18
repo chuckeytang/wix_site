@@ -29,6 +29,9 @@ const orders = ref([
    { id: 101, title: 'Item 1', date: '2025-10-01', total: 49.99 },
    { id: 102, title: 'Item 2', date: '2025-10-15', total: 99.99 },
 ]);
+definePageMeta({
+      middleware: 'auth'
+});
 </script>
 
 <style scoped>

@@ -12,6 +12,7 @@ export const useAuthStore = defineStore("auth", {
     trackIdForLicense: null as number | null, // 存储需要授权的 trackId
     trackTitleForLicense: null as string | null, // 存储需要授权的 trackTitle
     productTypeForLicense: null as "track" | "sfx" | "plan" | null,
+    promptLogin: false as boolean,
   }),
   getters: {
     isAuthenticated: (state) => !!state.accessToken,
@@ -68,6 +69,14 @@ export const useAuthStore = defineStore("auth", {
         localStorage.removeItem(TOKEN_STORAGE_KEY);
       }
       this.closeLoginDialog();
+    },
+    //打开提示窗
+    openPromptLogin() {
+      this.promptLogin = true;
+    },
+    //关闭提示窗
+    closePromptLogin() {
+      this.promptLogin = false;
     },
   },
 });
