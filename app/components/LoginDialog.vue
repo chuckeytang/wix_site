@@ -23,7 +23,7 @@
             type="text"
             class="dialog-input"
             required
-            :placeholder="isLoginMode ? 'Email or Nickname' : 'Email Address'"
+            :placeholder="isLoginMode ? 'Email' : 'Email Address'"
           />
         </div>
 
