@@ -2,6 +2,10 @@
 import { useAuthStore } from "~/stores/auth";
 
 export default defineNuxtRouteMiddleware((to, from) => {
+    if (process.server) {
+        return; 
+    }
+    
     const authStore = useAuthStore();
     
     // 在客户端，如果 store 中没有 token，尝试从 localStorage 加载
