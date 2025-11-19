@@ -7,35 +7,39 @@
       <p>Failed to load orders. Please try again.</p>
     </div>
     <div v-else>
-      <p class="summary-text">recent {{ orders.length }} orders:</p>
-
-      <table class="orders-table">
-        <thead>
-          <tr>
-            <th>order ID</th>
-            <th>data</th>
-            <th>total</th>
-            <th>state</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="order in orders" :key="order.orderId">
-            <td>#{{ order.orderId }}</td>
-            <td>{{ formatOrderDate(order.createdAt) }}</td>
-            <td>
-              ${{
-                order.totalAmount !== undefined && order.totalAmount !== null
-                  ? order.totalAmount.toFixed(2)
-                  : "0.00"
-              }}
-            </td>
-            <td>{{ formatStatus(order.status) }}</td>
-          </tr>
-          <tr v-if="orders.length === 0">
-            <td colspan="4" class="no-data-row">no orders</td>
-          </tr>
-        </tbody>
-      </table>
+      <div v-if="orders.length === 0">
+        <OrderEmptyState />
+      </div>
+      <div v-else>
+        <p class="summary-text">recent {{ orders.length }} orders:</p>
+        <table class="orders-table">
+          <thead>
+            <tr v-if!="orders.length === 0">
+              <th>order ID</th>
+              <th>data</th>
+              <th>total</th>
+              <th>state</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="order in orders" :key="order.orderId">
+              <td>#{{ order.orderId }}</td>
+              <td>{{ formatOrderDate(order.createdAt) }}</td>
+              <td>
+                ${{
+                  order.totalAmount !== undefined && order.totalAmount !== null
+                    ? order.totalAmount.toFixed(2)
+                    : "0.00"
+                }}
+              </td>
+              <td>{{ formatStatus(order.status) }}</td>
+            </tr>
+            <tr v-if="orders.length === 0">
+              <OrderEmptyState />
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>
@@ -46,6 +50,7 @@ import { ordersApi } from "~/api/orders";
 // 引入订单类型定义，与后端字段保持一致
 // 假设 types/orders.ts 中的 OrderDetails 包含了 orderId, totalAmount, status, createdAt
 import type { OrderDetails } from "~/types/orders";
+import OrderEmptyState from './OrderEmptyState.vue';
 
 const orders = ref<OrderDetails[]>([]);
 const loading = ref(false);

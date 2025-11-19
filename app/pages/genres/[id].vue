@@ -26,7 +26,7 @@
             </span>
             <span>></span>
             <span class="breadcrumb-item">
-              <NuxtLink to="/genres" class="breadcrumb-link">流派</NuxtLink>
+              <NuxtLink to="/genres" class="breadcrumb-link">genres</NuxtLink>
             </span>
             <span>></span>
             <span class="breadcrumb-item current">{{ genresDetail.name }}</span>
