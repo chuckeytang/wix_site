@@ -40,7 +40,7 @@ export const cartsApi = {
    * @returns 包含新创建订单详情的 Promise
    */
   submitCartToOrder(): Promise<AjaxResult<any>> {
-    return request.post("/site/details/submit");
+    return request.post("/site/orders/submit");
   },
 
   /**
@@ -65,6 +65,6 @@ export const cartsApi = {
     productId: number;
     licenseOption: string;
   }): Promise<AjaxResult<any>> {
-    return request.post("/site/details/instant-buy", data);
+    return request.post("/site/orders/instant-buy", data);
   },
 };
