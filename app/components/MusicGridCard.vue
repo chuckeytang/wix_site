@@ -94,6 +94,7 @@ import { tracksApi } from "~/api";
 import WaveformPlayer from "./WaveformPlayer.vue";
 import type { Tracks } from "~/types/tracks";
 import { useAddToCart } from '~/composables/useAddToCart';
+import { useToast } from '~/composables/useToast';
 
 const props = defineProps({
   track: {
@@ -107,6 +108,7 @@ const waveformPlayerRef = ref<InstanceType<typeof WaveformPlayer> | null>(null);
 
 const { isLoading: isCartLoading, handleAddToCart } = useAddToCart();
 const QUICK_LICENSE_OPTION = 'standard';
+const { showToast } = useToast();
 
 // 使用 computed 属性来同步本地播放状态和全局状态
 const localIsPlaying = computed(() => {
@@ -203,7 +205,8 @@ const handleWaveformClick = (relativePosition: number) => {
   });
 
   if (success) {
-    console.log(`Quick add to cart successful for: ${props.track.title}`);
+    //console.log(`Quick add to cart successful for: ${props.track.title}`);
+    showToast(`"${props.track.title}" has been added to your cart.`);
   }
 };
 

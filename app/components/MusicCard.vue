@@ -132,6 +132,7 @@ import { tracksApi } from "~/api";
 import WaveformPlayer from "./WaveformPlayer.vue";
 import type { Tracks } from "~/types/tracks";
 import { useAddToCart } from '~/composables/useAddToCart';
+import { useToast } from '~/composables/useToast';
 
 const props = defineProps({
   track: {
@@ -147,6 +148,7 @@ const progress = ref(0);
 const waveformPlayerRef = ref<InstanceType<typeof WaveformPlayer> | null>(null);
 const router = useRouter();
 const { isLoading: isCartLoading, handleAddToCart } = useAddToCart();
+const { showToast } = useToast();
 
 // 监听认证状态
 const isAuthenticated = computed(() => authStore.isAuthenticated);
@@ -192,7 +194,8 @@ const handleQuickAddToCart = async () => {
   });
 
   if (success) {
-    console.log(`Quick add to cart successful for: ${props.track.title}`);
+    //console.log(`Quick add to cart successful for: ${props.track.title}`);
+    showToast(`"${props.track.title}" has been added to your cart.`);
   }
 };
 

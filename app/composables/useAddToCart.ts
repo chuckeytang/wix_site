@@ -72,8 +72,6 @@ export function useAddToCart() {
         console.log(`Successfully added track ${productId}. Syncing cart...`);
         await cartStore.loadCart();
         
-        // 5. 成功提示
-        alert(`${trackTitle} 已成功添加到购物车！`);
         return true;
       } else {
         // 6. 业务错误处理
