@@ -10,9 +10,16 @@ export interface Playlists {
   imageUrl?: string; // 封面图片URL
   imageAltText?: string; // 封面图片替代文本
   slug: string; // 用于URL的友好名称
-  owner?: string; // 播放列表创建者
+  owner: number; // 播放列表创建者
   createdAt?: string; // 记录创建时间
   updatedAt?: string; // 记录更新时间
+  trackCount?: number;
+}
+
+export interface PlaylistCreateRequest {
+  title: string;
+  description?: string;
+  isPublic?: boolean; // 可选，预留
 }
 
 /**

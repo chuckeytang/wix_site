@@ -97,7 +97,6 @@
           <button class="download-button" @click="handleDownload">
             Download
           </button>
-          <button class="more-button">View Similar Tracks</button>
         </div>
 
         <div class="user-actions">
@@ -145,31 +144,6 @@
             Add to Cart
           </button>
           <button
-            class="action-btn primary-action"
-            @click="handleInstantCheckout"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8z"
-              ></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-            Checkout Now
-          </button>
-          <button
             class="action-btn"
             @click="handleShowLicenseModal('view_terms')"
           >
@@ -210,7 +184,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
-import { tracksApi } from "~/api";
 import { cartsApi } from "~/api/carts";
 import type { Tracks } from "~/types/tracks";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
@@ -219,6 +192,8 @@ import SearchBar from "~/components/SearchBar.vue";
 import MusicPlayerPanel from "~/components/MusicPlayerPanel.vue";
 import { useAuthStore } from "~/stores/auth";
 import CheckoutModal from "~/components/CheckoutModal.vue";
+import { useDownloadMedia } from "~/composables/useDownloadMedia";
+import { tracksApi } from "~/api/tracks";
 
 // 路由信息
 const route = useRoute();
@@ -239,6 +214,7 @@ const config = useRuntimeConfig();
 const publishableKey = config.public.stripePk as string;
 
 const musicPlayerStore = useMusicPlayerStore();
+const { handleDownload: handleDownloadCheckAndExecute } = useDownloadMedia();
 const localIsPlaying = computed(() => {
   if (!musicPlayerStore.currentTrack || !musicPlayerStore.isPlaying) {
     return false;
@@ -273,36 +249,13 @@ const handleSearch = (query: string) => {
 };
 
 const handleDownload = async () => {
-  if (!track.value?.trackId) {
-    console.error("Track ID is not available for download.");
+  if (!track.value) {
+    console.error("Track details are not loaded.");
     return;
   }
 
-  try {
-    // 调用 API 代理，获取歌曲的 Blob 对象
-    const blob = await tracksApi.downloadTrackProxy(track.value.trackId);
-
-    // 创建一个临时的 URL 来指向 Blob
-    const url = window.URL.createObjectURL(blob);
-
-    // 创建一个不可见的下载链接元素
-    const link = document.createElement("a");
-    link.href = url;
-    // 设置下载的文件名
-    link.setAttribute("download", `${track.value.title}.mp3`);
-
-    // 将链接元素添加到文档中，并模拟点击
-    document.body.appendChild(link);
-    link.click();
-
-    // 完成下载后，移除链接并释放 URL
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-
-    console.log("Download started successfully.");
-  } catch (error) {
-    console.error("Failed to download the audio file:", error);
-  }
+  // 调用 Composable，传入 track 对象和媒体类型 'track'
+  await handleDownloadCheckAndExecute(track.value, "track");
 };
 
 const activeSegment = computed(() => {

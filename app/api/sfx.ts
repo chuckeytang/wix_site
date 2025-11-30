@@ -118,4 +118,14 @@ export const sfxApi = {
       return Promise.reject(error);
     }
   },
+
+  /**
+   * 检查用户是否对指定的音效拥有下载授权
+   * @param sfxId 音效ID
+   * @returns 包含授权状态的 Promise
+   */
+  checkSfxLicense(sfxId: number): Promise<AjaxResult<any>> {
+    // 调用后端的音效授权检查接口
+    return request.get(`/site/sfx/check-license/${sfxId}`);
+  },
 };

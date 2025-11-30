@@ -20,6 +20,9 @@
         />
       </Transition>
     </ClientOnly>
+    <ClientOnly>
+      <AddToPlaylistModal />
+    </ClientOnly>
 
     <LicenseModal
       v-if="authStore.isAuthenticated && authStore.showLicenseModal"
@@ -33,8 +36,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted} from "vue";
-import { useRouter,useRoute } from "vue-router";
+import { computed, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "~/stores/auth";
 // 从 components 目录导入 TheHeader 和 TheFooter
 import TheHeader from "@/components/TheHeader.vue";
@@ -43,6 +46,7 @@ import LoginDialog from "@/components/LoginDialog.vue";
 import UserMenuDialog from "@/components/UserMenuDialog.vue";
 import LicenseModal from "@/components/LicenseModal.vue";
 import LoginPromptModal from "~/components/auth/LoginPromptModal.vue";
+import AddToPlaylistModal from "~/components/AddToPlaylistModal.vue";
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -65,19 +69,18 @@ onMounted(() => {
   authStore.loadToken();
 
   // 2. 检查 URL 中是否有 'promptLogin=true' 指令
-  if (route.query.promptLogin === 'true') {
-    
+  if (route.query.promptLogin === "true") {
     // 确保用户仍然未登录，我们才弹出提示
     if (!authStore.isAuthenticated) {
       console.log("客户端接收到指令，弹出 LoginPromptModal");
       authStore.openPromptLogin();
     }
-    
+
     // 3. 清除 URL 中的指令参数，保持地址栏干净
     // 必须使用 router.replace 替换历史记录，而不是 push
     const newQuery = { ...route.query };
     delete newQuery.promptLogin;
-    
+
     // 使用 replace 方法更新 URL，不改变路由历史记录
     router.replace({ query: newQuery });
   }

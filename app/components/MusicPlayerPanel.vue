@@ -230,9 +230,10 @@
 import { ref, watch, onMounted, computed } from "vue";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
 import WaveformPlayer from "~/components/WaveformPlayer.vue";
-import { tracksApi, sfxApi } from "~/api";
 import type { Tracks } from "~/types/tracks";
 import type { Sfx } from "~/types/sfx";
+import { useDownloadMedia } from "../composables/useDownloadMedia";
+import type { MediaType } from "../composables/useDownloadMedia";
 
 const playerStore = useMusicPlayerStore();
 const waveformPlayerRef = ref<InstanceType<typeof WaveformPlayer> | null>(null);
@@ -247,6 +248,7 @@ const segments = [
   { value: "30s", label: "30s" },
   { value: "60s", label: "60s" },
 ];
+const { handleDownload: handleDownloadCheckAndExecute } = useDownloadMedia();
 
 const isMusicTrack = computed(
   () => playerStore.mediaType === "track" && playerStore.currentTrack
@@ -407,28 +409,11 @@ const handleDownload = async () => {
     return;
   }
 
-  try {
-    let blob: Blob;
-    if (playerStore.mediaType === "track") {
-      const track = playerStore.currentTrack as Tracks;
-      blob = await tracksApi.downloadTrackProxy(track.trackId!);
-    } else {
-      const sfx = playerStore.currentTrack as Sfx;
-      blob = await sfxApi.downloadSfxProxy(sfx.sfxId!);
-    }
+  const media = playerStore.currentTrack;
+  const type = playerStore.mediaType as MediaType; // 假设 mediaType 始终是 'track' 或 'sfx'
 
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `${playerStore.currentTrack.title}.mp3`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-    console.log("Download started successfully.");
-  } catch (error) {
-    console.error("Failed to download the audio file:", error);
-  }
+  // 调用 Composable，传入当前媒体对象和类型
+  await handleDownloadCheckAndExecute(media, type);
 };
 
 // 处理上一首按钮的点击事件

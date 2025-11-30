@@ -65,9 +65,11 @@
           ></path>
         </svg>
       </button>
-      <button class="action-btn icon-more" 
-          @click="handleQuickAddToCart"
-          :disabled="isCartLoading">
+      <button
+        class="action-btn icon-more"
+        @click="handleQuickAddToCart"
+        :disabled="isCartLoading"
+      >
         <svg
           v-if="!isCartLoading"
           xmlns="http://www.w3.org/2000/svg"
@@ -82,7 +84,7 @@
           <circle cx="5" cy="12" r="2"></circle>
         </svg>
       </button>
-      <button class="download-button" @click="handleDownload">download</button>
+      <button class="download-button" @click="handleDownload">Download</button>
     </div>
   </div>
 </template>
@@ -90,11 +92,11 @@
 <script setup lang="ts">
 import { ref, defineProps, watch, computed } from "vue";
 import { useMusicPlayerStore } from "~/stores/musicPlayer.js";
-import { tracksApi } from "~/api";
 import WaveformPlayer from "./WaveformPlayer.vue";
 import type { Tracks } from "~/types/tracks";
-import { useAddToCart } from '~/composables/useAddToCart';
-import { useToast } from '~/composables/useToast';
+import { useAddToCart } from "~/composables/useAddToCart";
+import { useToast } from "~/composables/useToast";
+import { useDownloadMedia } from "~/composables/useDownloadMedia";
 
 const props = defineProps({
   track: {
@@ -107,8 +109,9 @@ const musicPlayerStore = useMusicPlayerStore();
 const waveformPlayerRef = ref<InstanceType<typeof WaveformPlayer> | null>(null);
 
 const { isLoading: isCartLoading, handleAddToCart } = useAddToCart();
-const QUICK_LICENSE_OPTION = 'standard';
+const QUICK_LICENSE_OPTION = "standard";
 const { showToast } = useToast();
+const { handleDownload: handleDownloadCheckAndExecute } = useDownloadMedia(); // 重命名以避免冲突
 
 // 使用 computed 属性来同步本地播放状态和全局状态
 const localIsPlaying = computed(() => {
@@ -189,17 +192,17 @@ const handleWaveformClick = (relativePosition: number) => {
 /**
  * 处理“更多选项”按钮，实现快捷添加到购物车功能
  */
- const handleQuickAddToCart = async () => {
+const handleQuickAddToCart = async () => {
   const trackId = props.track.trackId;
   if (!trackId) {
     console.error("Track ID is not available for cart.");
     return;
   }
-  
+
   // 调用封装的组合式函数来执行添加到购物车逻辑
   const success = await handleAddToCart({
     productId: trackId,
-    productType: 'track',
+    productType: "track",
     licenseOption: QUICK_LICENSE_OPTION,
     trackTitle: props.track.title,
   });
@@ -230,24 +233,7 @@ const handlePause = () => {
 
 // 处理下载逻辑
 const handleDownload = async () => {
-  if (!props.track.audioFileUrl) {
-    console.error("Audio file URL is not available.");
-    return;
-  }
-  try {
-    const blob = await tracksApi.downloadTrackProxy(props.track.trackId!);
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `${props.track.title}.mp3`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-    console.log("Download started successfully.");
-  } catch (error) {
-    console.error("Failed to download the audio file:", error);
-  }
+  await handleDownloadCheckAndExecute(props.track, "track");
 };
 
 const handleReady = () => {

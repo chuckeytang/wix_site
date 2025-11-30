@@ -19,6 +19,44 @@ export const playlistsApi = {
   },
 
   /**
+   * 获取当前登录用户的播放列表
+   * (用于“加入播放列表”弹窗)
+   */
+  getMyPlaylists(): Promise<PaginationResult<Playlists>> {
+    return request.get("/site/playlists/my-list");
+  },
+
+  /**
+   * 创建新的播放列表 (别名 addPlaylist，为了兼容某些组件调用习惯)
+   */
+  createPlaylist(data: {
+    title: string;
+    description?: string;
+  }): Promise<AjaxResult<any>> {
+    return request.post("/site/playlists", data);
+  },
+
+  /**
+   * 添加音乐到播放列表
+   */
+  addTrackToPlaylist(
+    playlistId: number,
+    trackId: number
+  ): Promise<AjaxResult<any>> {
+    return request.post(`/site/playlists/${playlistId}/tracks/${trackId}`);
+  },
+
+  /**
+   * 添加音效到播放列表
+   */
+  addSfxToPlaylist(
+    playlistId: number,
+    sfxId: number
+  ): Promise<AjaxResult<any>> {
+    return request.post(`/site/playlists/${playlistId}/sfx/${sfxId}`);
+  },
+
+  /**
    * 获取播放列表详细信息
    * @param playlistId 播放列表ID
    * @returns 包含单个播放列表详细信息的 Promise

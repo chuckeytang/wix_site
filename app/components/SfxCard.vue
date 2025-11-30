@@ -61,7 +61,7 @@
 
     <div class="right-column-group">
       <div class="action-buttons">
-        <button class="action-btn">
+        <button class="action-btn" @click.stop="handleAddToPlaylist">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -113,9 +113,13 @@
 <script setup lang="ts">
 import { ref, defineProps, computed, watch } from "vue";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
-import { sfxApi } from "~/api";
 import type { Sfx } from "~/types/sfx";
 import WaveformPlayer from "./WaveformPlayer.vue";
+import { useDownloadMedia } from "~/composables/useDownloadMedia";
+import { useAuthStore } from "~/stores/auth";
+import { usePlaylistModalStore } from "~/stores/playlistModal";
+import { useToast } from "~/composables/useToast";
+import { favoritesApi } from "~/api/favorites";
 
 const props = defineProps({
   sfx: {
@@ -126,6 +130,49 @@ const props = defineProps({
 
 const musicPlayerStore = useMusicPlayerStore();
 const waveformPlayerRef = ref<InstanceType<typeof WaveformPlayer> | null>(null);
+const { handleDownload: handleDownloadCheckAndExecute } = useDownloadMedia();
+const authStore = useAuthStore();
+const playlistModalStore = usePlaylistModalStore();
+const { showToast } = useToast();
+
+const isFavoritedSfx = ref(false);
+
+// 初始化时检查 SFX 收藏状态 (假设 favoritesApi 提供了 checkFavoriteSfxStatus)
+onMounted(async () => {
+  if (authStore.isAuthenticated && props.sfx.sfxId) {
+    try {
+      const res = await favoritesApi.checkFavoriteStatus(props.sfx.sfxId);
+      isFavoritedSfx.value = res.data!;
+    } catch (e) {
+      // 未登录或接口错误，默认为未收藏
+      isFavoritedSfx.value = false;
+    }
+  }
+});
+
+const handleToggleFavoriteSfx = async () => {
+  if (!authStore.isAuthenticated) {
+    authStore.openLoginDialog();
+    return;
+  }
+
+  const previousState = isFavoritedSfx.value;
+  // 乐观更新 UI
+  isFavoritedSfx.value = !previousState;
+
+  try {
+    // 假设 API 接口为 toggleFavoriteSfx
+    const res = await favoritesApi.toggleFavorite(props.sfx.sfxId!);
+    if (res.data !== undefined) {
+      isFavoritedSfx.value = res.data;
+      showToast(res.data ? "Added to favorites" : "Removed from favorites");
+    }
+  } catch (error) {
+    // 失败回滚
+    isFavoritedSfx.value = previousState;
+    showToast("Failed to update favorite status");
+  }
+};
 
 const localIsPlaying = computed(() => {
   return (
@@ -134,6 +181,15 @@ const localIsPlaying = computed(() => {
     musicPlayerStore.isPlaying
   );
 });
+
+const handleAddToPlaylist = () => {
+  if (!authStore.isAuthenticated) {
+    authStore.openLoginDialog(); // 假设您有这个
+    return;
+  }
+
+  playlistModalStore.openModal(props.sfx.sfxId!, "sfx", props.sfx.title);
+};
 
 // 监听全局播放ID变化，如果当前不是此卡片的ID，则暂停
 watch(
@@ -204,35 +260,17 @@ const handleDownload = async () => {
     console.error("Audio file URL is not available.");
     return;
   }
-
-  try {
-    const blob = await sfxApi.downloadSfxProxy(props.sfx.sfxId!);
-
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `${props.sfx.title}.mp3`);
-
-    document.body.appendChild(link);
-    link.click();
-
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-
-    console.log("Download started successfully.");
-  } catch (error) {
-    console.error("Failed to download the audio file:", error);
-  }
+  // 调用 Composable，传入媒体对象和类型
+  await handleDownloadCheckAndExecute(props.sfx, "sfx");
 };
 </script>
 
 <style scoped>
 .sfx-card-list {
   display: grid;
-  grid-template-columns: minmax(150px, 2fr) minmax(300px, 8fr) minmax(
-      80px,
-      1fr
-    ) auto;
+  grid-template-columns:
+    minmax(150px, 2fr) minmax(300px, 8fr) minmax(80px, 1fr)
+    auto;
   align-items: center;
   gap: 20px;
   padding: 15px 20px;

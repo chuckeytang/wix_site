@@ -71,27 +71,25 @@
 
     <div class="right-column-group">
       <div class="action-buttons">
-        <button class="action-btn">
+        <button class="action-btn" @click="handleToggleFavorite">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
             height="24"
             viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
+            :fill="isFavorited ? '#ff8c62' : 'none'"
+            :stroke="isFavorited ? '#ff8c62' : 'currentColor'"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
+            class="favorite-icon"
           >
             <path
               d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
             ></path>
           </svg>
         </button>
-        <button class="action-btn"
-            @click="handleQuickAddToCart"
-            :disabled="isCartLoading"
-            >
+        <button class="action-btn" @click.stop="handleAddToPlaylistClick">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -116,7 +114,7 @@
 
       <div class="right-column-group">
         <button class="download-button" @click="handleDownload">
-          download
+          Download
         </button>
       </div>
     </div>
@@ -126,13 +124,14 @@
 <script setup lang="ts">
 import { ref, defineProps, watch } from "vue";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
-import { useAuthStore } from "~/stores/auth";
-import { cartsApi } from "~/api/carts";
-import { tracksApi } from "~/api";
 import WaveformPlayer from "./WaveformPlayer.vue";
 import type { Tracks } from "~/types/tracks";
-import { useAddToCart } from '~/composables/useAddToCart';
-import { useToast } from '~/composables/useToast';
+import { useAddToCart } from "~/composables/useAddToCart";
+import { useToast } from "~/composables/useToast";
+import { useAuthStore } from "~/stores/auth";
+import { favoritesApi } from "~/api/favorites";
+import { useDownloadMedia } from "../composables/useDownloadMedia";
+import { usePlaylistModalStore } from "~/stores/playlistModal";
 
 const props = defineProps({
   track: {
@@ -143,15 +142,15 @@ const props = defineProps({
 });
 
 const musicPlayerStore = useMusicPlayerStore();
-const authStore = useAuthStore();
 const progress = ref(0);
 const waveformPlayerRef = ref<InstanceType<typeof WaveformPlayer> | null>(null);
 const router = useRouter();
 const { isLoading: isCartLoading, handleAddToCart } = useAddToCart();
 const { showToast } = useToast();
-
-// 监听认证状态
-const isAuthenticated = computed(() => authStore.isAuthenticated);
+const { handleDownload: handleDownloadCheckAndExecute } = useDownloadMedia();
+const authStore = useAuthStore();
+const isFavorited = ref(false);
+const playlistModalStore = usePlaylistModalStore();
 
 // 使用 computed 属性来同步本地播放状态和全局状态
 const localIsPlaying = computed(() => {
@@ -174,29 +173,61 @@ const globalProgress = computed(() => {
   return 0;
 });
 
-const QUICK_LICENSE_OPTION = 'standard'; 
+const QUICK_LICENSE_OPTION = "standard";
 
-/**
- * 处理“添加到购物车”快捷按钮的点击事件
- */
-const handleQuickAddToCart = async () => {
-  const trackId = props.track.trackId;
-  if (!trackId) {
-    console.error("Track ID is not available for cart.");
+// --- 初始化检查收藏状态 ---
+onMounted(async () => {
+  if (authStore.isAuthenticated && props.track.trackId) {
+    try {
+      const res = await favoritesApi.checkFavoriteStatus(props.track.trackId);
+      isFavorited.value = res.data!;
+    } catch (e) {
+      console.error("Failed to check favorite status", e);
+    }
+  }
+});
+
+// --- 处理点击收藏 ---
+const handleToggleFavorite = async () => {
+  if (!authStore.isAuthenticated) {
+    authStore.openLoginDialog();
     return;
   }
-  
-  const success = await handleAddToCart({
-    productId: trackId,
-    productType: 'track', // 硬编码为 track
-    licenseOption: QUICK_LICENSE_OPTION,
-    trackTitle: props.track.title,
-  });
 
-  if (success) {
-    //console.log(`Quick add to cart successful for: ${props.track.title}`);
-    showToast(`"${props.track.title}" has been added to your cart.`);
+  const previousState = isFavorited.value;
+  isFavorited.value = !previousState;
+
+  try {
+    const res = await favoritesApi.toggleFavorite(props.track.trackId!);
+    // 后端返回 data 为 true(已收藏) 或 false(未收藏)
+    if (res.data !== undefined) {
+      isFavorited.value = res.data;
+      showToast(res.data ? "Added to favorites" : "Removed from favorites");
+    }
+  } catch (error) {
+    // 失败回滚
+    isFavorited.value = previousState;
+    showToast("Failed to update favorite status");
   }
+};
+
+// --- 处理点击加入播放列表 ---
+// 注意：这通常需要触发一个全局 Modal，让用户选择 Playlist
+// 这里我假设你有一个 emit 或者 store action 来打开这个 Modal
+const emit = defineEmits(["add-to-playlist"]); // 如果你在父组件处理
+
+const handleAddToPlaylistClick = () => {
+  if (!authStore.isAuthenticated) {
+    authStore.openLoginDialog();
+    return;
+  }
+
+  // 使用 Store Action 打开全局模态框
+  playlistModalStore.openModal(
+    props.track.trackId!,
+    "track",
+    props.track.title
+  );
 };
 
 watch(
@@ -281,89 +312,7 @@ const handlePause = () => {
 
 // 处理下载逻辑
 const handleDownload = async () => {
-  const trackId = props.track.trackId;
-  if (!trackId) {
-    console.error("Track ID is not available.");
-    return;
-  }
-
-  // 1. 检查是否登录
-  if (!isAuthenticated.value) {
-    // 未登录：弹出登录对话框
-    authStore.openLoginDialog();
-    return;
-  }
-
-  // 2. 检查授权 (通过调用后端 API)
-  try {
-    // 接口 `/site/tracks/check-license/{trackId}` 返回权限状态
-    const licenseCheckResponse = await tracksApi.checkTrackLicense(trackId);
-    // 检查响应数据中是否有授权标志
-    const hasLicense = licenseCheckResponse.data?.hasLicense ?? false;
-
-    if (hasLicense) {
-      // 2a. 有授权：执行下载
-      await executeDownload(trackId);
-    } else {
-      // 2b. 无授权：弹出 LicenseModal (通过 store 通知全局组件)
-      authStore.openLicenseModal(
-        trackId,
-        props.track.title, // 假设 track 对象有 title 字段
-        "track"
-      );
-      console.log(`User needs license for track ID: ${trackId}`);
-    }
-  } catch (error: any) {
-    // 拦截器没有处理的错误 (如网络错误，或 403 授权不足)
-    console.error("Download check failed:", error);
-
-    // 检查是否为授权不足（已登录，但没有购买权限）
-    const isLicenseMissing =
-      (error as any).responseCode === 403 || error.response?.status === 403;
-
-    if (isLicenseMissing) {
-      // 已登录但无权限，弹出 LicenseModal
-      authStore.openLicenseModal(
-        trackId,
-        props.track.title, // 假设 track 对象有 title 字段
-        "track"
-      );
-      console.log(
-        "User is logged in but missing license. Opening license modal."
-      );
-      return; // 结束流程
-    }
-
-    // 提示其他一般性错误
-    console.log("Download verification failed. Please try again.");
-  }
-};
-
-// 实际下载执行函数 (原 handleDownload 逻辑)
-const executeDownload = async (trackId: number) => {
-  // 获取当前组件的 track 对象
-  const track = props.track;
-
-  try {
-    const blob = await tracksApi.downloadTrackProxy(trackId);
-
-    // 创建临时 URL 并触发下载
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `${track.title}.mp3`);
-
-    document.body.appendChild(link);
-    link.click();
-
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-
-    console.log("Download started successfully.");
-  } catch (error) {
-    console.error("Failed to download the audio file:", error);
-    alert("Failed to start download. Check if you have purchased this item.");
-  }
+  await handleDownloadCheckAndExecute(props.track, "track");
 };
 
 const handleReady = () => {

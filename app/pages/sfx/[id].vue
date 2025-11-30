@@ -63,7 +63,6 @@
           <button class="download-button" @click="handleDownload">
             Download
           </button>
-          <button class="more-button">View Similar Tracks</button>
         </div>
 
         <div class="user-actions">
@@ -146,8 +145,6 @@
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { cartsApi } from "~/api/carts";
-import type { CartItems } from "~/types/cartItems";
-import { sfxApi } from "~/api";
 import type { Sfx } from "~/types/sfx";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
 import TheHeader from "~/components/TheHeader.vue";
@@ -155,6 +152,8 @@ import SearchBar from "~/components/SearchBar.vue";
 import MusicPlayerPanel from "~/components/MusicPlayerPanel.vue";
 import { useAuthStore } from "~/stores/auth";
 import CheckoutModal from "~/components/CheckoutModal.vue";
+import { useDownloadMedia } from "~/composables/useDownloadMedia";
+import { sfxApi } from "~/api/sfx";
 
 const route = useRoute();
 const sfxId = Number(route.params.id);
@@ -170,7 +169,7 @@ const checkoutClientSecret = ref<string | null>(null);
 const checkoutOrderId = ref<number | null>(null);
 const checkoutReturnPath = ref<string | null>(null);
 const config = useRuntimeConfig();
-const publishableKey = config.public.stripePk as string;
+const { handleDownload: handleDownloadCheckAndExecute } = useDownloadMedia();
 
 const musicPlayerStore = useMusicPlayerStore();
 const localIsPlaying = computed(() => {
@@ -195,29 +194,13 @@ const handleSearch = (query: string) => {
 };
 
 const handleDownload = async () => {
-  if (!sfx.value?.sfxId) {
-    console.error("SFX ID is not available for download.");
+  if (!sfx.value) {
+    console.error("SFX details are not loaded.");
     return;
   }
 
-  try {
-    const blob = await sfxApi.downloadSfxProxy(sfx.value.sfxId);
-
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `${sfx.value.title}.mp3`);
-
-    document.body.appendChild(link);
-    link.click();
-
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-
-    console.log("Download started successfully.");
-  } catch (error) {
-    console.error("Failed to download the audio file:", error);
-  }
+  // 调用 Composable，传入 sfx 对象和媒体类型 'sfx'
+  await handleDownloadCheckAndExecute(sfx.value, "sfx");
 };
 
 const fetchSfxDetails = async () => {
