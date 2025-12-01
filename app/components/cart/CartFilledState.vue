@@ -38,33 +38,17 @@
         @startCheckout="handleCartCheckout"
       />
     </aside>
-
-    <CheckoutModal
-      :isVisible="showCheckoutModal"
-      :clientSecret="checkoutClientSecret"
-      :orderId="checkoutOrderId"
-      :returnPath="checkoutReturnPath"
-      :amount="checkoutAmount"
-      :currency="checkoutCurrency"
-      @close="showCheckoutModal = false"
-    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, defineEmits } from "vue";
 import { useCartStore } from "~/stores/cart";
-import CartItem from "~/components/cart/CartItem.vue";
 import CartSummary from "~/components/cart/CartSummary.vue";
-import CheckoutModal from "~/components/CheckoutModal.vue";
 import { tracksApi } from "~/api";
 
+const emit = defineEmits(["requestCheckout"]);
 const cartStore = useCartStore();
-
-const showCheckoutModal = ref(false);
-const checkoutClientSecret = ref(null);
-const checkoutOrderId = ref(null);
-const checkoutReturnPath = ref("/cart");
 
 // 模拟推荐数据（实际应从 API 获取）
 const recommendedTracks = ref([]);
@@ -110,14 +94,17 @@ onMounted(() => {
 // Action: 处理从 CartSummary 接收到的结算事件
 // ----------------------------------------------------
 const handleCartCheckout = (data) => {
-  // 设置模态框所需的数据
-  checkoutClientSecret.value = data.clientSecret;
-  checkoutOrderId.value = data.orderId;
+  console.log("CartFilledState: handleCartCheckout", data);
 
-  // returnPath 已经默认设置为 /cart
-
-  // 显示模态框
-  showCheckoutModal.value = true;
+  // 直接向上层组件抛出事件和数据
+  emit("requestCheckout", {
+    clientSecret: data.clientSecret,
+    orderId: data.orderId,
+    returnPath: "/cart", // 固定路径
+    // 将金额和货币也传递上去
+    amount: cartStore.subtotal,
+    currency: "usd", // 或从 Store/API 获取实际货币
+  });
 };
 
 // ----------------------------------------------------

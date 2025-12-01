@@ -103,7 +103,7 @@ export function useDownloadMedia() {
         console.log(`User needs license for ${type} ID: ${id}`);
       }
     } catch (error: any) {
-      console.error("Download check failed:", error);
+      console.warn("Download check failed:", error);
 
       const isLicenseMissing =
         (error as any).responseCode === 403 || error.response?.status === 403;

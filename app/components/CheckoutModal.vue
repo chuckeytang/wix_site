@@ -7,10 +7,6 @@
       </div>
 
       <div class="modal-body">
-        <div class="order-summary">
-          <span class="summary-label">Total Amount:</span>
-          <span class="summary-amount">{{ formattedAmount }}</span>
-        </div>
         <div v-if="loading" class="loading-message">
           Loading payment information...
         </div>
@@ -25,7 +21,8 @@
           :disabled="!isStripeReady || loading"
           class="submit-button"
         >
-          Confirm and Pay
+          <span v-if="loading">Processing...</span>
+          <span v-else>Pay {{ formattedAmount }}</span>
         </button>
       </div>
     </div>
@@ -58,13 +55,14 @@ const loading = ref(false);
 const error = ref<string | null>(null);
 const isStripeReady = ref(false);
 let elements: any | null = null; // Stripe Elements 实例
+const cartStore = useCartStore();
 
 const formattedAmount = computed(() => {
   if (!props.amount || !props.currency) return "";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: props.currency.toUpperCase(),
-  }).format(props.amount / 100); // 假设传入的是分 (cents)
+  }).format(props.amount);
 });
 
 // 监听 isVisible 属性，并使用 nextTick
@@ -72,7 +70,6 @@ watch(
   () => props.isVisible,
   async (newVal) => {
     if (newVal && props.clientSecret) {
-      // 关键修正：等待 DOM 渲染完成
       await nextTick();
       await initializeStripe(props.clientSecret);
     }
@@ -99,9 +96,17 @@ const initializeStripe = async (secret: string) => {
     elements = stripeInstance.elements({
       clientSecret: secret,
       appearance: {
-        theme: "night", // 使用夜间模式以匹配你的深色背景
+        theme: "night",
         variables: {
           colorPrimary: "#ff8c62",
+          borderRadius: "4px",
+          // 可以在这里微调字体大小
+          fontSizeBase: "15px",
+        },
+        rules: {
+          ".Input": {
+            border: "1px solid #444", // 让输入框边框更明显
+          },
         },
       },
     }); // elements 被设置为 any
@@ -113,17 +118,18 @@ const initializeStripe = async (secret: string) => {
 
     const paymentElementOptions = {
       layout: "tabs",
-      // [关键] 强制收集账单地址、姓名和邮箱
-      // 这会解决“必填项为空”和“Link勾选框不显示”的问题
+
+      // 2. 字段配置
       fields: {
         billingDetails: {
-          name: "auto", // 显示姓名输入框（必填）
-          email: "auto", // 显示邮箱输入框（Link 需要此项才能显示勾选框）
+          name: "auto", // 姓名
+          email: "auto", // 邮箱 (如果开启 Link，这个是必须的)
+
+          // [核心] 强制显示完整的账单地址
+          // 设置为 'billing' 后，Stripe 会渲染 Address Line 1, City, Zip, Country
+          // 并且这些字段默认都是【必填】的 (required)
           address: {
-            country: "auto",
-            postalCode: "auto",
-            city: "auto",
-            line1: "auto", // 强制显示具体地址行
+            mode: "billing",
           },
         },
       },
@@ -144,32 +150,36 @@ const initializeStripe = async (secret: string) => {
 
 // 5. 提交支付
 const handleSubmit = async () => {
-  if (!stripeInstance || !elements || !props.orderId || !props.clientSecret) {
-    error.value = "System error: Payment data is missing.";
-    return;
-  }
+  if (!stripeInstance || !elements) return;
 
   loading.value = true;
   error.value = null;
 
-  // 1. 构建 return_url
   const returnUrl = `${window.location.origin}/payment-status?orderId=${props.orderId}&returnPath=${encodeURIComponent(props.returnPath || "/")}`;
 
-  // 2. 确认支付
-  const { error: stripeError } = await stripeInstance.confirmPayment({
-    elements,
-    confirmParams: {
-      return_url: returnUrl,
-    },
-  });
+  // 提交支付
+  const { error: stripeError, paymentIntent } =
+    await stripeInstance.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: returnUrl,
+      },
+      // 如果需要更严格的验证后再跳转，可以保留 if_required
+      redirect: "if_required",
+    });
 
   if (stripeError) {
-    // 显示错误信息，保持模态框开启
-    error.value =
-      stripeError.message || "Payment failed. Please check card details.";
+    // 如果必填项（如地址）为空，Stripe 会在这里报错，并在 UI 上显示红色提示
+    error.value = stripeError.message || "Payment failed.";
     loading.value = false;
-  } else {
-    // 理论上这里不会执行，因为 confirmPayment 会重定向
+  } else if (paymentIntent && paymentIntent.status === "succeeded") {
+    // 支付成功
+    try {
+      await cartStore.clearCart();
+    } catch (e) {
+      console.error("Failed to refresh cart", e);
+    }
+    window.location.href = returnUrl;
   }
 };
 
@@ -293,7 +303,7 @@ onUnmounted(() => {
 
 .modal-footer {
   padding-top: 20px;
-  text-align: right;
+  text-align: center;
   border-top: 1px solid #333;
 }
 

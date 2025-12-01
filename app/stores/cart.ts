@@ -129,6 +129,19 @@ export const useCartStore = defineStore("cart", () => {
     }
   }
 
+  /**
+   * 清空购物车中的所有商品项
+   */
+  async function clearCart() {
+    // 1. 调用后端 API 清空购物车（如果需要，一般由支付成功后的 Webhook 处理）
+    // 为了前端视觉效果，我们首先修改本地状态
+    items.value = [];
+    cart.value = null; // 重置购物车对象
+
+    // 可以在这里调用后端 API。但标准流程是在支付成功后通过 Webhook/Success Page处理。
+    console.log("Cart Store: Frontend shopping cart cleared.");
+  }
+
   // ------------------------------------------------
   // 导出 Store 的所有成员
   // ------------------------------------------------
@@ -142,5 +155,6 @@ export const useCartStore = defineStore("cart", () => {
     loadCart,
     addItem: addItemAndRefresh,
     removeItem,
+    clearCart,
   };
 });

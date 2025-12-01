@@ -1,30 +1,68 @@
 <template>
   <div class="cart-page-wrapper">
-    <template v-if="cartStore.isEmpty">
+    <template v-if="cartStore.isEmpty && !showCheckoutModal && !loading">
       <CartEmptyState />
     </template>
 
     <template v-else>
-      <CartFilledState />
+      <CartFilledState @requestCheckout="handleOpenCheckout" />
     </template>
+
+    <CheckoutModal
+      :isVisible="showCheckoutModal"
+      :clientSecret="checkoutClientSecret"
+      :orderId="checkoutOrderId"
+      :returnPath="checkoutReturnPath"
+      :amount="checkoutAmount"
+      :currency="checkoutCurrency"
+      @close="handleCloseCheckout"
+    />
   </div>
 </template>
 
 <script setup>
 import { onMounted, ref } from "vue";
 import { useCartStore } from "~/stores/cart";
-import { useRouter ,useRoute} from "vue-router";
+import { useRouter, useRoute } from "vue-router";
+
+import CartFilledState from "~/components/cart/CartFilledState.vue";
+import CartEmptyState from "~/components/cart/CartEmptyState.vue";
+import CheckoutModal from "~/components/CheckoutModal.vue";
 
 const cartStore = useCartStore();
 const loading = ref(true); // 初始设置为加载中
 const router = useRouter();
 const route = useRoute();
 
+const showCheckoutModal = ref(false);
+const checkoutClientSecret = ref(null);
+const checkoutOrderId = ref(null);
+const checkoutReturnPath = ref("/cart");
+const checkoutAmount = ref(0);
+const checkoutCurrency = ref("usd");
+
 // 页面挂载时，加载后端购物车数据
 onMounted(async () => {
   await cartStore.loadCart();
   loading.value = false;
 });
+
+// 处理 CartFilledState 发出的结算请求
+const handleOpenCheckout = (data) => {
+  // 设置模态框所需的数据
+  checkoutClientSecret.value = data.clientSecret;
+  checkoutOrderId.value = data.orderId;
+  checkoutAmount.value = data.amount; // 接收 CartFilledState 传递的金额
+  checkoutCurrency.value = data.currency;
+
+  // 显示模态框
+  showCheckoutModal.value = true;
+};
+
+// 处理模态框关闭事件
+const handleCloseCheckout = () => {
+  showCheckoutModal.value = false;
+};
 </script>
 
 <style scoped>

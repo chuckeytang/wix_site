@@ -61,6 +61,8 @@ import { useRouter } from "vue-router";
 import { cartsApi } from "~/api/carts";
 import { useCartStore } from "~/stores/cart";
 
+const { showToast } = useToast();
+
 // ----------------------------------------------------
 // Props：接收父组件 (CartFilledState.vue) 传递的数据
 // ----------------------------------------------------
@@ -130,11 +132,19 @@ const handleCheckout = async () => {
       return;
     }
     const clientSecret = paymentIntentResult.data.clientSecret;
-    // 3. 通知父组件，并传递支付所需数据
+
+    // 4. 通知父组件，并传递支付所需数据
     emit("startCheckout", {
       orderId: newOrder.orderId,
       clientSecret: clientSecret,
+      amount: props.subtotal,
+      currency: "usd",
     });
+
+    await nextTick();
+
+    await cartStore.clearCart();
+    console.log("handleCheckout");
   } catch (error) {
     console.error("Checkout process failed:", error);
     showToast(`Checkout process failed. Please check network and login state.`);
