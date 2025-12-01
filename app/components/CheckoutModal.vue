@@ -7,6 +7,10 @@
       </div>
 
       <div class="modal-body">
+        <div class="order-summary">
+          <span class="summary-label">Total Amount:</span>
+          <span class="summary-amount">{{ formattedAmount }}</span>
+        </div>
         <div v-if="loading" class="loading-message">
           Loading payment information...
         </div>
@@ -37,7 +41,9 @@ const props = defineProps<{
   isVisible: boolean;
   clientSecret: string | null;
   orderId: number | null;
-  returnPath: string | null; // 用于支付成功后跳转回原页面的路径
+  returnPath: string | null;
+  amount: number;
+  currency: string;
 }>();
 
 // 2. Emits: 定义事件，通知父组件关闭
@@ -52,6 +58,14 @@ const loading = ref(false);
 const error = ref<string | null>(null);
 const isStripeReady = ref(false);
 let elements: any | null = null; // Stripe Elements 实例
+
+const formattedAmount = computed(() => {
+  if (!props.amount || !props.currency) return "";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: props.currency.toUpperCase(),
+  }).format(props.amount / 100); // 假设传入的是分 (cents)
+});
 
 // 监听 isVisible 属性，并使用 nextTick
 watch(
@@ -82,12 +96,38 @@ const initializeStripe = async (secret: string) => {
   }
 
   try {
-    elements = stripeInstance.elements({ clientSecret: secret }); // elements 被设置为 any
+    elements = stripeInstance.elements({
+      clientSecret: secret,
+      appearance: {
+        theme: "night", // 使用夜间模式以匹配你的深色背景
+        variables: {
+          colorPrimary: "#ff8c62",
+        },
+      },
+    }); // elements 被设置为 any
     // 确保目标元素存在 (在 nextTick 中调用后，这里应该安全了)
     const targetElement = document.querySelector("#payment-element");
     if (!targetElement) {
       throw new Error("Payment Element target not found in DOM.");
     }
+
+    const paymentElementOptions = {
+      layout: "tabs",
+      // [关键] 强制收集账单地址、姓名和邮箱
+      // 这会解决“必填项为空”和“Link勾选框不显示”的问题
+      fields: {
+        billingDetails: {
+          name: "auto", // 显示姓名输入框（必填）
+          email: "auto", // 显示邮箱输入框（Link 需要此项才能显示勾选框）
+          address: {
+            country: "auto",
+            postalCode: "auto",
+            city: "auto",
+            line1: "auto", // 强制显示具体地址行
+          },
+        },
+      },
+    };
 
     // 创建 Payment Element 并挂载
     const paymentElement = elements!.create("payment");
@@ -197,6 +237,28 @@ onUnmounted(() => {
   font-size: 1.8rem;
   font-weight: bold;
   color: #ff8c62; /* 网站主色调 */
+}
+
+.order-summary {
+  background-color: rgba(255, 140, 98, 0.1); /* 淡淡的主色背景 */
+  border: 1px solid rgba(255, 140, 98, 0.3);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.2rem;
+}
+
+.summary-label {
+  color: #ccc;
+}
+
+.summary-amount {
+  font-weight: bold;
+  color: #fff;
+  font-size: 1.4rem;
 }
 
 .close-button {

@@ -44,6 +44,8 @@
       :clientSecret="checkoutClientSecret"
       :orderId="checkoutOrderId"
       :returnPath="checkoutReturnPath"
+      :amount="checkoutAmount"
+      :currency="checkoutCurrency"
       @close="showCheckoutModal = false"
     />
   </div>

@@ -136,6 +136,8 @@
       :clientSecret="checkoutClientSecret"
       :orderId="checkoutOrderId"
       :returnPath="checkoutReturnPath"
+      :amount="checkoutAmount"
+      :currency="checkoutCurrency"
       @close="showCheckoutModal = false"
     />
   </div>
@@ -168,6 +170,8 @@ const showCheckoutModal = ref(false);
 const checkoutClientSecret = ref<string | null>(null);
 const checkoutOrderId = ref<number | null>(null);
 const checkoutReturnPath = ref<string | null>(null);
+const checkoutAmount = ref(0);
+const checkoutCurrency = ref("usd");
 const config = useRuntimeConfig();
 const { handleDownload: handleDownloadCheckAndExecute } = useDownloadMedia();
 
@@ -318,6 +322,8 @@ const handleInstantCheckout = async () => {
   checkoutClientSecret.value = clientSecret;
   checkoutOrderId.value = newOrder.orderId;
   checkoutReturnPath.value = returnPath;
+  checkoutAmount.value = newOrder.totalAmount || 0;
+  checkoutCurrency.value = "usd";
   showCheckoutModal.value = true;
 };
 </script>
