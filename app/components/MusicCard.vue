@@ -110,6 +110,72 @@
             <polyline points="10 9 9 9 8 9"></polyline>
           </svg>
         </button>
+
+        <div class="more-options-wrapper" ref="moreOptionsRef">
+          <button class="action-btn" @click.stop="toggleMenu">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="1"></circle>
+              <circle cx="12" cy="5" r="1"></circle>
+              <circle cx="12" cy="19" r="1"></circle>
+            </svg>
+          </button>
+
+          <transition name="fade">
+            <div v-if="isMenuOpen" class="dropdown-menu">
+              <div class="menu-item" @click.stop="handleMenuAction('cart')">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="menu-icon cart-icon"
+                >
+                  <circle cx="9" cy="21" r="1"></circle>
+                  <circle cx="20" cy="21" r="1"></circle>
+                  <path
+                    d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                  ></path>
+                </svg>
+                <span>Add to cart</span>
+              </div>
+
+              <div class="menu-item" @click.stop="handleMenuAction('preview')">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="menu-icon"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Download preview</span>
+              </div>
+            </div>
+          </transition>
+        </div>
       </div>
 
       <div class="right-column-group">
@@ -132,6 +198,7 @@ import { useAuthStore } from "~/stores/auth";
 import { favoritesApi } from "~/api/favorites";
 import { useDownloadMedia } from "../composables/useDownloadMedia";
 import { usePlaylistModalStore } from "~/stores/playlistModal";
+import { tracksApi } from "~/api";
 
 const props = defineProps({
   track: {
@@ -175,6 +242,23 @@ const globalProgress = computed(() => {
 
 const QUICK_LICENSE_OPTION = "standard";
 
+const isMenuOpen = ref(false);
+const moreOptionsRef = ref<HTMLElement | null>(null);
+
+const toggleMenu = () => {
+  isMenuOpen.value = !isMenuOpen.value;
+};
+
+// 点击外部关闭菜单
+const handleClickOutside = (event: MouseEvent) => {
+  if (
+    moreOptionsRef.value &&
+    !moreOptionsRef.value.contains(event.target as Node)
+  ) {
+    isMenuOpen.value = false;
+  }
+};
+
 // --- 初始化检查收藏状态 ---
 onMounted(async () => {
   if (authStore.isAuthenticated && props.track.trackId) {
@@ -185,7 +269,75 @@ onMounted(async () => {
       console.error("Failed to check favorite status", e);
     }
   }
+  document.addEventListener("click", handleClickOutside);
 });
+
+onUnmounted(() => {
+  document.removeEventListener("click", handleClickOutside);
+});
+
+// 菜单动作处理
+const handleMenuAction = async (action: "cart" | "preview") => {
+  // 先关闭菜单
+  isMenuOpen.value = false;
+
+  if (action === "cart") {
+    // 调用现有的加入购物车逻辑
+    await handleQuickAddToCart();
+  } else if (action === "preview") {
+    // 调用下载预览逻辑
+    await handleDownloadPreview();
+  }
+};
+
+/**
+ * 处理“更多选项”按钮，实现快捷添加到购物车功能
+ */
+const handleQuickAddToCart = async () => {
+  const trackId = props.track.trackId;
+  if (!trackId) {
+    console.error("Track ID is not available for cart.");
+    return;
+  }
+
+  // 调用封装的组合式函数来执行添加到购物车逻辑
+  const success = await handleAddToCart({
+    productId: trackId,
+    productType: "track",
+    licenseOption: QUICK_LICENSE_OPTION,
+    trackTitle: props.track.title,
+  });
+
+  if (success) {
+    //console.log(`Quick add to cart successful for: ${props.track.title}`);
+    showToast(`"${props.track.title}" has been added to your cart.`);
+  }
+};
+
+// 下载预览 (无需登录)
+const handleDownloadPreview = async () => {
+  if (!props.track.trackId) return;
+
+  try {
+    const blob = await tracksApi.downloadPreviewProxy(props.track.trackId);
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${props.track.title}_preview.mp3`);
+
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    console.log("Preview download started.");
+  } catch (error) {
+    console.error("Failed to download preview:", error);
+    // 这里可以使用 showToast 提示用户
+  }
+};
 
 // --- 处理点击收藏 ---
 const handleToggleFavorite = async () => {
@@ -671,5 +823,86 @@ const handleReady = () => {
 
 .track-title:hover {
   color: #ff8c62; /* 悬停时改变颜色，提供视觉反馈 */
+}
+
+/* 包装器用于定位下拉菜单 */
+.more-options-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* 下拉菜单容器 */
+.dropdown-menu {
+  position: absolute;
+  top: 100%; /* 在按钮正下方 */
+  left: 50%;
+  transform: translateX(-50%); /* 水平居中 */
+  margin-top: 10px;
+  background-color: #222; /* 深色背景 */
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 8px 0;
+  min-width: 180px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 100; /* 确保在最上层 */
+
+  /* 添加一个小三角指向按钮 (可选) */
+}
+
+.dropdown-menu::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid #333; /* 与边框颜色一致 */
+}
+
+/* 菜单项 */
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.menu-item:hover {
+  background-color: #333;
+}
+
+/* 菜单图标 */
+.menu-icon {
+  width: 18px;
+  height: 18px;
+  color: #ccc;
+}
+.cart-icon {
+  color: #ffd700; /* 给购物车加点黄色，类似截图中的颜色 */
+}
+
+.menu-item:hover .menu-icon {
+  color: #fff;
+}
+
+/* 简单的淡入淡出动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -10px); /* 出现时稍微向下移动 */
 }
 </style>

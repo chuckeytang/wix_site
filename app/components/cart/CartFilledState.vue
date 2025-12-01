@@ -1,9 +1,7 @@
 <template>
   <div class="cart-filled-state container">
     <section class="cart-list-section">
-      <h1 class="cart-title">
-        In your shopping cart
-      </h1>
+      <h1 class="cart-title">In your shopping cart</h1>
 
       <div class="item-list">
         <CartItem
@@ -125,7 +123,7 @@ const handleCartCheckout = (data) => {
 // ----------------------------------------------------
 const handleRecommendationAddToCart = (track) => {
   if (!track.trackId || !track.standardPrice) {
-    alert("Cannot add recommended item: Price information missing.");
+    showToast("Cannot add recommended item: Price information missing.");
     return;
   }
 

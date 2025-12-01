@@ -14,6 +14,7 @@ export type MediaType = "track" | "sfx";
  */
 export function useDownloadMedia() {
   const authStore = useAuthStore();
+  const { showToast } = useToast();
 
   // 监听认证状态
   const isAuthenticated = computed(() => authStore.isAuthenticated);
@@ -55,7 +56,9 @@ export function useDownloadMedia() {
       return true;
     } catch (error) {
       console.error("Failed to execute download:", error);
-      alert("Failed to start download. Check if you have purchased this item.");
+      showToast(
+        "Failed to start download. Check if you have purchased this item."
+      );
       return false;
     }
   };

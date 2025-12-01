@@ -81,6 +81,7 @@ const emit = defineEmits(["close"]);
 const router = useRouter();
 const cartStore = useCartStore();
 const authStore = useAuthStore();
+const { showToast } = useToast();
 
 /**
  * 处理从许可模态框中添加到购物车
@@ -119,16 +120,16 @@ const handleLicenseAddToCart = async (licenseOption: string, price: number) => {
       await cartStore.loadCart(); // 调用 Store 中的 Action 来刷新数据
 
       // 提示用户并设置延迟
-      alert(`Track added to cart!`);
+      showToast(`Track added to cart!`);
 
       emit("close");
     } else {
-      alert(`Failed to add to cart: ${result.msg || "Unknown error"}`);
+      showToast(`Failed to add to cart: ${result.msg || "Unknown error"}`);
     }
   } catch (error) {
     console.error("Add to cart request failed:", error);
     // 假设错误是网络或登录问题
-    alert(`Add to cart request failed: ${error}`);
+    showToast(`Add to cart request failed: ${error}`);
   }
 };
 </script>

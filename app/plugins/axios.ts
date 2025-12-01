@@ -8,6 +8,7 @@ import type {
 } from "axios";
 import { useAuthStore } from "~/stores/auth";
 
+const { showToast } = useToast();
 interface Toast {
   error(message: string): void;
 }
@@ -87,7 +88,7 @@ export default defineNuxtPlugin((nuxtApp) => {
           if (app.$toast) {
             app.$toast.error("登录已过期，请重新登录。");
           } else {
-            alert("登录已过期，请重新登录。");
+            showToast("登录已过期，请重新登录。");
           }
 
           authStore.logout();
@@ -125,7 +126,7 @@ export default defineNuxtPlugin((nuxtApp) => {
         if (app.$toast) {
           app.$toast.error("登录已过期，请重新登录。");
         } else {
-          alert("登录已过期，请重新登录。");
+          showToast("登录已过期，请重新登录。");
         }
 
         authStore.logout();

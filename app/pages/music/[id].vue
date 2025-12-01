@@ -211,6 +211,7 @@ const track = ref<Tracks | null>(null);
 const loading = ref(true);
 const error = ref(false);
 const config = useRuntimeConfig();
+const { showToast } = useToast();
 const publishableKey = config.public.stripePk as string;
 
 const musicPlayerStore = useMusicPlayerStore();
@@ -340,7 +341,7 @@ const selectSegmentOption = (segment: string) => {
  */
 const handleInstantCheckout = async () => {
   if (!track.value?.trackId) {
-    alert("音乐信息不完整，无法购买。");
+    showToast("Music information is incomplete; purchase is not possible.");
     return;
   }
 
@@ -358,14 +359,16 @@ const handleInstantCheckout = async () => {
   try {
     const orderResult = await cartsApi.instantBuy(buyItem);
     if (orderResult.code !== 200 || !orderResult.data) {
-      alert(`提交订单失败: ${orderResult.msg || "未知错误"}`);
+      showToast(
+        `Order submission failed:${orderResult.msg || "Unknown error"}`
+      );
       return;
     }
     newOrder = orderResult.data;
-    console.log("单品订单创建成功:", newOrder);
+    console.log("Single item order created successfully:", newOrder);
   } catch (error) {
-    console.error("添加到购物车请求失败:", error);
-    alert(`添加到购物车失败: ${error || "未知错误"}`);
+    console.error("Add to cart request failed:", error);
+    showToast(`Add to cart request failed: ${error || "Unknown error"}`);
     return;
   }
 
@@ -379,19 +382,24 @@ const handleInstantCheckout = async () => {
       paymentIntentResult.code !== 200 ||
       !paymentIntentResult.data?.clientSecret
     ) {
-      alert(`创建支付意图失败: ${paymentIntentResult.msg || "后端错误"}`);
+      showToast(
+        `Failed to create payment intent:${paymentIntentResult.msg || "Unknown error"}`
+      );
       return;
     }
     clientSecret = paymentIntentResult.data.clientSecret;
-    console.log("Payment Intent 创建成功，Client Secret:", clientSecret);
+    console.log(
+      "Payment Intent created successfully, Client Secret:",
+      clientSecret
+    );
   } catch (error) {
-    console.error("创建支付意图请求失败:", error);
-    alert("支付服务连接失败。");
+    console.error("The request to create a payment intent failed.", error);
+    showToast("Payment service connection failed.");
     return;
   }
 
-  alert(
-    `订单创建成功，即将跳转到 Stripe 支付页面。Client Secret: ${clientSecret}`
+  showToast(
+    `Order created successfully. You will be redirected to the Stripe payment page shortly. Client Secret: ${clientSecret}`
   );
 
   // 4. 成功后，设置状态并显示模态框

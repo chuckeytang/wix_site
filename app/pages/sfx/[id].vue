@@ -172,6 +172,7 @@ const config = useRuntimeConfig();
 const { handleDownload: handleDownloadCheckAndExecute } = useDownloadMedia();
 
 const musicPlayerStore = useMusicPlayerStore();
+const { showToast } = useToast();
 const localIsPlaying = computed(() => {
   // 仅在当前媒体类型为 sfx 时进行比较，并断言类型
   return (
@@ -260,7 +261,7 @@ const handleAddToCart = () => {
  */
 const handleInstantCheckout = async () => {
   if (!sfx.value?.sfxId) {
-    alert("SFX information is missing.");
+    showToast("SFX information is missing.");
     return;
   }
 
@@ -278,14 +279,16 @@ const handleInstantCheckout = async () => {
   try {
     const orderResult = await cartsApi.instantBuy(buyItem);
     if (orderResult.code !== 200 || !orderResult.data) {
-      alert(`提交订单失败: ${orderResult.msg || "未知错误"}`);
+      showToast(
+        `Order submission failed:${orderResult.msg || "Unknown error"}`
+      );
       return;
     }
     newOrder = orderResult.data;
-    console.log("单品订单创建成功:", newOrder);
+    console.log("Single item order created successfully:", newOrder);
   } catch (error) {
     console.error("Instant Buy request failed:", error);
-    alert(`Instant Buy failed: ${error || "Unknown error"}`);
+    showToast(`Instant Buy failed: ${error || "Unknown error"}`);
     return;
   }
 
@@ -299,13 +302,15 @@ const handleInstantCheckout = async () => {
       paymentIntentResult.code !== 200 ||
       !paymentIntentResult.data?.clientSecret
     ) {
-      alert(`创建支付意图失败: ${paymentIntentResult.msg || "后端错误"}`);
+      showToast(
+        `Failed to create payment intent:${paymentIntentResult.msg || "Unknown error"}`
+      );
       return;
     }
     clientSecret = paymentIntentResult.data?.clientSecret;
   } catch (error) {
     console.error("Create Payment Intent failed:", error);
-    alert("Payment service connection failed.");
+    showToast("Payment service connection failed.");
     return;
   }
 

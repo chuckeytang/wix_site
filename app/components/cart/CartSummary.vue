@@ -96,7 +96,7 @@ const handleCheckout = async () => {
 
   // 1. **订阅/单次购买逻辑分支（未来扩展）**
   if (selectedPurchaseType.value === "subscription") {
-    alert(
+    showToast(
       "Subscription checkout is not yet implemented. Please choose One-time purchase."
     );
     return;
@@ -108,7 +108,9 @@ const handleCheckout = async () => {
     const orderResult = await cartsApi.submitCartToOrder();
 
     if (orderResult.code !== 200 || !orderResult.data) {
-      alert(`Checkout failed: ${orderResult.msg || "Failed to create order."}`);
+      showToast(
+        `Checkout failed: ${orderResult.msg || "Failed to create order."}`
+      );
       return;
     }
     const newOrder = orderResult.data;
@@ -122,7 +124,7 @@ const handleCheckout = async () => {
       paymentIntentResult.code !== 200 ||
       !paymentIntentResult.data?.clientSecret
     ) {
-      alert(
+      showToast(
         `Payment failed: ${paymentIntentResult.msg || "Failed to create payment intent."}`
       );
       return;
@@ -135,7 +137,7 @@ const handleCheckout = async () => {
     });
   } catch (error) {
     console.error("Checkout process failed:", error);
-    alert(`Checkout process failed. Please check network and login state.`);
+    showToast(`Checkout process failed. Please check network and login state.`);
   }
 };
 </script>

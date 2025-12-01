@@ -10,6 +10,7 @@ import type { Carts } from "~/types/carts";
 // 辅助函数：模拟后端 API 延迟
 // ------------------------------------------------
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const { showToast } = useToast();
 
 export const useCartStore = defineStore("cart", () => {
   // ------------------------------------------------
@@ -54,7 +55,7 @@ export const useCartStore = defineStore("cart", () => {
         cart.value = response.data;
         items.value = response.data.items || []; // items 列表
         console.log(
-          `Cart Store: 购物车数据加载完成，共 ${items.value.length} 项。`
+          `Cart Store: Shopping cart data loaded, totaling ${items.value.length} items.`
         );
       } else if (response.code === 200 && !response.data) {
         // 后端返回成功，但没有购物车对象（可能是新用户，后端已创建空购物车）
@@ -86,12 +87,14 @@ export const useCartStore = defineStore("cart", () => {
         await loadCart();
         return true;
       } else {
-        alert(`添加商品失败: ${response.msg}`);
+        showToast(`Adding product failed: ${response.msg}`);
         return false;
       }
     } catch (error) {
-      console.error("Cart Store: 添加商品失败！", error);
-      alert("添加商品失败，请检查网络或登录状态。");
+      console.error("Cart Store: Failed to add product!", error);
+      showToast(
+        "Adding a product failed. Please check your network or login status."
+      );
       return false;
     }
   }
@@ -117,12 +120,12 @@ export const useCartStore = defineStore("cart", () => {
       console.log(`Cart Item ${cartItemId} successfully removed from backend.`);
     } catch (error) {
       console.error(
-        `Cart Store: ⚠️ 移除商品 ${cartItemId} 失败，恢复前端状态！`,
+        `Cart Store: Removing item ${cartItemId} failed, restore front-end state!`,
         error
       );
       // 3. 错误处理：如果后端失败，恢复原始数据
       items.value = originalItems;
-      alert("移除商品失败，请重试！");
+      showToast("Product removal failed, please try again!");
     }
   }
 
