@@ -3,7 +3,6 @@
 import request from "./http";
 import type { Users, PaginationResult } from "~/types/users";
 import type { AjaxResult } from "~/types/ajax";
-// import axios from "axios"; // 如果用户相关的API没有涉及文件上传/下载，可以不用引入 axios
 
 /**
  * 用户相关的 API 接口
@@ -35,7 +34,6 @@ export const usersApi = {
    * 假设后端提供了一个不带 ID 的特殊接口，或者我们通过 auth/getInfo 获取
    * 如果后端是通过 /site/users/{userId} 获取，前端需要知道当前用户 ID
    * 这里我们假设后端有一个获取自身信息的接口 /site/users/me
-   * **注意：请根据后端实际接口进行调整。如果后端没有 `/me` 接口，应使用 `authApi` 或传入当前用户 ID。**
    */
   getMe(): Promise<AjaxResult<Users>> {
     // 这是一个常见的 RESTful 补充接口，用于获取当前登录用户自身信息

@@ -263,7 +263,10 @@ const handleClickOutside = (event: MouseEvent) => {
 onMounted(async () => {
   if (authStore.isAuthenticated && props.track.trackId) {
     try {
-      const res = await favoritesApi.checkFavoriteStatus(props.track.trackId);
+      const res = await favoritesApi.checkFavoriteStatus(
+        props.track.trackId,
+        "track"
+      );
       isFavorited.value = res.data!;
     } catch (e) {
       console.error("Failed to check favorite status", e);
@@ -350,7 +353,10 @@ const handleToggleFavorite = async () => {
   isFavorited.value = !previousState;
 
   try {
-    const res = await favoritesApi.toggleFavorite(props.track.trackId!);
+    const res = await favoritesApi.toggleFavorite(
+      props.track.trackId!,
+      "track"
+    );
     // 后端返回 data 为 true(已收藏) 或 false(未收藏)
     if (res.data !== undefined) {
       isFavorited.value = res.data;

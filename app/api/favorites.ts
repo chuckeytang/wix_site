@@ -4,21 +4,27 @@ import type { AjaxResult } from "~/types/ajax";
 
 export const favoritesApi = {
   /**
-   * 切换收藏状态 (Track)
-   * @param trackId 音乐ID
+   * 切换收藏状态 (通用接口: 支持 Track 和 Sfx)
+   * URL: /site/favorites/toggle/{type}/{id}
+   * @param id 媒体ID (trackId 或 sfxId)
+   * @param type 媒体类型 ('track' 或 'sfx')
    */
-  toggleFavorite(trackId: number): Promise<AjaxResult<boolean>> {
-    return request.post(`/site/favorites/toggle/${trackId}`);
+  toggleFavorite(id: number, type: MediaType): Promise<AjaxResult<boolean>> {
+    // 后端 UserFavoritesController 应该接收 /toggle/{type}/{id} 这样的路由
+    return request.post(`/site/favorites/toggle/${type}/${id}`);
   },
 
   /**
-   * 检查收藏状态 (Track)
-   * @param trackId 音乐ID
+   * 检查收藏状态 (通用接口: 支持 Track 和 Sfx)
+   * URL: /site/favorites/check/{type}/{id}
+   * @param id 媒体ID
+   * @param type 媒体类型
    */
-  checkFavoriteStatus(trackId: number): Promise<AjaxResult<boolean>> {
-    return request.get(`/site/favorites/check/${trackId}`);
+  checkFavoriteStatus(
+    id: number,
+    type: MediaType
+  ): Promise<AjaxResult<boolean>> {
+    // 后端 UserFavoritesController 应该接收 /check/{type}/{id} 这样的路由
+    return request.get(`/site/favorites/check/${type}/${id}`);
   },
-
-  // 如果后端实现了 SFX 的收藏接口，可以在这里扩展
-  // toggleFavoriteSfx(sfxId: number) ...
 };

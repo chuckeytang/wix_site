@@ -1,11 +1,13 @@
 import { defineStore } from "pinia";
+import type { Users } from "~/types/users";
+import { usersApi } from "~/api/users";
 
 const TOKEN_HEADER = "Authorization";
 const TOKEN_STORAGE_KEY = "accessToken";
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
-    user: null,
+    user: null as Users | null,
     accessToken: null as string | null,
     showLoginDialog: false as boolean,
     showLicenseModal: false as boolean, // 控制 License Modal 是否显示
@@ -20,6 +22,7 @@ export const useAuthStore = defineStore("auth", {
     // 获取完整的 Token 字符串，包括 Bearer 前缀
     getAuthHeader: (state) =>
       state.accessToken ? `Bearer ${state.accessToken}` : null,
+    getNickname: (state) => state.user?.nickname || "Guest",
   },
   actions: {
     openLoginDialog() {
@@ -42,19 +45,40 @@ export const useAuthStore = defineStore("auth", {
       this.showLicenseModal = false;
       this.trackIdForLicense = null;
     },
+    async fetchUserInfo() {
+      if (!this.isAuthenticated) {
+        this.user = null;
+        return;
+      }
+      try {
+        const response = await usersApi.getMe();
+        if (response.code === 200 && response.data) {
+          this.user = response.data as Users;
+        } else {
+          // 接口返回错误，可能是 Token 无效，执行登出
+          this.logout();
+        }
+      } catch (error) {
+        console.error("Failed to fetch user info:", error);
+        // 网络错误或 401 错误，执行登出
+        this.logout();
+      }
+    },
     // 设置 token 和用户信息
     setToken(token: string) {
       this.accessToken = token;
       if (process.client) {
         localStorage.setItem(TOKEN_STORAGE_KEY, token);
       }
+      this.fetchUserInfo();
     },
     // 从 localStorage 加载 token (仅在客户端运行)
-    loadToken() {
+    async loadToken() {
       if (process.client) {
         const token = localStorage.getItem(TOKEN_STORAGE_KEY);
         if (token) {
           this.accessToken = token;
+          await this.fetchUserInfo();
         }
       }
     },

@@ -48,14 +48,14 @@
     </div>
 
     <div class="card-footer">
-      <button class="action-btn icon-heart">
+      <button class="action-btn icon-heart" @click.stop="handleToggleFavorite">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="24"
           height="24"
           viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
+          :fill="isFavorited ? '#ff8c62' : 'none'"
+          :stroke="isFavorited ? '#ff8c62' : 'currentColor'"
           stroke-width="2"
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -65,25 +65,71 @@
           ></path>
         </svg>
       </button>
-      <button
-        class="action-btn icon-more"
-        @click="handleQuickAddToCart"
-        :disabled="isCartLoading"
-      >
-        <svg
-          v-if="!isCartLoading"
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          stroke="none"
-        >
-          <circle cx="12" cy="12" r="2"></circle>
-          <circle cx="19" cy="12" r="2"></circle>
-          <circle cx="5" cy="12" r="2"></circle>
-        </svg>
-      </button>
+      <div class="more-options-wrapper" ref="moreOptionsRef">
+        <button class="action-btn icon-more" @click.stop="toggleMenu">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="1"></circle>
+            <circle cx="12" cy="5" r="1"></circle>
+            <circle cx="12" cy="19" r="1"></circle>
+          </svg>
+        </button>
+
+        <transition name="fade">
+          <div v-if="isMenuOpen" class="dropdown-menu">
+            <div class="menu-item" @click.stop="handleMenuAction('cart')">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="menu-icon cart-icon"
+              >
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path
+                  d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                ></path>
+              </svg>
+              <span>Add to cart</span>
+            </div>
+
+            <div class="menu-item" @click.stop="handleMenuAction('preview')">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="menu-icon"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Download preview</span>
+            </div>
+          </div>
+        </transition>
+      </div>
       <button class="download-button" @click="handleDownload">Download</button>
     </div>
   </div>
@@ -97,6 +143,9 @@ import type { Tracks } from "~/types/tracks";
 import { useAddToCart } from "~/composables/useAddToCart";
 import { useToast } from "~/composables/useToast";
 import { useDownloadMedia } from "~/composables/useDownloadMedia";
+import { useAuthStore } from "~/stores/auth";
+import { favoritesApi } from "~/api/favorites";
+import { tracksApi } from "~/api/tracks";
 
 const props = defineProps({
   track: {
@@ -112,6 +161,80 @@ const { isLoading: isCartLoading, handleAddToCart } = useAddToCart();
 const QUICK_LICENSE_OPTION = "standard";
 const { showToast } = useToast();
 const { handleDownload: handleDownloadCheckAndExecute } = useDownloadMedia(); // 重命名以避免冲突
+const authStore = useAuthStore();
+const isFavorited = ref(false);
+const isMenuOpen = ref(false);
+const moreOptionsRef = ref<HTMLElement | null>(null);
+const toggleMenu = () => {
+  isMenuOpen.value = !isMenuOpen.value;
+};
+
+// 点击外部关闭菜单
+const handleClickOutside = (event: MouseEvent) => {
+  if (
+    moreOptionsRef.value &&
+    !moreOptionsRef.value.contains(event.target as Node)
+  ) {
+    isMenuOpen.value = false;
+  }
+};
+
+onMounted(async () => {
+  document.addEventListener("click", handleClickOutside);
+  // 初始化检查收藏状态
+  if (authStore.isAuthenticated && props.track.trackId) {
+    try {
+      const res = await favoritesApi.checkFavoriteStatus(
+        props.track.trackId,
+        "track"
+      );
+      isFavorited.value = res.data!;
+    } catch (e) {
+      // ignore error
+    }
+  }
+});
+
+onUnmounted(() => {
+  document.removeEventListener("click", handleClickOutside);
+});
+
+// 菜单动作处理
+const handleMenuAction = async (action: "cart" | "preview") => {
+  // 先关闭菜单
+  isMenuOpen.value = false;
+
+  if (action === "cart") {
+    await handleQuickAddToCart();
+  } else if (action === "preview") {
+    await handleDownloadPreview();
+  }
+};
+
+// 下载预览 (无需登录)
+const handleDownloadPreview = async () => {
+  if (!props.track.trackId) return;
+
+  try {
+    const blob = await tracksApi.downloadPreviewProxy(props.track.trackId);
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${props.track.title}_preview.mp3`);
+
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    console.log("Preview download started.");
+  } catch (error) {
+    console.error("Failed to download preview:", error);
+    showToast("Failed to download preview.");
+  }
+};
 
 // 使用 computed 属性来同步本地播放状态和全局状态
 const localIsPlaying = computed(() => {
@@ -239,6 +362,30 @@ const handleDownload = async () => {
 const handleReady = () => {
   if (waveformPlayerRef.value) {
     musicPlayerStore.setDuration(waveformPlayerRef.value.getDuration());
+  }
+};
+
+const handleToggleFavorite = async () => {
+  if (!authStore.isAuthenticated) {
+    authStore.openLoginDialog();
+    return;
+  }
+
+  const previousState = isFavorited.value;
+  isFavorited.value = !previousState;
+
+  try {
+    const res = await favoritesApi.toggleFavorite(
+      props.track.trackId!,
+      "track"
+    );
+    if (res.data !== undefined) {
+      isFavorited.value = res.data;
+      showToast(res.data ? "Added to favorites" : "Removed from favorites");
+    }
+  } catch (error) {
+    isFavorited.value = previousState;
+    showToast("Failed to update favorite status");
   }
 };
 </script>
@@ -369,5 +516,81 @@ const handleReady = () => {
 .waveform-wrapper {
   flex-grow: 1; /* 让它占据所有可用空间 */
   height: 50px; /* 保持与播放按钮一致的高度 */
+}
+
+.more-options-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dropdown-menu {
+  position: absolute;
+  bottom: 100%; /* 在按钮正上方弹出，避免被遮挡 */
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 10px;
+  background-color: #222;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 8px 0;
+  min-width: 180px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+}
+
+/* 小三角指向下方 */
+.dropdown-menu::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #333;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.menu-item:hover {
+  background-color: #333;
+}
+
+.menu-icon {
+  width: 18px;
+  height: 18px;
+  color: #ccc;
+}
+
+.cart-icon {
+  color: #ffd700;
+}
+
+.menu-item:hover .menu-icon {
+  color: #fff;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 10px); /* 动画方向改为向上 */
 }
 </style>

@@ -37,8 +37,9 @@
           <div class="mood-intro-text">
             <h2>
               {{ genresDetail.name }}
-              <button class="play-all-btn" @click="playAllTracks">
+              <button class="play-all-btn" @click="togglePlayPauseAll">
                 <svg
+                  v-if="!isCurrentPagePlaying"
                   xmlns="http://www.w3.org/2000/svg"
                   width="30"
                   height="30"
@@ -52,6 +53,23 @@
                 >
                   <circle cx="12" cy="12" r="10"></circle>
                   <polygon points="10 8 16 12 10 16 10 8"></polygon>
+                </svg>
+                <svg
+                  v-else
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="30"
+                  height="30"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="feather feather-pause-circle"
+                >
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="10" y1="15" x2="10" y2="9"></line>
+                  <line x1="14" y1="15" x2="14" y2="9"></line>
                 </svg>
               </button>
             </h2>
@@ -264,6 +282,14 @@ const totalPages = computed(() => {
   return Math.ceil(totalTracks.value / pageSize.value);
 });
 
+const isCurrentPagePlaying = computed(() => {
+  // 检查全局播放器的源 ID 是否匹配当前流派 ID
+  const isThisSource =
+    musicPlayerStore.currentSourceId === Number(genresId.value);
+  // 检查是否正在播放
+  return isThisSource && musicPlayerStore.isPlaying;
+});
+
 // 定义筛选器配置和状态
 interface FilterItem {
   id: string;
@@ -309,9 +335,20 @@ const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
 };
 
-const playAllTracks = () => {
-  if (tracks.value && tracks.value.length > 0) {
-    musicPlayerStore.setPlaylist(tracks.value, tracks.value[0]);
+const togglePlayPauseAll = () => {
+  if (isCurrentPagePlaying.value) {
+    // 1. 如果当前页面正在播放，则暂停
+    musicPlayerStore.togglePlayPause();
+  } else {
+    // 2. 如果当前页面未播放，则设置新列表并从头播放
+    if (tracks.value && tracks.value.length > 0) {
+      // 在设置列表时，将当前流派ID作为播放源ID传入
+      musicPlayerStore.setPlaylist(
+        tracks.value,
+        tracks.value[0],
+        Number(genresId.value) // 🚀 传入 Source ID
+      );
+    }
   }
 };
 
@@ -399,7 +436,6 @@ const fetchTracks = async () => {
     );
     tracks.value = response.rows;
     totalTracks.value = response.total;
-    musicPlayerStore.setPlaylist(tracks.value);
   } catch (e) {
     tracksError.value = true;
     console.error("Failed to fetch tracks:", e);

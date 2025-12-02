@@ -61,14 +61,14 @@
 
     <div class="right-column-group">
       <div class="action-buttons">
-        <button class="action-btn" @click.stop="handleAddToPlaylist">
+        <button class="action-btn" @click.stop="handleToggleFavoriteSfx">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
             height="24"
             viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
+            :fill="isFavoritedSfx ? '#ff8c62' : 'none'"
+            :stroke="isFavoritedSfx ? '#ff8c62' : 'currentColor'"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -78,7 +78,8 @@
             ></path>
           </svg>
         </button>
-        <button class="action-btn">
+
+        <button class="action-btn" @click.stop="handleAddToPlaylist">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -99,6 +100,52 @@
             <polyline points="10 9 9 9 8 9"></polyline>
           </svg>
         </button>
+
+        <div class="more-options-wrapper" ref="moreOptionsRef">
+          <button class="action-btn" @click.stop="toggleMenu">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="1"></circle>
+              <circle cx="12" cy="5" r="1"></circle>
+              <circle cx="12" cy="19" r="1"></circle>
+            </svg>
+          </button>
+
+          <transition name="fade">
+            <div v-if="isMenuOpen" class="dropdown-menu">
+              <div class="menu-item" @click.stop="handleMenuAction('cart')">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="menu-icon cart-icon"
+                >
+                  <circle cx="9" cy="21" r="1"></circle>
+                  <circle cx="20" cy="21" r="1"></circle>
+                  <path
+                    d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                  ></path>
+                </svg>
+                <span>Add to cart</span>
+              </div>
+            </div>
+          </transition>
+        </div>
       </div>
 
       <div class="download-group">
@@ -111,7 +158,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps, computed, watch } from "vue";
+import { ref, defineProps, computed, watch, onMounted, onUnmounted } from "vue";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
 import type { Sfx } from "~/types/sfx";
 import WaveformPlayer from "./WaveformPlayer.vue";
@@ -120,6 +167,7 @@ import { useAuthStore } from "~/stores/auth";
 import { usePlaylistModalStore } from "~/stores/playlistModal";
 import { useToast } from "~/composables/useToast";
 import { favoritesApi } from "~/api/favorites";
+import { useAddToCart } from "~/composables/useAddToCart";
 
 const props = defineProps({
   sfx: {
@@ -134,14 +182,22 @@ const { handleDownload: handleDownloadCheckAndExecute } = useDownloadMedia();
 const authStore = useAuthStore();
 const playlistModalStore = usePlaylistModalStore();
 const { showToast } = useToast();
+const { handleAddToCart } = useAddToCart();
 
 const isFavoritedSfx = ref(false);
+const isMenuOpen = ref(false);
+const moreOptionsRef = ref<HTMLElement | null>(null);
+const QUICK_LICENSE_OPTION = "standard";
 
 // 初始化时检查 SFX 收藏状态 (假设 favoritesApi 提供了 checkFavoriteSfxStatus)
 onMounted(async () => {
+  document.addEventListener("click", handleClickOutside);
   if (authStore.isAuthenticated && props.sfx.sfxId) {
     try {
-      const res = await favoritesApi.checkFavoriteStatus(props.sfx.sfxId);
+      const res = await favoritesApi.checkFavoriteStatus(
+        props.sfx.sfxId,
+        "sfx"
+      );
       isFavoritedSfx.value = res.data!;
     } catch (e) {
       // 未登录或接口错误，默认为未收藏
@@ -149,6 +205,48 @@ onMounted(async () => {
     }
   }
 });
+
+onUnmounted(() => {
+  document.removeEventListener("click", handleClickOutside);
+});
+
+// --- 更多选项菜单逻辑 ---
+const toggleMenu = () => {
+  isMenuOpen.value = !isMenuOpen.value;
+};
+
+const handleClickOutside = (event: MouseEvent) => {
+  if (
+    moreOptionsRef.value &&
+    !moreOptionsRef.value.contains(event.target as Node)
+  ) {
+    isMenuOpen.value = false;
+  }
+};
+
+const handleMenuAction = async (action: "cart") => {
+  isMenuOpen.value = false; // 关闭菜单
+
+  if (action === "cart") {
+    await handleQuickAddToCart();
+  }
+};
+
+// 快捷加入购物车逻辑
+const handleQuickAddToCart = async () => {
+  if (!props.sfx.sfxId) return;
+
+  const success = await handleAddToCart({
+    productId: props.sfx.sfxId,
+    productType: "sfx", // 注意这里类型是 sfx
+    licenseOption: QUICK_LICENSE_OPTION,
+    trackTitle: props.sfx.title,
+  });
+
+  if (success) {
+    showToast(`"${props.sfx.title}" has been added to your cart.`);
+  }
+};
 
 const handleToggleFavoriteSfx = async () => {
   if (!authStore.isAuthenticated) {
@@ -162,7 +260,7 @@ const handleToggleFavoriteSfx = async () => {
 
   try {
     // 假设 API 接口为 toggleFavoriteSfx
-    const res = await favoritesApi.toggleFavorite(props.sfx.sfxId!);
+    const res = await favoritesApi.toggleFavorite(props.sfx.sfxId!, "sfx");
     if (res.data !== undefined) {
       isFavoritedSfx.value = res.data;
       showToast(res.data ? "Added to favorites" : "Removed from favorites");
@@ -406,5 +504,81 @@ const handleDownload = async () => {
 
 .sfx-card-list:hover .play-button svg {
   color: white;
+}
+
+.more-options-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%; /* SfxCard 为列表布局，向下弹出比较自然，如被遮挡可改为 bottom: 100% */
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 10px;
+  background-color: #222;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 8px 0;
+  min-width: 180px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+}
+
+/* 小三角指向按钮 */
+.dropdown-menu::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid #333;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.menu-item:hover {
+  background-color: #333;
+}
+
+.menu-icon {
+  width: 18px;
+  height: 18px;
+  color: #ccc;
+}
+
+.cart-icon {
+  color: #ffd700;
+}
+
+.menu-item:hover .menu-icon {
+  color: #fff;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -10px);
 }
 </style>
