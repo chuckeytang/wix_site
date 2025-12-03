@@ -29,6 +29,11 @@ export const useCartStore = defineStore("cart", () => {
   // 计算购物车中的总商品项数
   const totalItems = computed(() => items.value.length);
 
+  const badgeCount = computed(() => {
+    const count = items.value.length;
+    return count > 99 ? 99 : count;
+  });
+
   // 计算购物车中所有商品的总价（小计）
   const subtotal = computed(() => {
     return items.value.reduce(
@@ -151,6 +156,7 @@ export const useCartStore = defineStore("cart", () => {
     isEmpty,
     totalItems,
     subtotal,
+    badgeCount,
     // 动作
     loadCart,
     addItem: addItemAndRefresh,

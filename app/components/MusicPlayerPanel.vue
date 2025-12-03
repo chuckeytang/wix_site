@@ -161,25 +161,24 @@
                 @input="handleVolumeChange"
               />
             </div>
-            <button class="action-btn">
+            <button class="action-btn" @click="handleToggleFavorite">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
                 height="24"
                 viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
+                :fill="isFavorited ? '#ff8c62' : 'none'"
+                :stroke="isFavorited ? '#ff8c62' : 'currentColor'"
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                class="feather feather-heart"
               >
                 <path
                   d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
                 ></path>
               </svg>
             </button>
-            <button class="action-btn">
+            <button class="action-btn" @click="handleAddToPlaylist">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -190,17 +189,74 @@
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                class="feather feather-plus-circle"
               >
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="16"></line>
-                <line x1="8" y1="12" x2="16" y2="12"></line>
+                <path
+                  d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8z"
+                ></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </button>
+
+            <button
+              class="action-btn"
+              @click="handleQuickAddToCart"
+              :disabled="isCartLoading"
+            >
+              <svg
+                v-if="!isCartLoading"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path
+                  d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                ></path>
+              </svg>
+              <svg
+                v-else
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="spin"
+              >
+                <line x1="12" y1="2" x2="12" y2="6"></line>
+                <line x1="12" y1="18" x2="12" y2="22"></line>
+                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                <line x1="2" y1="12" x2="6" y2="12"></line>
+                <line x1="18" y1="12" x2="22" y2="12"></line>
+                <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
               </svg>
             </button>
           </div>
 
           <div class="preview-download-group">
-            <button class="preview-btn">Preview</button>
+            <button
+              class="preview-btn"
+              @click="handleDownloadPreview"
+              :disabled="!isMusicTrack"
+              :class="{ disabled: !isMusicTrack }"
+            >
+              Preview
+            </button>
             <button class="download-btn" @click="handleDownload()">
               Download
             </button>
@@ -227,28 +283,42 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from "vue";
+import { ref, watch, onMounted, computed, onBeforeUnmount } from "vue";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
 import WaveformPlayer from "~/components/WaveformPlayer.vue";
 import type { Tracks } from "~/types/tracks";
 import type { Sfx } from "~/types/sfx";
-import { useDownloadMedia } from "../composables/useDownloadMedia";
-import type { MediaType } from "../composables/useDownloadMedia";
+import {
+  useDownloadMedia,
+  type MediaType,
+} from "~/composables/useDownloadMedia";
+import { useAuthStore } from "~/stores/auth";
+import { usePlaylistModalStore } from "~/stores/playlistModal";
+import { useAddToCart } from "~/composables/useAddToCart";
+import { useToast } from "~/composables/useToast";
+import { favoritesApi } from "~/api/favorites";
+import { tracksApi } from "~/api/tracks";
 
 const playerStore = useMusicPlayerStore();
 const waveformPlayerRef = ref<InstanceType<typeof WaveformPlayer> | null>(null);
+const authStore = useAuthStore();
+const playlistModalStore = usePlaylistModalStore();
+const { handleDownload: handleDownloadCheckAndExecute } = useDownloadMedia();
+const { isLoading: isCartLoading, handleAddToCart } = useAddToCart();
+const { showToast } = useToast();
 
 const currentTime = ref(0);
 const duration = ref(0);
 const volume = ref(70);
 const currentSegment = ref("full");
+const isFavorited = ref(false);
+const QUICK_LICENSE_OPTION = "standard";
 const segments = [
   { value: "full", label: "Full" },
   { value: "15s", label: "15s" },
   { value: "30s", label: "30s" },
   { value: "60s", label: "60s" },
 ];
-const { handleDownload: handleDownloadCheckAndExecute } = useDownloadMedia();
 
 const isMusicTrack = computed(
   () => playerStore.mediaType === "track" && playerStore.currentTrack
@@ -256,6 +326,114 @@ const isMusicTrack = computed(
 const isSfx = computed(
   () => !!(playerStore.mediaType === "sfx" && playerStore.currentTrack)
 );
+
+// 监听当前歌曲变化，检查收藏状态
+watch(
+  () => playerStore.currentPlayingId,
+  async (newId) => {
+    if (!newId || !authStore.isAuthenticated) {
+      isFavorited.value = false;
+      return;
+    }
+    try {
+      const type = playerStore.mediaType as MediaType;
+      const res = await favoritesApi.checkFavoriteStatus(newId, type);
+      isFavorited.value = res.data!;
+    } catch (e) {
+      isFavorited.value = false;
+    }
+  },
+  { immediate: true }
+);
+
+// --- 1. 收藏功能 ---
+const handleToggleFavorite = async () => {
+  if (!playerStore.currentPlayingId) return;
+  if (!authStore.isAuthenticated) {
+    authStore.openLoginDialog();
+    return;
+  }
+
+  const previousState = isFavorited.value;
+  isFavorited.value = !previousState;
+
+  try {
+    const type = playerStore.mediaType as MediaType;
+    const res = await favoritesApi.toggleFavorite(
+      playerStore.currentPlayingId,
+      type
+    );
+    if (res.data !== undefined) {
+      isFavorited.value = res.data;
+      showToast(res.data ? "Added to favorites" : "Removed from favorites");
+    }
+  } catch (error) {
+    isFavorited.value = previousState;
+    showToast("Failed to update favorite status");
+  }
+};
+
+// --- 2. 加入播放列表功能 ---
+const handleAddToPlaylist = () => {
+  if (!playerStore.currentTrack) return;
+  if (!authStore.isAuthenticated) {
+    authStore.openLoginDialog();
+    return;
+  }
+
+  const type = playerStore.mediaType as MediaType;
+  const title = playerStore.currentTrack.title;
+  playlistModalStore.openModal(playerStore.currentPlayingId!, type, title);
+};
+
+// --- 3. 加入购物车功能 ---
+const handleQuickAddToCart = async () => {
+  if (!playerStore.currentTrack) return;
+
+  const type = playerStore.mediaType as "track" | "sfx";
+  const title = playerStore.currentTrack.title;
+
+  const success = await handleAddToCart({
+    productId: playerStore.currentPlayingId!,
+    productType: type,
+    licenseOption: QUICK_LICENSE_OPTION,
+    trackTitle: title,
+  });
+
+  if (success) {
+    showToast(`"${title}" has been added to your cart.`);
+  }
+};
+
+// --- 4. 预览下载功能 ---
+const handleDownloadPreview = async () => {
+  // 只允许 Track 下载预览，SFX 不支持
+  if (!isMusicTrack.value || !playerStore.currentTrack) return;
+
+  try {
+    const trackId = playerStore.currentPlayingId!;
+    const title = playerStore.currentTrack.title;
+
+    const blob = await tracksApi.downloadPreviewProxy(trackId);
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${title}_preview.mp3`);
+
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    console.log("Preview download started.");
+  } catch (error) {
+    console.error("Failed to download preview:", error);
+    showToast("Failed to download preview.");
+  }
+};
+
 const handleHidePanel = () => {
   // 它只做一件事：调用我们在 store 中创建的那个 action
   playerStore.stopAndHidePlayer();
@@ -648,5 +826,24 @@ onBeforeUnmount(() => {
   cursor: pointer;
   box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.3);
   z-index: 2001;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 禁用按钮样式 */
+.preview-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

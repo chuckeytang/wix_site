@@ -16,8 +16,13 @@
         </ul>
       </nav>
       <div class="user-actions">
-        <button @click="handleCart">
+        <button @click="handleCart" class="cart-button-wrapper">
           <span class="cart-icon">🛒</span>
+          <Transition name="cart-badge">
+            <span v-if="cartStore.badgeCount > 0" class="cart-badge">
+              {{ cartStore.badgeCount }}
+            </span>
+          </Transition>
         </button>
         <button @click="authStore.openLoginDialog()">
           <img
@@ -36,6 +41,7 @@ import { NuxtLink } from "#components";
 import { ref, onMounted, onUnmounted, Transition } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "~/stores/auth";
+import { useCartStore } from "~/stores/cart";
 
 const isHidden = ref(false);
 let lastScrollY = 0;
@@ -43,6 +49,7 @@ let lastScrollY = 0;
 // 控制登录对话框显示的状态
 const router = useRouter();
 const authStore = useAuthStore();
+const cartStore = useCartStore();
 
 // 监听认证状态
 const isAuthenticated = computed(() => authStore.isAuthenticated);
@@ -72,6 +79,10 @@ const handleScroll = () => {
 
 // 在组件挂载时添加滚动事件监听
 onMounted(() => {
+  authStore.loadToken();
+  if (authStore.isAuthenticated) {
+    cartStore.loadCart(); // 只有登录用户才加载购物车
+  }
   window.addEventListener("scroll", handleScroll);
 });
 
@@ -205,5 +216,47 @@ const handleCart = () => {
 .slide-right-enter-from,
 .slide-right-leave-to {
   opacity: 0;
+}
+
+.cart-button-wrapper {
+  position: relative; /* 用于定位角标 */
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.cart-badge {
+  position: absolute;
+  top: 0px; /* 调整位置 */
+  right: -10px; /* 调整位置 */
+  background-color: #ff8c62; /* 使用主题色 */
+  color: #0d0d1a;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: bold;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 2px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.cart-icon {
+  font-size: 32px;
+}
+
+/* 购物车角标过渡动画 */
+.cart-badge-enter-active,
+.cart-badge-leave-active {
+  transition: all 0.3s ease;
+}
+
+.cart-badge-enter-from,
+.cart-badge-leave-to {
+  opacity: 0;
+  transform: scale(0.5);
 }
 </style>
