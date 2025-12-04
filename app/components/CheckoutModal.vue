@@ -15,10 +15,26 @@
         <div id="payment-element" class="payment-element-container"></div>
       </div>
 
+      <div class="terms-container">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            v-model="isAgreementChecked"
+            class="terms-checkbox"
+          />
+          <span class="checkbox-text">
+            I have read and agree to the terms of the
+            <span class="link-text" @click.stop="openAgreement"
+              >Verscape License Agreement</span
+            >.
+          </span>
+        </label>
+      </div>
+
       <div class="modal-footer">
         <button
           @click="handleSubmit"
-          :disabled="!isStripeReady || loading"
+          :disabled="!isStripeReady || loading || !isAgreementChecked"
           class="submit-button"
         >
           <span v-if="loading">Processing...</span>
@@ -26,13 +42,24 @@
         </button>
       </div>
     </div>
+
+    <LicenseAgreementModal
+      :is-visible="showAgreementModal"
+      @close="showAgreementModal = false"
+      @confirm="handleAgreementConfirmed"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, computed, onUnmounted, nextTick } from "vue";
 import type { Stripe, StripeElements } from "@stripe/stripe-js";
+import { useRoute, useRouter } from "vue-router";
+import { useCartStore } from "~/stores/cart";
+import LicenseAgreementModal from "~/components/LicenseAgreementModal.vue";
 
+const router = useRouter();
+const route = useRoute();
 // 1. Props: 接收父组件传递的控制参数
 const props = defineProps<{
   isVisible: boolean;
@@ -49,13 +76,17 @@ const emit = defineEmits(["close", "paymentInitiated"]);
 // 3. 注入和状态
 const nuxtApp = useNuxtApp();
 const stripeInstance = nuxtApp.$stripe as Stripe | null;
-const router = useRouter();
 
 const loading = ref(false);
 const error = ref<string | null>(null);
 const isStripeReady = ref(false);
 let elements: any | null = null; // Stripe Elements 实例
 const cartStore = useCartStore();
+const paymentElementRef = ref<any | null>(null);
+const elementsRef = ref<StripeElements | null>(null);
+
+const isAgreementChecked = ref(false);
+const showAgreementModal = ref(false);
 
 const formattedAmount = computed(() => {
   if (!props.amount || !props.currency) return "";
@@ -70,11 +101,29 @@ watch(
   () => props.isVisible,
   async (newVal) => {
     if (newVal && props.clientSecret) {
-      await nextTick();
-      await initializeStripe(props.clientSecret);
+      isAgreementChecked.value = false; // 每次打开重置
+      if (props.clientSecret) {
+        await nextTick();
+        await initializeStripe(props.clientSecret);
+      }
+    } else if (!newVal) {
+      // 🚀 当模态框关闭时，执行清理
+      cleanupElements();
     }
   }
 );
+
+/**
+ * 🚀 清理 Stripe Elements 实例
+ */
+const cleanupElements = () => {
+  if (paymentElementRef.value) {
+    paymentElementRef.value.destroy();
+    paymentElementRef.value = null;
+  }
+  // 清理 Elements 实例 (不可销毁，但可置空引用)
+  elementsRef.value = null;
+};
 
 const initializeStripe = async (secret: string) => {
   if (!stripeInstance) {
@@ -86,14 +135,10 @@ const initializeStripe = async (secret: string) => {
   isStripeReady.value = false;
   loading.value = true;
 
-  // 确保旧的 Element 被卸载（如果存在）
-  if (elements) {
-    elements.destroy();
-    elements = null;
-  }
+  cleanupElements();
 
   try {
-    elements = stripeInstance.elements({
+    elementsRef.value = stripeInstance.elements({
       clientSecret: secret,
       appearance: {
         theme: "night",
@@ -116,27 +161,9 @@ const initializeStripe = async (secret: string) => {
       throw new Error("Payment Element target not found in DOM.");
     }
 
-    const paymentElementOptions = {
-      layout: "tabs",
-
-      // 2. 字段配置
-      fields: {
-        billingDetails: {
-          name: "auto", // 姓名
-          email: "auto", // 邮箱 (如果开启 Link，这个是必须的)
-
-          // [核心] 强制显示完整的账单地址
-          // 设置为 'billing' 后，Stripe 会渲染 Address Line 1, City, Zip, Country
-          // 并且这些字段默认都是【必填】的 (required)
-          address: {
-            mode: "billing",
-          },
-        },
-      },
-    };
-
-    // 创建 Payment Element 并挂载
-    const paymentElement = elements!.create("payment");
+    // 2. 创建 Payment Element 并挂载
+    const paymentElement = elementsRef.value!.create("payment");
+    paymentElementRef.value = paymentElement;
     paymentElement.mount("#payment-element");
 
     isStripeReady.value = true;
@@ -150,8 +177,8 @@ const initializeStripe = async (secret: string) => {
 
 // 5. 提交支付
 const handleSubmit = async () => {
-  if (!stripeInstance || !elements) return;
-
+  if (!isAgreementChecked.value) return;
+  if (!stripeInstance || !elementsRef.value) return;
   loading.value = true;
   error.value = null;
 
@@ -160,11 +187,11 @@ const handleSubmit = async () => {
   // 提交支付
   const { error: stripeError, paymentIntent } =
     await stripeInstance.confirmPayment({
-      elements,
+      // 🚀 传递 elementsRef.value
+      elements: elementsRef.value,
       confirmParams: {
         return_url: returnUrl,
       },
-      // 如果需要更严格的验证后再跳转，可以保留 if_required
       redirect: "if_required",
     });
 
@@ -184,18 +211,36 @@ const handleSubmit = async () => {
 };
 
 const handleClose = () => {
-  // 清理状态并通知父组件关闭
+  // 1. 清理本地状态和 Stripe
   error.value = null;
   loading.value = false;
   isStripeReady.value = false;
-  emit("close");
+  cleanupElements(); // 确保销毁实例
+
+  // 2. 检查是否在购物车页面
+  const currentPath = route.path;
+
+  if (currentPath === "/cart" || currentPath === "/cart/index") {
+    cartStore.clearCart();
+    router.push("/account/orders");
+  } else {
+    // 3. 否则，通知父组件关闭
+    emit("close");
+  }
+};
+
+const openAgreement = () => {
+  showAgreementModal.value = true;
+};
+
+const handleAgreementConfirmed = () => {
+  isAgreementChecked.value = true;
+  showAgreementModal.value = false;
 };
 
 // 确保在组件销毁时清理 elements
 onUnmounted(() => {
-  if (elements) {
-    elements.destroy();
-  }
+  cleanupElements();
 });
 </script>
 
@@ -232,6 +277,14 @@ onUnmounted(() => {
   overflow: hidden; /* 隐藏模态框本身的滚动条，控制到 body 里面 */
   display: flex;
   flex-direction: column;
+}
+
+.modal-body {
+  flex-grow: 1;
+  overflow-y: auto;
+  /* 调整高度计算，给条款留空间 */
+  max-height: calc(90vh - 220px);
+  padding: 10px 0;
 }
 
 .modal-header {
@@ -344,5 +397,53 @@ onUnmounted(() => {
 .error-message {
   background-color: #581515;
   color: #ff4747;
+}
+
+.terms-container {
+  padding: 15px 0 0 0;
+  border-top: 1px solid #333;
+  margin-top: 10px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start; /* 顶部对齐，应对多行文字 */
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #ccc;
+  line-height: 1.4;
+}
+
+.terms-checkbox {
+  margin-top: 3px; /* 微调对齐 */
+  accent-color: #ff8c62; /* 浏览器支持的原生着色 */
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.link-text {
+  color: #ff8c62;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.link-text:hover {
+  color: #e67a54;
+}
+
+.modal-footer {
+  padding-top: 20px;
+  text-align: center;
+  border-top: none; /* 移除原来的 border，因为上面 terms-container 有了 */
+}
+
+/* Submit button disabled state styling already exists, ensuring logic works */
+.submit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #555;
 }
 </style>

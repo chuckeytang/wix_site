@@ -1,21 +1,33 @@
 // app/types/orders.ts
 
+// 简化的 Track/Sfx 类型，仅用于订单显示
+export interface OrderItemProduct {
+  title: string;
+}
+
+export interface OrderItems {
+  orderItemId: number;
+  productType: "track" | "sfx" | "plan";
+  purchasePrice: number;
+  // 对应后端关联查询出来的对象
+  track?: OrderItemProduct;
+  sfx?: OrderItemProduct;
+}
+
 /**
- * 订单实体类型定义 (对应后端实际返回的 OrderDetails 字段)
+ * 订单实体类型定义
  */
 export interface OrderDetails {
   orderId: number; // 订单ID
-  userId?: number; // 下单用户ID (假设该字段可能存在)
 
   // 核心字段，匹配后端 JSON
-  status: "PENDING_PAYMENT" | "PAID" | "CANCELLED" | string; // 订单状态 (后端返回的是 status)
-  totalAmount: number; // 订单总金额 (后端返回的是 totalAmount)
-  createdAt: string; // 记录创建时间 (后端返回的是 createdAt)
+  status: "PENDING_PAYMENT" | "PAID" | "CANCELLED" | string; // 订单状态
+  totalAmount: number; // 订单总金额
+  createdAt: string; // 记录创建时间
 
-  paymentTime?: string; // 支付时间
   currency?: string; // 货币类型
-  paymentIntentId?: string; // 支付意图ID
-  // ... 其他字段，如 createBy, updateTime, remark, items
+  // 包含 items 数组
+  items: OrderItems[];
 }
 
 /**
