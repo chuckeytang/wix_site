@@ -109,9 +109,9 @@ onMounted(() => {
 }
 
 .title-section {
-  background-color: #000;
   color: #fff;
   padding: 70px 0;
+  text-align: center;
 }
 
 .main-title {
@@ -121,13 +121,17 @@ onMounted(() => {
 }
 
 .card-content {
-  background-color: #000;
   display: grid;
   grid-template-columns: repeat(6, 1fr); /* 确保固定为6列 */
   gap: 30px;
   padding: 40px 60px;
   max-width: none;
   margin: 0 auto;
+  min-height: 50vh;
+}
+
+.description {
+  color: #ccc;
 }
 
 .loading-state,
@@ -136,5 +140,27 @@ onMounted(() => {
   font-size: 1.5em;
   color: #ccc;
   grid-column: 1 / -1;
+  padding: 50px 0;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .title-section {
+    padding: 90px 20px 30px; /* 增加顶部 padding 给 fixed header 留位置 */
+  }
+
+  .main-title {
+    font-size: 2em;
+  }
+
+  .card-content {
+    grid-template-columns: repeat(2, 1fr); /* 手机端改为 2 列 */
+    padding: 20px;
+    gap: 15px;
+  }
+
+  .container {
+    max-width: 100%;
+  }
 }
 </style>

@@ -1,66 +1,60 @@
 /* ==================================== */
-/* 1. 默认/桌面端样式 */
+/* 1. 全局基础样式 */
 /* ==================================== */
 
-// 您的默认全局样式，比如最大宽度容器、字体等
-body {
+html,
+body,
+#__nuxt {
+  height: 100%; /* 确保高度撑满 */
   margin: 0;
   padding: 0;
-  // 确保所有元素使用弹性盒模型，方便布局
-  box-sizing: border-box;
+  background-color: #0d0d1a; /* 全局深色背景 */
+  color: #fff;
+  font-family: "Open Sans", sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-// 示例：桌面端导航栏横向排列
-.app-header {
-  display: flex;
-  justify-content: space-between;
-  padding: 1rem 3rem;
-}
-
-// 示例：主容器设置最大宽度并居中
-.main-content {
-  max-width: 1200px;
-  margin: 0 auto;
+/* 链接去除下划线 */
+a {
+  text-decoration: none;
+  color: inherit;
 }
 
 /* ==================================== */
-/* 2. 媒体查询 - 移动设备 (屏幕宽度 <= 768px) */
+/* 2. 媒体查询 - 移动设备适配 */
 /* ==================================== */
 
-// 使用媒体查询来覆盖桌面样式
 @media (max-width: 768px) {
-  // 头部导航栏适配：
-  .app-header {
-    // 移动端头部紧凑
-    padding: 0.5rem 1rem;
-
-    // 隐藏部分桌面端元素，只保留 Logo 和关键按钮
-    .desktop-nav-links {
-      display: none;
-    }
-
-    // 显示移动端菜单图标
-    .mobile-menu-icon {
-      display: block; // 假设您有一个用于汉堡菜单的图标
-    }
+  /* 调整 Header 内边距 */
+  .main-header .container {
+    padding: 0 15px !important;
   }
 
-  // 主内容区适配：
-  .main-content {
-    // 移动端取消最大宽度限制，让内容充满屏幕
-    width: 100%;
-    padding: 0 1rem;
+  /* 隐藏桌面端导航链接 */
+  .main-nav ul {
+    display: none !important;
   }
 
-  // 字体大小调整：
-  body {
-    font-size: 14px; // 移动端字体稍微缩小
+  /* 调整标题文字大小 */
+  .main-title {
+    font-size: 1.8em !important;
   }
 
-  // 搜索框优化：
-  .search-bar-wrapper {
-    // 在手机上让搜索框占据全部宽度
-    width: 100%;
-    margin: 1rem 0;
+  /* 调整网格布局为单列或双列 */
+  .card-content,
+  .music-grid-container {
+    grid-template-columns: 1fr !important; /* 手机端单列 */
+    padding: 20px !important;
+  }
+
+  /* 搜索框适配 */
+  .search-bar-container {
+    width: 90% !important;
+    padding-top: 60px !important;
+  }
+
+  /* 隐藏音乐页面的侧边栏筛选器（如果太复杂），或者调整样式 */
+  .sidebar {
+    width: 80% !important; /* 侧边栏在手机上占宽一点 */
   }
 }

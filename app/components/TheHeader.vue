@@ -31,8 +31,51 @@
             class="user-svg-icon"
           />
         </button>
+
+        <button class="mobile-menu-btn" @click="drawerVisible = true">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
       </div>
     </div>
+
+    <client-only>
+      <el-drawer
+        v-model="drawerVisible"
+        title="MENU"
+        direction="rtl"
+        size="70%"
+        class="mobile-nav-drawer"
+        :append-to-body="true"
+      >
+        <nav class="mobile-nav-list">
+          <NuxtLink to="/" @click="drawerVisible = false">HOME</NuxtLink>
+          <NuxtLink to="/music" @click="drawerVisible = false">MUSIC</NuxtLink>
+          <NuxtLink to="/genres" @click="drawerVisible = false"
+            >GENRES</NuxtLink
+          >
+          <NuxtLink to="/moods" @click="drawerVisible = false">MOODS</NuxtLink>
+          <NuxtLink to="/playlists" @click="drawerVisible = false"
+            >PLAYLISTS</NuxtLink
+          >
+          <NuxtLink to="/sfx" @click="drawerVisible = false">SFX</NuxtLink>
+          <NuxtLink to="/price" @click="drawerVisible = false">PRICE</NuxtLink>
+        </nav>
+      </el-drawer>
+    </client-only>
   </header>
 </template>
 
@@ -44,6 +87,7 @@ import { useAuthStore } from "~/stores/auth";
 import { useCartStore } from "~/stores/cart";
 
 const isHidden = ref(false);
+const drawerVisible = ref(false);
 let lastScrollY = 0;
 
 // 控制登录对话框显示的状态
@@ -53,7 +97,6 @@ const cartStore = useCartStore();
 
 // 监听认证状态
 const isAuthenticated = computed(() => authStore.isAuthenticated);
-authStore.loadToken();
 
 const handleScroll = () => {
   const currentScrollY = window.scrollY;
@@ -103,14 +146,13 @@ const handleCart = () => {
   color: #fff;
   padding: 15px 0;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-
-  position: fixed; /* 将元素固定在视口中 */
-  top: 0; /* 距离视口顶部 0px */
-  left: 0; /* 距离视口左侧 0px */
-  width: 100%; /* 宽度占满整个视口 */
-  z-index: 1000; /* 确保它位于其他内容之上 */
-
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
   transition: transform 0.3s ease-in-out;
+  backdrop-filter: blur(10px);
 }
 
 .main-header.is-hidden {
@@ -258,5 +300,48 @@ const handleCart = () => {
 .cart-badge-leave-to {
   opacity: 0;
   transform: scale(0.5);
+}
+
+/* --- 移动端适配样式 --- */
+.mobile-menu-btn {
+  display: none; /* 默认隐藏 */
+}
+
+/* 移动端菜单列表样式 */
+.mobile-nav-list {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 20px;
+}
+
+.mobile-nav-list a {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #333;
+  text-decoration: none;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.mobile-nav-list a.router-link-active {
+  color: #ff8c62;
+}
+
+@media (max-width: 768px) {
+  /* 隐藏桌面导航 */
+  .desktop-only {
+    display: none !important;
+  }
+
+  /* 显示汉堡菜单 */
+  .mobile-menu-btn {
+    display: block !important;
+  }
+
+  /* 调整 logo 大小防止溢出 */
+  .logo img {
+    height: 28px;
+  }
 }
 </style>
