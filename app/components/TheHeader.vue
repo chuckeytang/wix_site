@@ -4,7 +4,7 @@
       <div class="logo">
         <img src="/images/logo.png" alt="Verscape Logo" />
       </div>
-      <nav class="main-nav">
+      <nav class="main-nav desktop-nav-links">
         <ul>
           <li><NuxtLink to="/">HOME</NuxtLink></li>
           <li><NuxtLink to="/music">MUSIC</NuxtLink></li>
@@ -218,6 +218,8 @@ const handleCart = () => {
 .user-actions {
   display: flex;
   gap: 15px;
+  position: relative;
+  z-index: 1001; /* 略高于 Header 的 1000 */
 }
 
 .user-actions button {
@@ -305,6 +307,7 @@ const handleCart = () => {
 /* --- 移动端适配样式 --- */
 .mobile-menu-btn {
   display: none; /* 默认隐藏 */
+  pointer-events: auto;
 }
 
 /* 移动端菜单列表样式 */
@@ -330,7 +333,7 @@ const handleCart = () => {
 
 @media (max-width: 768px) {
   /* 隐藏桌面导航 */
-  .desktop-only {
+  .desktop-nav-links {
     display: none !important;
   }
 
