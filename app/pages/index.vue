@@ -178,6 +178,10 @@ onMounted(() => {
   color: #fff;
 }
 
+/* ======================================= */
+/* 桌面端默认样式 (Desktop Base) */
+/* ======================================= */
+
 .hero-section {
   position: relative;
   display: flex;
@@ -271,6 +275,7 @@ onMounted(() => {
 .menu-section {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 0 20px;
 }
 
 .footer-columns {
@@ -284,7 +289,7 @@ onMounted(() => {
 
 .footer-column {
   flex: 1;
-  min-width: 100px;
+  min-width: 150px;
 }
 
 .footer-column h4 {
@@ -314,15 +319,85 @@ onMounted(() => {
 }
 
 .search-bar-container {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  top: 260px;
-  width: 220%;
+  position: relative;
+  margin: 30px auto; /* 添加上下间距 */
+  width: 100%; /* 允许搜索栏在 hero-content 中占满宽度 */
+  max-width: 600px; /* 限制最大宽度 */
   background-color: transparent;
 }
 
 .hero-content h2 {
   margin-top: 120px; /* 这里的数值需要手动调整，直到不重叠 */
+}
+
+/* ======================================= */
+/* 移动端覆盖样式 (Mobile Overrides) */
+/* ======================================= */
+
+@media (max-width: 768px) {
+  /* --- 英雄区 Hero Section --- */
+  .hero-section {
+    padding: 40px 10px 60px; /* 减小上下内边距 */
+  }
+
+  .hero-video {
+    /* 移动端更精确的居中 */
+    transform: translate(-50%, -50%);
+    min-height: 400px;
+  }
+
+  .hero-content {
+    padding: 20px 10px;
+  }
+
+  .hero-content h1 {
+    font-size: 3rem; /* 大标题减小 */
+    margin-bottom: 15px;
+  }
+
+  .hero-content h2 {
+    font-size: 1.8rem; /* 副标题减小 */
+    margin-top: 15px;
+    line-height: 1.3;
+  }
+
+  .hero-content p {
+    font-size: 1rem; /* 段落文字减小 */
+    margin-bottom: 30px;
+  }
+
+  .search-bar-container {
+    width: 100%; /* 搜索栏在移动端占满内容区宽度 */
+    margin: 20px auto;
+  }
+
+  .browse-text {
+    font-size: 1.2rem;
+  }
+
+  /* --- 播放列表区 Playlists Section --- */
+  .playlists-section {
+    padding: 40px 10px;
+  }
+  .playlist-grid {
+    /* 关键调整：强制单列，保证卡片宽度足够 */
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  /* --- 底部菜单 Footer Columns --- */
+  .menu-section {
+    padding: 0 10px;
+  }
+  .footer-columns {
+    flex-direction: column; /* 垂直堆叠 */
+    gap: 10px;
+    padding-bottom: 20px;
+  }
+
+  .footer-column {
+    min-width: 100%;
+    margin-bottom: 10px;
+  }
 }
 </style>
