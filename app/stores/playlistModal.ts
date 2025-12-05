@@ -1,8 +1,7 @@
 // stores/playlistModal.ts
 import { defineStore } from "pinia";
 import { ref } from "vue";
-
-export type MediaType = "track" | "sfx";
+import type { MediaType } from "../composables/useDownloadMedia";
 
 export const usePlaylistModalStore = defineStore("playlistModal", () => {
   const isVisible = ref(false);

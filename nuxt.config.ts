@@ -10,6 +10,11 @@ export default defineNuxtConfig({
     "@element-plus/nuxt",
     "@pinia/nuxt",
   ],
+  nitro: {
+    routeRules: {
+      "/": { headers: { "Cache-Control": "no-cache" } },
+    },
+  },
   build: {
     transpile: ["element-plus"], // 确保 Element Plus 可以被正确编译
   },
