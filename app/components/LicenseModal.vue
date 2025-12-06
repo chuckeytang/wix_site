@@ -2,61 +2,153 @@
   <div v-if="isVisible" class="modal-overlay" @click.self="emit('close')">
     <div class="modal-content">
       <header class="modal-header">
-        <h2 class="modal-title">Licensing for {{ trackTitle }}</h2>
+        <div class="header-text">
+          <h2 class="modal-title">Verscape Music & SFX Licenses</h2>
+          <p class="modal-subtitle">
+            One-time purchase, perpetual use. Pick the license that matches your
+            project size.
+          </p>
+        </div>
         <button class="close-button" @click="emit('close')">×</button>
       </header>
-      <div class="modal-body">
-        <h3 class="section-title">Single Track License Options</h3>
 
-        <div class="license-option standard">
-          <div class="details">
-            <h4 class="option-title">Standard License</h4>
-            <p class="option-description">
-              1 Track Download · Commercial Work · Customer-facing content · 5
-              Monetized Social Channels
-            </p>
-          </div>
-          <div class="price">
-            <div><span class="price-value">CA$1.99</span>/track</div>
+      <div class="modal-body">
+        <div class="license-grid">
+          <div class="license-card popular">
+            <div class="badge">Current Best Value</div>
+            <div class="card-header">
+              <h3 class="tier-name">Creator</h3>
+              <span class="tier-sub">(Personal)</span>
+              <div class="price">
+                $1.99 <span class="per-track">/ track</span>
+              </div>
+            </div>
+            <ul class="features-list">
+              <li class="feature-item">
+                <span class="check">✔</span> 1 Project covered
+              </li>
+              <li class="feature-item">
+                <span class="cross">✘</span> No Client work
+              </li>
+              <li class="feature-item">
+                <span class="check">✔</span> Web & Social (YouTube, TikTok,
+                Bilibili)
+              </li>
+              <li class="feature-item">
+                <span class="cross">✘</span> No Games/Apps
+              </li>
+              <li class="feature-item">
+                <span class="cross">✘</span> No Broadcast TV/Radio
+              </li>
+            </ul>
             <button
-              class="add-to-cart-button"
-              @click="handleLicenseAddToCart('standard', 1.99)"
+              class="select-btn primary"
+              @click="handleLicenseAddToCart('creator', 1.99)"
             >
               Add to Cart
             </button>
           </div>
-        </div>
 
-        <div class="license-option premium disabled-option">
-          <div class="details">
-            <h4 class="option-title">Premium License</h4>
-            <p class="option-description small-font">
-              1 Track Download · TV & Radio, VOD/OTT · Apps, Games & Films ·
-              Industrial Use · Unlimited Monetized Social Channels
-            </p>
+          <div class="license-card coming-soon">
+            <div class="card-header">
+              <h3 class="tier-name">Standard</h3>
+              <span class="tier-sub">(Freelance)</span>
+              <div class="price">
+                $6.99 <span class="per-track">/ track</span>
+              </div>
+            </div>
+            <ul class="features-list disabled-text">
+              <li class="feature-item">
+                <span class="check">✔</span> 1 Project covered
+              </li>
+              <li class="feature-item">
+                <span class="check">✔</span> Client work allowed
+              </li>
+              <li class="feature-item">
+                <span class="check">✔</span> Web & Social
+              </li>
+              <li class="feature-item">
+                <span class="cross">✘</span> No Games/Apps
+              </li>
+              <li class="feature-item">
+                <span class="cross">✘</span> No Broadcast TV/Radio
+              </li>
+            </ul>
+            <button class="select-btn disabled" disabled>Coming Soon</button>
           </div>
-          <div class="price">
-            <div><span class="price-value">CA$3.99</span>/track</div>
-            <button class="add-to-cart-button disabled" disabled @click.stop>
-              Unavailable
+
+          <div class="license-card coming-soon">
+            <div class="card-header">
+              <h3 class="tier-name">Business</h3>
+              <span class="tier-sub">(Studio)</span>
+              <div class="price">
+                $21.99 <span class="per-track">/ track</span>
+              </div>
+            </div>
+            <ul class="features-list disabled-text">
+              <li class="feature-item">
+                <span class="check">✔</span> 1 Project covered
+              </li>
+              <li class="feature-item">
+                <span class="check">✔</span> Client work allowed
+              </li>
+              <li class="feature-item">
+                <span class="check">✔</span> Web & Social
+              </li>
+              <li class="feature-item">
+                <span class="check">✔</span> Indie / Mid-size Games
+              </li>
+              <li class="feature-item">
+                <span class="check">✔</span> Regional TV / Radio
+              </li>
+            </ul>
+            <button class="select-btn disabled" disabled>Coming Soon</button>
+          </div>
+
+          <div class="license-card enterprise">
+            <div class="card-header">
+              <h3 class="tier-name">Enterprise</h3>
+              <span class="tier-sub">(Custom)</span>
+              <div class="price">Contact us</div>
+            </div>
+            <ul class="features-list">
+              <li class="feature-item">
+                <span class="check">✔</span> Unlimited Projects
+              </li>
+              <li class="feature-item">
+                <span class="check">✔</span> Client work allowed
+              </li>
+              <li class="feature-item">
+                <span class="check">✔</span> Web & Social
+              </li>
+              <li class="feature-item">
+                <span class="check">✔</span> Large / Global Games
+              </li>
+              <li class="feature-item">
+                <span class="check">✔</span> Worldwide Broadcast
+              </li>
+            </ul>
+            <button class="select-btn outline" @click="handleContactUs">
+              Contact Us
             </button>
           </div>
         </div>
 
-        <div class="license-option commercial disabled-option">
-          <div class="details">
-            <h4 class="option-title">Commercial License</h4>
-            <p class="option-description">
-              1 Track Download · Extended Pro Content including all Premium
-              features · Unlimited Monetized Social Channels
-            </p>
-          </div>
-          <div class="price">
-            <div><span class="price-value">CA$5.99</span>/track</div>
-            <button class="add-to-cart-button disabled" disabled @click.stop>
-              Unavailable
-            </button>
-          </div>
+        <div class="legal-footer">
+          <p>
+            All licenses are one-time purchase and perpetual for approved uses.
+          </p>
+          <p>
+            Raw audio cannot be resold, redistributed, or used to train AI
+            models.
+          </p>
+          <p>
+            See the
+            <a href="#" @click.prevent="openFullTerms"
+              >Verscape License Agreement</a
+            >
+            for full legal terms.
+          </p>
         </div>
       </div>
     </div>
@@ -69,6 +161,7 @@ import type { CartItems } from "~/types/cartItems";
 import { useRouter } from "vue-router";
 import { useCartStore } from "~/stores/cart";
 import { useAuthStore } from "~/stores/auth";
+import { useToast } from "~/composables/useToast";
 
 const props = defineProps<{
   isVisible: boolean;
@@ -84,30 +177,26 @@ const authStore = useAuthStore();
 const { showToast } = useToast();
 
 /**
- * 处理从许可模态框中添加到购物车
- * @param licenseOption 授权类型 (e.g., 'standard')
- * @param price 价格 (用于前端显示反馈，后端仍会查价)
+ * 处理添加到购物车
  */
 const handleLicenseAddToCart = async (licenseOption: string, price: number) => {
-  // 1. 检查是否选择了 Standard License (确保其他选项被禁用)
-  if (licenseOption !== "standard") {
-    // 因为按钮已被禁用，理论上不会执行到这里，但作为安全检查
-    console.warn(`License option ${licenseOption} is temporarily disabled.`);
+  // 1. 强制检查是否选择了 Creator (唯一可用)
+  if (licenseOption !== "creator") {
+    console.warn(`Only 'creator' license is currently available.`);
     return;
   }
 
-  // 2. 再次检查登录状态 (如果用户在登录过期后直接打开此模态框)
   if (!authStore.isAuthenticated) {
-    authStore.closeLicenseModal(); // 关闭当前模态框
-    authStore.openLoginDialog(); // 弹出登录框
+    authStore.closeLicenseModal();
+    authStore.openLoginDialog();
     return;
   }
 
-  // 3. 构建请求体 (保持不变)
+  // 3. 构建请求体 (使用 'creator' 作为 licenseOption)
   const itemToAdd: Partial<CartItems> = {
     productType: props.productType,
     productId: props.trackId,
-    licenseOption: licenseOption,
+    licenseOption: "creator",
     quantity: 1,
   };
 
@@ -115,169 +204,346 @@ const handleLicenseAddToCart = async (licenseOption: string, price: number) => {
     const result = await cartsApi.addItemToCart(itemToAdd);
 
     if (result.code === 200) {
-      // 刷新购物车状态
-      console.log(`Successfully added to cart. Syncing state...`);
-      await cartStore.loadCart(); // 调用 Store 中的 Action 来刷新数据
-
-      // 提示用户并设置延迟
-      showToast(`Track added to cart!`);
-
+      await cartStore.loadCart();
+      showToast(`Added ${licenseOption} license to cart!`);
       emit("close");
     } else {
-      showToast(`Failed to add to cart: ${result.msg || "Unknown error"}`);
+      showToast(`Failed to add: ${result.msg || "Unknown error"}`);
     }
   } catch (error) {
-    console.error("Add to cart request failed:", error);
-    // 假设错误是网络或登录问题
-    showToast(`Add to cart request failed: ${error}`);
+    console.error("Add to cart error:", error);
+    showToast("Network error, please try again.");
   }
+};
+
+const handleContactUs = () => {
+  window.location.href =
+    "mailto:sales@verscape.com?subject=Enterprise License Inquiry";
+};
+
+const openFullTerms = () => {
+  window.open("/license-agreement", "_blank");
 };
 </script>
 
 <style scoped>
-/* 模态框背景层 */
+.license-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+@media (max-width: 900px) {
+  .license-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .license-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- 卡片样式 --- */
+.license-card {
+  background-color: #1e1e2d;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition:
+    transform 0.2s,
+    border-color 0.2s,
+    opacity 0.3s;
+}
+
+/* 🚀 新增：禁用和敬请期待样式 */
+.license-card.coming-soon {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none; /* 禁用所有鼠标事件 */
+}
+
+.license-card.coming-soon:hover {
+  transform: none; /* 禁用 hover 效果 */
+  border-color: #333;
+}
+
+.disabled-text {
+  color: #888;
+}
+.disabled-text .check,
+.disabled-text .cross {
+  opacity: 0.8;
+}
+
+/* 原有的 popular 样式保留给 Creator */
+.license-card.popular {
+  border: 1px solid #ff8c62;
+  background-color: #252535;
+  box-shadow: 0 0 15px rgba(255, 140, 98, 0.1);
+  pointer-events: auto; /* 确保它能被点击 */
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.8);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(5px);
 }
 
-/* 模态框主体内容 */
 .modal-content {
-  width: 90%;
-  max-width: 600px;
-  background-color: #1a1a1a;
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  padding: 30px;
+  width: 95%;
+  max-width: 1100px; /* 加宽以容纳4列 */
+  background-color: #12121e; /* 深色背景 */
+  border: 1px solid #333;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
   color: #fff;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden;
 }
 
 .modal-header {
+  padding: 20px 30px;
+  border-bottom: 1px solid #333;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #333;
-  padding-bottom: 20px;
-  margin-bottom: 20px;
+  align-items: flex-start;
+  background-color: #1a1a2e;
 }
 
 .modal-title {
-  font-size: 1.8em;
+  font-size: 1.8rem;
   font-weight: bold;
+  color: #fff;
+  margin: 0 0 5px 0;
+}
+
+.modal-subtitle {
+  font-size: 0.95rem;
+  color: #aaa;
+  margin: 0;
 }
 
 .close-button {
   background: none;
   border: none;
-  color: #fff;
-  font-size: 2em;
-  cursor: pointer;
+  color: #888;
+  font-size: 2rem;
   line-height: 1;
+  cursor: pointer;
   padding: 0;
+}
+.close-button:hover {
+  color: #fff;
 }
 
 .modal-body {
-  padding: 20px;
+  padding: 30px;
+  overflow-y: auto;
 }
 
-.section-title {
-  font-size: 1.2em;
-  font-weight: bold;
-  margin-bottom: 20px;
+/* --- 布局核心 --- */
+.license-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 4列等宽 */
+  gap: 20px;
+  margin-bottom: 30px;
 }
 
-.license-option {
-  background-color: #2c2c2c;
+/* 响应式：小屏幕变2列或1列 */
+@media (max-width: 900px) {
+  .license-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .license-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- 卡片样式 --- */
+.license-card {
+  background-color: #1e1e2d;
+  border: 1px solid #333;
   border-radius: 8px;
   padding: 20px;
-  margin-bottom: 15px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: background-color 0.3s;
+  flex-direction: column;
+  position: relative;
+  transition:
+    transform 0.2s,
+    border-color 0.2s;
 }
 
-.license-option:hover {
-  background-color: #383838;
+.license-card:hover {
+  transform: translateY(-5px);
+  border-color: #555;
 }
 
-.option-title {
-  font-size: 1.1em;
+/* 高亮 Popular 卡片 */
+.license-card.popular {
+  border: 1px solid #ff8c62;
+  background-color: #252535;
+  box-shadow: 0 0 15px rgba(255, 140, 98, 0.1);
+}
+
+.badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #ff8c62;
+  color: #0d0d1a;
+  font-size: 0.6rem;
+  font-weight: bold;
+  padding: 4px 12px;
+  border-radius: 12px;
+  text-transform: uppercase;
+}
+
+.card-header {
+  text-align: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 15px;
+}
+
+.tier-name {
+  font-size: 1.4rem;
   font-weight: bold;
   margin: 0;
+  color: #fff;
 }
 
-/* 描述文本的样式，新添加 */
-.option-description {
-  font-size: 0.9em;
-  color: #ccc;
-  margin: 5px 0 0;
-}
-
-/* 特定描述的字号调整 */
-.option-description.small-font {
-  font-size: 0.7em; /* 0.9em 减小 2 号，大约是 0.7em */
+.tier-sub {
+  font-size: 0.9rem;
+  color: #888;
+  display: block;
+  margin-bottom: 10px;
 }
 
 .price {
-  text-align: right;
-  flex-shrink: 0;
-  /* 调整 flexbox 布局以垂直对齐价格和按钮 */
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end; /* 右对齐 */
-  gap: 10px;
-}
-
-.price-value {
-  font-size: 1.5em;
+  font-size: 1.5rem;
   font-weight: bold;
-  margin-bottom: 8px; /* 在价格和按钮之间增加间距 */
+  color: #ff8c62;
 }
 
-.add-to-cart-button {
-  background-color: #ff8c62;
-  color: #0d0d1a;
+.per-track {
+  font-size: 0.9rem;
+  color: #888;
+  font-weight: normal;
+}
+
+/* --- 特性列表 --- */
+.features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+  flex-grow: 1; /* 让列表占据剩余空间，对齐按钮 */
+}
+
+.feature-item {
+  font-size: 0.9rem;
+  color: #ccc;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: flex-start;
+  line-height: 1.4;
+}
+
+.check {
+  color: #4caf50; /* 绿色对勾 */
+  margin-right: 8px;
+  font-weight: bold;
+}
+
+.cross {
+  color: #f44336; /* 红色叉叉 */
+  margin-right: 8px;
+  font-weight: bold;
+}
+
+strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* --- 按钮 --- */
+.select-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 6px;
   border: none;
-  border-radius: 50px;
-  padding: 10px 20px;
-  font-size: 0.9em;
   font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.3s;
-  /* margin-top: 10px; 原有的已移除，因为父容器是flex-direction: column */
+  background-color: #333;
+  color: #fff;
+  transition: background-color 0.2s;
 }
 
-.add-to-cart-button:hover {
+.select-btn:hover {
+  background-color: #444;
+}
+
+.select-btn.primary {
+  background-color: #ff8c62;
+  color: #0d0d1a;
+}
+
+.select-btn.primary:hover {
   background-color: #e67a54;
 }
 
-.disabled-option {
-  opacity: 0.5;
+.select-btn.outline {
+  background-color: transparent;
+  border: 1px solid #ff8c62;
+  color: #ff8c62;
+}
+
+.select-btn.outline:hover {
+  background-color: rgba(255, 140, 98, 0.1);
+}
+
+/* 禁用按钮样式 */
+.select-btn.disabled {
+  background-color: #444;
+  color: #888;
   cursor: not-allowed;
-  background-color: #1a1a1a;
+  box-shadow: none;
 }
-.disabled-option:hover {
-  border-color: #333; /* 禁用 hover 效果 */
-  background-color: #1a1a1a;
+
+/* --- 底部文字 --- */
+.legal-footer {
+  text-align: center;
+  color: #777;
+  font-size: 0.85rem;
+  border-top: 1px solid #333;
+  padding-top: 20px;
 }
-.add-to-cart-button.disabled {
-  background-color: #444; /* 置灰按钮背景 */
-  color: #aaa;
-  cursor: not-allowed;
-  pointer-events: all; /* 保持指针事件，但通过 disabled 属性控制行为 */
+
+.legal-footer p {
+  margin: 5px 0;
 }
-.add-to-cart-button.disabled:hover {
-  background-color: #444; /* 禁用 hover 变色 */
+
+.legal-footer a {
+  color: #ff8c62;
+  text-decoration: none;
+}
+.legal-footer a:hover {
+  text-decoration: underline;
 }
 </style>

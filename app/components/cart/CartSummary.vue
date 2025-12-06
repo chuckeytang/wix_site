@@ -10,28 +10,19 @@
           checked
         />
         <div class="option-details">
-          <span class="type-title">One-time purchase</span>
+          <div class="details-header">
+            <span class="type-title">One-time purchase</span>
+          </div>
           <span class="price-display" v-if="false"
             >US$ {{ subtotal.toFixed(2) }}</span
           >
         </div>
-      </label>
 
-      <!--
-      <label class="option-row subscription-option">
-        <input
-          type="radio"
-          name="purchase-type"
-          value="subscription"
-          v-model="selectedPurchaseType"
-        />
-        <div class="option-details">
-          <span class="type-title">Subscription for unlimited downloads</span>
-          <span class="price-display sub-price">US$24.99 /month</span>
-          <span class="annual-note">Billed annually at US$299.88</span>
+        <div class="license-link-wrapper" @click="showLicenseModal = true">
+          <span class="license-text">Compare Licenses</span>
+          <span class="info-icon">?</span>
         </div>
       </label>
-      -->
 
       <button
         class="checkout-button"
@@ -52,6 +43,11 @@
         <span>US$ {{ subtotal.toFixed(2) }}</span>
       </div>
     </div>
+
+    <LicenseComparisonModal
+      :is-visible="showLicenseModal"
+      @close="showLicenseModal = false"
+    />
   </div>
 </template>
 
@@ -60,6 +56,8 @@ import { ref, defineProps } from "vue";
 import { useRouter } from "vue-router";
 import { cartsApi } from "~/api/carts";
 import { useCartStore } from "~/stores/cart";
+import { useToast } from "~/composables/useToast";
+import LicenseComparisonModal from "~/components/LicenseComparisonModal.vue";
 
 const { showToast } = useToast();
 
@@ -84,6 +82,7 @@ const cartStore = useCartStore();
 
 // 状态：用于控制用户选择了哪种购买方式（一次性或订阅）
 const selectedPurchaseType = ref("one-time");
+const showLicenseModal = ref(false);
 // 声明一个事件，用于通知父组件开始结算
 const emit = defineEmits(["startCheckout"]);
 
@@ -197,6 +196,88 @@ const handleCheckout = async () => {
 .type-title {
   font-weight: bold;
   font-size: 1em;
+}
+
+/* 结算按钮 */
+.checkout-button {
+  flex-grow: 1; /* 占据主要空间 */
+  background-color: #ff8c62;
+  color: #1a1a1a;
+  font-weight: bold;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1.1em;
+  transition: background-color 0.3s;
+  white-space: nowrap; /* 防止文字换行 */
+}
+
+.checkout-button:hover:not(:disabled) {
+  background-color: #e67a54;
+}
+
+.checkout-button:disabled {
+  background-color: #aaaaaa;
+  cursor: not-allowed;
+}
+
+.license-text {
+  font-size: 0.6em;
+  color: #666;
+}
+
+/* License 链接容器 */
+.license-link-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: #333;
+  font-size: 0.9em;
+  font-weight: 600;
+  transition: color 0.2s;
+  white-space: nowrap; /* 不换行 */
+  flex-shrink: 0; /* 不被压缩 */
+}
+
+.license-link-wrapper:hover {
+  color: #ff8c62;
+}
+
+.info-icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* 价格详情 */
+.price-details {
+  padding: 15px;
+  background-color: #333333;
+  border-radius: 8px;
+  color: #ffffff;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  font-size: 0.9em;
+  border-bottom: 1px dashed #444;
+}
+
+.total-row {
+  padding-top: 10px;
+  font-size: 1.1em;
+  font-weight: bold;
+  border-bottom: none;
 }
 
 .price-display {

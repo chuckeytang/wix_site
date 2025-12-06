@@ -2,57 +2,51 @@
   <div class="cart-item-row">
     <div class="item-details">
       <button
-          class="play-icon-btn"
-          @click="handlePlayClick"
-          :disabled="isLoadingDetails" 
+        class="play-icon-btn"
+        @click="handlePlayClick"
+        :disabled="isLoadingDetails"
+      >
+        <svg
+          v-if="isLoadingDetails"
+          class="spinner"
+          width="24"
+          height="24"
+          viewBox="0 0 50 50"
         >
-          <svg
-            v-if="isLoadingDetails"
-            class="spinner"
-            width="24"
-            height="24"
-            viewBox="0 0 50 50"
-          >
-            <circle
-              cx="25"
-              cy="25"
-              r="20"
-              fill="none"
-              stroke-width="5"
-            ></circle>
-          </svg>
+          <circle cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+        </svg>
 
-          <svg
-            v-else-if="localIsPlaying"
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <rect x="6" y="4" width="4" height="16"></rect>
-            <rect x="14" y="4" width="4" height="16"></rect>
-          </svg>
+        <svg
+          v-else-if="localIsPlaying"
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="6" y="4" width="4" height="16"></rect>
+          <rect x="14" y="4" width="4" height="16"></rect>
+        </svg>
 
-          <svg
-            v-else
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-          </svg>
-        </button>
+        <svg
+          v-else
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+      </button>
 
       <span class="track-name">{{ productTitle }}</span>
     </div>
@@ -91,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, computed, ref } from "vue";
+import { computed, ref } from "vue";
 import { useCartStore } from "~/stores/cart";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
 import { tracksApi, sfxApi } from "~/api";
@@ -114,7 +108,7 @@ console.log("购物车项目数据:", props.item);
 
 const localIsPlaying = computed(() => {
   // 核心修复：Store 中只有一个 currentTrack 属性，无需 || currentSfx
-  const currentMedia = musicPlayerStore.currentTrack; 
+  const currentMedia = musicPlayerStore.currentTrack;
 
   // 1. 检查全局播放器是否正在播放
   if (!musicPlayerStore.isPlaying || !currentMedia) {
@@ -130,14 +124,14 @@ const localIsPlaying = computed(() => {
   // 3. 检查播放的媒体ID是否与当前项目的ID匹配
   let currentMediaId: number | undefined;
 
-  if (musicPlayerStore.mediaType === 'track') {
+  if (musicPlayerStore.mediaType === "track") {
     // 强制转换为 Tracks 类型以访问 trackId
     currentMediaId = (currentMedia as Tracks).trackId;
-  } else if (musicPlayerStore.mediaType === 'sfx') {
+  } else if (musicPlayerStore.mediaType === "sfx") {
     // 强制转换为 Sfx 类型以访问 sfxId
     currentMediaId = (currentMedia as Sfx).sfxId;
   }
-  
+
   const itemProductId = props.item.productId;
 
   // 这里的比较是安全的，因为我们已经通过 mediaType 确定了 ID 的来源。
@@ -195,7 +189,7 @@ const handlePlayClick = async () => {
     } else if (productType === "sfx") {
       // 2b. 获取【完整】音效详情
       // (假设你有一个 sfxApi.getSfxDetail 接口)
-      const response = await sfxApi.getSfxDetail(productId); 
+      const response = await sfxApi.getSfxDetail(productId);
       if (response.data) {
         musicPlayerStore.setSfx(response.data); // 调用全局播放
       } else {
@@ -314,7 +308,7 @@ const handleRemove = () => {
 /* 修复：防止图标切换时按钮大小变化导致页面跳动 */
 .play-icon-btn {
   /* 你的 padding 是 5px, 图标是 24px, 总宽/高 = 24 + 5*2 = 34px */
-  width: 34px; 
+  width: 34px;
   height: 34px;
   display: flex;
   align-items: center;
