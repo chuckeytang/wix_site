@@ -73,4 +73,11 @@ export const authApi = {
   getInfo(): Promise<AjaxResult<Users>> {
     return request.get("/site/auth/getInfo");
   },
+
+  /**
+   * 重发验证邮件
+   */
+  resendVerificationEmail(email: string): Promise<AjaxResult<any>> {
+    return request.post("/site/auth/resendVerification", { email });
+  },
 };

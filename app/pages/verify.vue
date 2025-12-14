@@ -45,11 +45,11 @@
           </svg>
           <h2 class="state-title text-green">Verification Successful!</h2>
           <p class="state-description">
-            You have successfully verified your email. Redirecting you to the
-            home page now.
+            You have successfully verified your email. <br />
+            Redirecting you to the home page...
           </p>
           <NuxtLink to="/" class="go-home-link text-secondary-color">
-            Go to Home Page
+            Go to Home Page Now
           </NuxtLink>
         </div>
 
@@ -68,18 +68,37 @@
               d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
+
           <h2 class="state-title text-red">Verification Failed</h2>
+
           <p class="state-description error-message">{{ errorMessage }}</p>
-          <p
-            v-if="
-              errorMessage.includes('过期') || errorMessage.includes('无效')
-            "
-            class="error-hint"
-          >
-            您的验证链接可能已过期或无效。请尝试重新注册。
-          </p>
+
+          <div v-if="isInvalidLink">
+            <p class="error-hint">
+              Redirecting to home page in {{ redirectCountdown }} seconds...
+            </p>
+          </div>
+
+          <div v-else class="action-area">
+            <p class="state-description">
+              The link may be expired. You can request a new one.
+            </p>
+
+            <button
+              class="resend-button"
+              @click="handleResend"
+              :disabled="resendCooldown > 0 || resendLoading"
+            >
+              <span v-if="resendLoading">SENDING...</span>
+              <span v-else-if="resendCooldown > 0"
+                >RESEND IN {{ resendCooldown }}s</span
+              >
+              <span v-else>RESEND VERIFICATION EMAIL</span>
+            </button>
+          </div>
+
           <NuxtLink to="/" class="go-home-link text-secondary-color">
-            Go back to Home
+            {{ isInvalidLink ? "Go to Home Page" : "Cancel & Return Home" }}
           </NuxtLink>
         </div>
       </div>
@@ -88,7 +107,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { authApi } from "~/api/auth";
 import { useAuthStore } from "~/stores/auth";
@@ -101,204 +120,270 @@ const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 
+// 状态控制
 const loading = ref(true);
 const success = ref(false);
 const errorMessage = ref("An unexpected error occurred.");
+const isInvalidLink = ref(false); // 标记是否为格式错误的链接
 
+// 倒计时相关
+const redirectCountdown = ref(3); // 无效链接自动跳转倒计时
+const resendCooldown = ref(0); // 重发邮件冷却
+const resendLoading = ref(false); // 重发加载状态
+let timer = null;
+
+// 从 URL 获取参数
+const token = route.query.token;
+const email = route.query.email;
+
+// 核心验证逻辑
 const verifyEmail = async () => {
-  const token = route.query.token;
-  const email = route.query.email;
-
+  // 1. 检查链接完整性
   if (!token || !email) {
     loading.value = false;
-    errorMessage.value = "Missing verification parameters (token or email).";
+    isInvalidLink.value = true;
+    errorMessage.value = "Invalid verification link (missing parameters).";
+    startRedirectTimer(); // 启动自动跳转
     return;
   }
 
   try {
     const response = await authApi.verifyEmail({
-      email: email,
-      code: token,
+      email: String(email),
+      code: String(token),
     });
 
     if (response.code === 200 && response.data) {
-      // 1. 验证成功
+      // 成功
       success.value = true;
-
-      // 2. 存储 JWT Token
-      const jwtToken = response.data; // 假设 response.data 直接是 JWT token 字符串
-      authStore.setToken(jwtToken);
-
-      // 3. 重定向用户
-      // setTimeout(() => {
-      //   router.push("/");
-      // }, 3000); // 3秒后自动跳转
+      authStore.setToken(response.data);
+      // 成功后也可以延迟跳转
+      setTimeout(() => router.push("/"), 3000);
     } else {
-      // 验证失败，显示后端返回的错误信息
-      errorMessage.value = response.msg || "Email verification failed.";
-      success.value = false;
+      // 业务失败
+      handleError(response.msg || "Email verification failed.");
     }
   } catch (error) {
     console.error("Verification API error:", error);
-
-    let userFriendlyMessage =
-      "Network error occurred during verification. Please check your connection.";
-
-    // **优先级 1: 尝试从 error.response 中提取若依的 {msg: "..."} 结构**
-    if (error.response && error.response.data && error.response.data.msg) {
-      userFriendlyMessage = error.response.data.msg;
+    let msg = "Network error occurred.";
+    if (error.response?.data?.msg) {
+      msg = error.response.data.msg;
+    } else if (error.message) {
+      msg = error.message;
     }
-    // **优先级 2: 从 error.message 中提取**
-    // 你的日志显示：error.message 就是 "Verification link is invalid or expired. Please register again."
-    else if (error.message) {
-      // 如果 error.message 包含了后端抛出的友好信息，直接使用它
-      userFriendlyMessage = error.message;
-    }
-
-    errorMessage.value = userFriendlyMessage;
-    success.value = false;
+    handleError(msg);
   } finally {
     loading.value = false;
   }
 };
 
+// 统一错误处理
+const handleError = (msg) => {
+  success.value = false;
+  errorMessage.value = msg;
+  // 如果参数完整，允许用户尝试重发
+  isInvalidLink.value = false;
+};
+
+// 处理重发邮件
+const handleResend = async () => {
+  if (!email || resendCooldown.value > 0 || resendLoading.value) return;
+
+  resendLoading.value = true;
+  try {
+    const res = await authApi.resendVerificationEmail(String(email));
+    if (res.code === 200) {
+      alert("A new verification email has been sent!");
+      startResendCooldown();
+    } else {
+      alert(res.msg || "Failed to resend email.");
+    }
+  } catch (error) {
+    alert("Network error, please try again.");
+  } finally {
+    resendLoading.value = false;
+  }
+};
+
+// 重发按钮冷却倒计时
+const startResendCooldown = () => {
+  resendCooldown.value = 60;
+  const interval = setInterval(() => {
+    resendCooldown.value--;
+    if (resendCooldown.value <= 0) {
+      clearInterval(interval);
+    }
+  }, 1000);
+};
+
+// 无效链接自动跳转倒计时
+const startRedirectTimer = () => {
+  timer = setInterval(() => {
+    redirectCountdown.value--;
+    if (redirectCountdown.value <= 0) {
+      clearInterval(timer);
+      router.push("/");
+    }
+  }, 1000);
+};
+
 onMounted(() => {
   verifyEmail();
+});
+
+onUnmounted(() => {
+  if (timer) clearInterval(timer);
 });
 </script>
 
 <style scoped>
-/* ---------------------------------------------------- */
-/* 定义核心主题变量 (参考登录页) */
-/* ---------------------------------------------------- */
+/* 保持原有基础变量 */
 :root {
-  --primary-color: #ff8c62; /* 假设的主色：橙色系 */
-  --secondary-color: #f39c12; /* 辅助色 */
+  --primary-color: #ff8c62;
+  --secondary-color: #f39c12;
   --text-color: #ffffff;
-  --dark-bg: rgba(13, 13, 26, 1); /* 背景色 */
-  --card-bg: #1c1b1b; /* 卡片背景色 */
-  --error-color: var(--primary-color);
+  --dark-bg: rgba(13, 13, 26, 1);
+  --card-bg: #1c1b1b;
+  --error-color: #ef4444; /* 修正红色 */
   --success-color: #2ecc71;
   --link-color: var(--secondary-color);
   --light-gray: #a0a0a0;
 }
 
-/* ---------------------------------------------------- */
-/* 布局：全屏居中 */
-/* ---------------------------------------------------- */
-
+/* 布局和卡片样式 (保持不变) */
 .verify-page-full {
-  /* 强制应用空白布局的背景和高度 */
   height: 100vh;
   width: 100vw;
   background-color: var(--dark-bg);
   color: var(--text-color);
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-
-  /* 居中卡片容器 */
   display: flex;
-  align-items: center; /* 垂直居中 */
-  justify-content: center; /* 水平居中 */
+  align-items: center;
+  justify-content: center;
 }
 
 .verify-card-container {
-  /* 限制卡片的最大宽度 */
   max-width: 500px;
-  width: 90%; /* 允许在小屏幕上自适应 */
-  box-sizing: border-box;
+  width: 90%;
 }
-
-/* ---------------------------------------------------- */
-/* 卡片和内容样式 */
-/* ---------------------------------------------------- */
 
 .verify-card {
   background-color: var(--card-bg);
   padding: 40px;
   border-radius: 8px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
-  text-align: center; /* 内部元素居中 */
+  text-align: center;
 }
 
+/* 字体和图标 */
 .main-title {
   font-size: 2.2rem;
   font-weight: bold;
   margin-bottom: 25px;
-  text-align: center;
 }
-
 .text-primary-color {
   color: var(--primary-color);
 }
 .text-secondary-color {
   color: var(--secondary-color);
 }
-
-/* ---------------------------------------------------- */
-/* 状态内容 (居中图标和文字) */
-/* ---------------------------------------------------- */
+.text-green {
+  color: var(--success-color);
+}
+.text-red {
+  color: var(--error-color);
+}
 
 .state-content {
   display: flex;
   flex-direction: column;
-  align-items: center; /* 图标和文字居中 */
-  justify-content: center;
-  gap: 15px; /* 元素间距 */
+  align-items: center;
+  gap: 15px;
 }
 
-/* 图标样式：进一步缩小到合理范围 */
 .status-icon,
 .spinner-icon {
-  width: 50px; /* 图标尺寸，覆盖 h-12 w-12 */
+  width: 50px;
   height: 50px;
-  margin-bottom: 10px; /* 底部间距 */
+  margin-bottom: 10px;
+}
+.success-icon {
+  color: var(--success-color);
+}
+.error-icon {
+  color: var(--error-color);
 }
 
-/* 状态标题 */
 .state-title {
   font-size: 1.5em;
   font-weight: bold;
-  margin-bottom: 5px;
 }
 
-/* 成功和失败颜色 */
-.success-icon,
-.text-green {
-  color: var(--success-color) !important;
-}
-.error-icon,
-.text-red {
-  color: var(--error-color) !important;
-}
-
-/* 状态描述和错误信息 */
-.state-text,
 .state-description {
-  font-size: 1em;
+  color: var(--light-gray);
+  font-size: 1rem;
   line-height: 1.5;
-  color: var(--light-gray);
-  margin-bottom: 10px;
 }
+
 .error-message {
-  color: #ef4444;
+  color: var(--error-color);
   font-weight: bold;
+  background: rgba(239, 68, 68, 0.1); /* 轻微红色背景强调错误 */
+  padding: 10px;
+  border-radius: 4px;
+  width: 100%;
 }
+
 .error-hint {
-  color: var(--light-gray);
-  font-size: 0.9em;
-  margin-top: -10px;
+  color: var(--secondary-color);
+  font-weight: bold;
+  margin-top: 5px;
 }
 
 .go-home-link {
   color: var(--link-color);
   text-decoration: none;
   font-weight: bold;
-  margin-top: 15px;
+  margin-top: 20px;
   display: block;
+  font-size: 0.9rem;
 }
 .go-home-link:hover {
   text-decoration: underline;
+}
+
+/* --- 新增：Resend 按钮样式 --- */
+.action-area {
+  width: 100%;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.resend-button {
+  background-color: var(--secondary-color); /* 使用主题橙色 */
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition:
+    background-color 0.3s,
+    opacity 0.3s;
+  width: 100%; /* 按钮占满 */
+  max-width: 300px;
+}
+
+.resend-button:hover:not(:disabled) {
+  background-color: #e67e22; /* hover 变深一点 */
+}
+
+.resend-button:disabled {
+  background-color: var(--light-gray);
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 </style>

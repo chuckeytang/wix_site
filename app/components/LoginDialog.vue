@@ -5,14 +5,43 @@
 
       <h2 class="dialog-title">{{ isLoginMode ? "LOGIN" : "SIGN UP" }}</h2>
 
-      <div v-if="showVerificationDialog">
-        <p class="dialog-text text-white mb-4">
-          A verification email has been sent to
+      <div v-if="showVerificationDialog" class="verification-container">
+        <div class="mail-icon-wrapper">
+          <img src="/icons/mail-sent.svg" alt="Email Sent" class="mail-icon" />
+        </div>
+
+        <h2 class="dialog-title">Verify your email</h2>
+
+        <p class="dialog-text">
+          Thanks for signing up! We just need to verify your email address to
+          finish setting up your account.
+        </p>
+
+        <p class="dialog-text sub-text">
+          A verification email has been sent to:<br />
           <span class="font-bold text-primary-color">{{
             emailForVerification
-          }}</span
-          >. Please check your inbox and follow the link to complete sign up.
+          }}</span>
         </p>
+
+        <div class="action-buttons">
+          <button
+            class="submit-button resend-btn"
+            @click="handleResendEmail"
+            :disabled="resendCooldown > 0 || resendLoading"
+          >
+            <span v-if="resendLoading">SENDING...</span>
+            <span v-else-if="resendCooldown > 0"
+              >RESEND IN {{ resendCooldown }}s</span
+            >
+            <span v-else>RESEND VERIFICATION EMAIL</span>
+          </button>
+        </div>
+
+        <div class="footer-link">
+          <span class="text-gray">Not ready to continue? </span>
+          <a href="#" @click.prevent="close" class="link">Log Out</a>
+        </div>
       </div>
 
       <form v-else @submit.prevent="handleSubmit">
@@ -85,9 +114,12 @@
         </button>
       </form>
 
-      <div class="divider">
-        <span class="or-text">OR</span>
+      <div v-if="!showVerificationDialog">
+        <div class="divider">
+          <span class="or-text">OR</span>
+        </div>
       </div>
+
       <div class="social-login-options">
         <button class="social-button google" @click="handleGoogleLogin">
           <img src="/icons/google-icon.svg" alt="Google" />
@@ -142,6 +174,9 @@ const loading = ref(false);
 const errorMessage = ref("");
 const showVerificationDialog = ref(false);
 const emailForVerification = ref("");
+const resendLoading = ref(false);
+const resendCooldown = ref(0);
+let timer = null;
 
 const emit = defineEmits(["close"]);
 const authStore = useAuthStore();
@@ -278,6 +313,47 @@ const handleGoogleLogin = () => {
 
 watch(isLoginMode, (newVal) => {
   console.log(`Switched to ${newVal ? "Login" : "Registration"} mode`);
+});
+
+// 处理重发邮件
+const handleResendEmail = async () => {
+  if (resendCooldown.value > 0 || resendLoading.value) return;
+
+  resendLoading.value = true;
+  try {
+    const res = await authApi.resendVerificationEmail(
+      emailForVerification.value
+    );
+    if (res.code === 200) {
+      // 开始倒计时
+      startCooldown();
+      // 可以加一个简单的提示
+      errorMessage.value = ""; // 清空错误
+      alert("Email sent successfully!");
+    } else {
+      errorMessage.value = res.msg || "Failed to resend email.";
+    }
+  } catch (error) {
+    errorMessage.value = "Network error, please try again.";
+  } finally {
+    resendLoading.value = false;
+  }
+};
+
+const startCooldown = () => {
+  resendCooldown.value = 60; // 60秒冷却
+  if (timer) clearInterval(timer);
+  timer = setInterval(() => {
+    resendCooldown.value--;
+    if (resendCooldown.value <= 0) {
+      clearInterval(timer);
+    }
+  }, 1000);
+};
+
+// 组件销毁时清除定时器
+onUnmounted(() => {
+  if (timer) clearInterval(timer);
 });
 </script>
 
@@ -545,5 +621,58 @@ watch(isLoginMode, (newVal) => {
   margin-bottom: 1rem; /* mb-4 */
   font-size: 0.875rem; /* text-sm */
   text-align: left; /* text-left */
+}
+
+/* 新增/修改的样式 */
+.verification-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%; /* 充满容器 */
+  padding-top: 20px;
+}
+
+.mail-icon {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.dialog-text {
+  color: var(--text-color);
+  line-height: 1.6;
+  margin-bottom: 15px;
+}
+
+.sub-text {
+  font-size: 0.95rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 8px;
+  width: 100%;
+  margin-bottom: 30px;
+}
+
+.resend-btn {
+  /* 继承 submit-button 的基础样式，但可以微调颜色 */
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+.resend-btn:disabled {
+  background-color: var(--light-gray);
+  cursor: not-allowed;
+  color: #333;
+}
+
+.footer-link {
+  margin-top: 20px;
+  font-size: 0.9rem;
+}
+
+.text-gray {
+  color: var(--light-gray);
 }
 </style>
