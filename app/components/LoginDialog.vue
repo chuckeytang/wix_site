@@ -361,12 +361,12 @@ onUnmounted(() => {
 :root {
   --sidebar-width: 450px;
   --primary-color: #ff8c62; /* 主题橙色 */
-  --secondary-color: #e96d47; /* 按钮橙色 */
-  --text-color: #ffffff; /* 白色文字 */
-  --dark-gray: rgba(44, 44, 58, 1); /* 社交按钮/卡片背景深灰 */
-  --card-bg: rgba(13, 13, 26, 1); /* 对话框背景色 */
-  --light-gray: #a0a0a0; /* 浅灰色 */
-  --border-color: #444444; /* 边框颜色 */
+  --secondary-color: #e96d47; /* 按钮橙色，比 primary 更深一点，用于行动按钮 */
+  --text-color: #ffffff;
+  --dark-gray: rgba(44, 44, 58, 1);
+  --card-bg: rgba(13, 13, 26, 1);
+  --light-gray: #a0a0a0;
+  --border-color: rgba(255, 255, 255, 0.1); /* 浅色半透明边框 */
   --error-color: #ef4444; /* 红色错误提示 */
   --shadow-color: rgba(0, 0, 0, 0.5);
 }
@@ -623,56 +623,106 @@ onUnmounted(() => {
   text-align: left; /* text-left */
 }
 
-/* 新增/修改的样式 */
 .verification-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100%; /* 充满容器 */
+  justify-content: flex-start; /* 顶部对齐 */
+  height: 100%;
   padding-top: 20px;
+  text-align: center;
 }
 
-.mail-icon {
-  width: 60px;
-  height: 60px;
-  margin-bottom: 20px;
-  opacity: 0.8;
-}
-
-.dialog-text {
-  color: var(--text-color);
-  line-height: 1.6;
-  margin-bottom: 15px;
-}
-
-.sub-text {
-  font-size: 0.95rem;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 15px;
-  border-radius: 8px;
-  width: 100%;
+.mail-icon-wrapper {
   margin-bottom: 30px;
 }
 
-.resend-btn {
-  /* 继承 submit-button 的基础样式，但可以微调颜色 */
-  margin-top: 10px;
+/* 假设 mail-icon.svg 是白色的，我们给它一个橙色光晕或背景 */
+.mail-icon {
+  width: 65px;
+  height: 65px;
+  /* 增加一个柔和的背景或光晕，模拟图标被主题色包围 */
+  padding: 15px;
+  border-radius: 50%;
+  background-color: rgba(255, 140, 98, 0.1); /* Primary Color 的 10% 透明度 */
+  box-shadow: 0 0 15px rgba(255, 140, 98, 0.5); /* 柔和光晕 */
+  opacity: 1;
+}
+
+.dialog-title {
+  /* 确保标题文字清晰 */
+  color: var(--text-color);
+  font-size: 2.2rem;
   margin-bottom: 20px;
 }
 
+.dialog-text {
+  color: var(--light-gray); /* 主体文字使用浅灰 */
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.sub-text {
+  font-size: 1rem;
+  /* 采用暗色系玻璃质感背景 */
+  background: rgba(255, 255, 255, 0.05); /* 更薄的玻璃效果 */
+  padding: 20px;
+  border-radius: 10px;
+  width: 100%;
+  margin-bottom: 30px;
+  border: 1px solid var(--border-color); /* 增加边框 */
+  color: var(--text-color); /* 邮箱地址周围文字用白色 */
+}
+/* 邮箱地址高亮 */
+.text-primary-color {
+  color: var(--primary-color);
+}
+
+.action-buttons {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.resend-btn {
+  width: 100%;
+  padding: 15px;
+  /* 使用 secondary-color 作为主要行动色 */
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+  border: none;
+  border-radius: 5px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-bottom: 20px;
+}
+.resend-btn:hover:not(:disabled) {
+  background-color: #e67a54; /* 更深的橙色 */
+}
+
 .resend-btn:disabled {
-  background-color: var(--light-gray);
+  background-color: #555555; /* 深灰色，明显不可用 */
   cursor: not-allowed;
-  color: #333;
+  color: #cccccc;
 }
 
 .footer-link {
-  margin-top: 20px;
+  margin-top: 40px;
   font-size: 0.9rem;
+  width: 100%; /* 确保对齐 */
+  text-align: center;
 }
 
 .text-gray {
   color: var(--light-gray);
+}
+.link {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+.link:hover {
+  color: var(--text-color);
 }
 </style>

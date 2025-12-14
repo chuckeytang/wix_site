@@ -4,7 +4,7 @@
       <div class="panel-content">
         <div class="waveform-row">
           <WaveformPlayer
-            :audio-url="audioUrl"
+            :audio-url="audioUrl!"
             :is-playing="playerStore.isPlaying"
             @update-progress="handleUpdateProgress"
             @ready="handleReady"
@@ -249,14 +249,14 @@
           </div>
 
           <div class="preview-download-group">
-            <button
+            <!-- <button
               class="preview-btn"
               @click="handleDownloadPreview"
               :disabled="!isMusicTrack"
               :class="{ disabled: !isMusicTrack }"
             >
               Preview
-            </button>
+            </button> -->
             <button class="download-btn" @click="handleDownload()">
               Download
             </button>

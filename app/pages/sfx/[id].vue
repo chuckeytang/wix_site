@@ -106,7 +106,7 @@
             </svg>
             Add to Cart
           </button>
-          <button class="action-btn" @click="handleShowLicenseModal">
+          <!-- <button class="action-btn" @click="handleShowLicenseModal">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -124,7 +124,7 @@
               <polyline points="14 2 14 8 20 8"></polyline>
             </svg>
             View License Terms
-          </button>
+          </button> -->
         </div>
       </section>
     </div>

@@ -239,15 +239,16 @@ onUnmounted(() => {
 <style scoped>
 /* 保持原有基础变量 */
 :root {
-  --primary-color: #ff8c62;
-  --secondary-color: #f39c12;
+  --primary-color: #ff8c62; /* 您的主色：橙色系 */
+  --secondary-color: #f39c12; /* 辅助色：用于链接/强调 */
   --text-color: #ffffff;
   --dark-bg: rgba(13, 13, 26, 1);
   --card-bg: #1c1b1b;
-  --error-color: #ef4444; /* 修正红色 */
-  --success-color: #2ecc71;
+  --error-color: #ef4444; /* 您的警示色：红色 */
+  --success-color: #2ecc71; /* 保持成功色为绿色 */
   --link-color: var(--secondary-color);
   --light-gray: #a0a0a0;
+  --border-color: rgba(255, 255, 255, 0.1);
 }
 
 /* 布局和卡片样式 (保持不变) */
@@ -267,19 +268,22 @@ onUnmounted(() => {
 }
 
 .verify-card {
-  background-color: var(--card-bg);
+  background-color: rgba(255, 255, 255, 0.05); /* 采用轻微透明的玻璃卡片背景 */
+  backdrop-filter: blur(15px); /* 增加模糊效果 */
+  border: 1px solid var(--border-color); /* 增加边框 */
   padding: 40px;
-  border-radius: 8px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+  border-radius: 12px; /* 略微圆润 */
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
   text-align: center;
 }
 
-/* 字体和图标 */
 .main-title {
-  font-size: 2.2rem;
-  font-weight: bold;
-  margin-bottom: 25px;
+  color: var(--primary-color); /* 标题使用主题色 */
+  font-size: 2.5rem; /* 略微放大 */
+  text-transform: uppercase;
+  margin-bottom: 30px;
 }
+
 .text-primary-color {
   color: var(--primary-color);
 }
@@ -307,45 +311,55 @@ onUnmounted(() => {
   margin-bottom: 10px;
 }
 .success-icon {
-  color: var(--success-color);
+  color: var(--success-color) !important;
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.7);
+  border-radius: 50%;
 }
+
+/* 失败图标：使用警示色，增加柔和阴影 */
 .error-icon {
-  color: var(--error-color);
+  color: var(--error-color) !important;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.7);
+  border-radius: 50%;
 }
 
 .state-title {
-  font-size: 1.5em;
-  font-weight: bold;
+  font-size: 1.8em;
+  margin-top: 10px;
 }
 
+/* 状态描述和错误信息 */
 .state-description {
   color: var(--light-gray);
-  font-size: 1rem;
-  line-height: 1.5;
+  font-size: 1.1em;
+  margin-bottom: 20px;
 }
 
 .error-message {
   color: var(--error-color);
   font-weight: bold;
-  background: rgba(239, 68, 68, 0.1); /* 轻微红色背景强调错误 */
-  padding: 10px;
-  border-radius: 4px;
+  /* 失败提示：使用警示色背景的柔和版本 */
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid var(--error-color);
+  padding: 12px;
+  border-radius: 8px;
   width: 100%;
+  margin-bottom: 15px;
 }
 
+/* 无效链接自动跳转提示 */
 .error-hint {
-  color: var(--secondary-color);
+  color: var(--secondary-color); /* 使用辅助色来强调倒计时 */
   font-weight: bold;
+  font-size: 1em;
   margin-top: 5px;
 }
 
 .go-home-link {
-  color: var(--link-color);
-  text-decoration: none;
+  color: var(--secondary-color);
   font-weight: bold;
-  margin-top: 20px;
-  display: block;
-  font-size: 0.9rem;
+  margin-top: 30px;
+  font-size: 1em;
 }
 .go-home-link:hover {
   text-decoration: underline;
@@ -354,7 +368,7 @@ onUnmounted(() => {
 /* --- 新增：Resend 按钮样式 --- */
 .action-area {
   width: 100%;
-  margin-top: 10px;
+  margin-top: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -362,28 +376,29 @@ onUnmounted(() => {
 }
 
 .resend-button {
-  background-color: var(--secondary-color); /* 使用主题橙色 */
-  color: #fff;
+  background-color: var(--primary-color); /* 使用主题色 */
+  color: #000; /* 按钮文字使用深色，更清晰 */
   border: none;
-  padding: 12px 24px;
-  border-radius: 4px;
-  font-size: 1rem;
+  padding: 14px 28px;
+  border-radius: 6px;
+  font-size: 1.05rem;
   font-weight: bold;
   cursor: pointer;
   transition:
     background-color 0.3s,
     opacity 0.3s;
-  width: 100%; /* 按钮占满 */
-  max-width: 300px;
+  width: 100%;
+  max-width: 320px;
 }
 
 .resend-button:hover:not(:disabled) {
-  background-color: #e67e22; /* hover 变深一点 */
+  background-color: #f77341; /* 略微变浅的主题色 */
 }
 
 .resend-button:disabled {
-  background-color: var(--light-gray);
+  background-color: #444444; /* 冷却状态的深灰色 */
+  color: #aaaaaa;
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 1;
 }
 </style>

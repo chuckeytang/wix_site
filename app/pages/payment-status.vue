@@ -6,10 +6,16 @@
         <p class="status-message">
           Your purchase is complete. Authorization is synchronized.
         </p>
-
         <p class="detail-text">
-          Redirecting to track page in {{ countdown }}s...
+          Redirecting to {{ redirectPath ? "previous page" : "homepage" }} in
+          {{ countdown }}s...
         </p>
+        <button
+          class="action-button primary-button"
+          @click="router.push(redirectPath || '/')"
+        >
+          Continue
+        </button>
       </template>
 
       <template
@@ -22,13 +28,21 @@
         <h1 class="title fail-title">❌ Payment Failed</h1>
         <p class="status-message">{{ statusMessage }}</p>
         <p class="detail-text">The transaction could not be completed.</p>
-        <button class="action-button primary-button" @click="goToHome">
-          Return to Homepage
+        <button class="action-button primary-button" @click="goToOrderHistory">
+          View Order History
         </button>
       </template>
 
       <template v-else>
-        <h1 class="title processing-title">⏳ Processing...</h1>
+        <h1 class="title processing-title">
+          <span v-if="status === 'processing'">⏳ Processing...</span>
+          <span v-else>Unknown Status...</span>
+        </h1>
+        <div class="loading-indicator">
+          <div class="spinner"></div>
+          <span>Checking status with backend...</span>
+        </div>
+
         <p class="status-message">{{ statusMessage }}</p>
         <p class="detail-text">Please check your order history later.</p>
         <button class="action-button primary-button" @click="goToOrderHistory">
@@ -42,6 +56,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { ordersApi } from "~/api/orders";
 
 // 1. 使用 blank 布局
 definePageMeta({
@@ -66,28 +81,81 @@ const status = ref<
   | "requires_payment_method"
 >("loading");
 const statusMessage = ref("Verifying transaction status...");
-const countdown = ref(2);
+const countdown = ref(3);
+let pollingTimer: NodeJS.Timeout | null = null;
 
 // --- 路由方法 ---
 const goToHome = () => router.push("/");
-const goToOrderHistory = () => router.push("/profile/orders");
+const goToOrderHistory = () => router.push("/account/orders");
+
+/**
+ * 查询后端订单状态的 API 模拟/占位符
+ */
+const checkOrderStatus = async () => {
+  if (!orderId) {
+    status.value = "failed";
+    statusMessage.value = "Order ID missing.";
+    if (pollingTimer) clearInterval(pollingTimer);
+    return;
+  }
+
+  // 假设您有一个 API 来查询订单状态
+  try {
+    // 假设后端 API 结构为：GET /api/orders/{id}/status 返回 { status: 'PAID' | 'PENDING' | 'FAILED' }
+    const response = await ordersApi.getOrderStatus(orderId);
+    const backendStatus = response.data?.status; // 假设后端返回 'PAID', 'PENDING' 等
+
+    if (backendStatus === "PAID") {
+      handleSuccess();
+    } else if (backendStatus === "PENDING") {
+      status.value = "processing";
+      statusMessage.value = `Payment is still being verified. Last checked: ${new Date().toLocaleTimeString()}`;
+    } else if (backendStatus === "FAILED" || backendStatus === "CANCELLED") {
+      status.value = "failed";
+      statusMessage.value =
+        "The order has failed or been cancelled by the system.";
+      if (pollingTimer) clearInterval(pollingTimer);
+    }
+  } catch (error) {
+    console.error("Polling failed:", error);
+    statusMessage.value = `Network error during status check. Last checked: ${new Date().toLocaleTimeString()}`;
+  }
+};
+
+/**
+ * 处理支付成功逻辑
+ */
+const handleSuccess = () => {
+  if (pollingTimer) clearInterval(pollingTimer); // 停止轮询
+  status.value = "succeeded";
+  statusMessage.value = "Your purchase is complete.";
+
+  // 启动倒计时跳转
+  const timer = setInterval(() => {
+    countdown.value--;
+    if (countdown.value <= 0) {
+      clearInterval(timer);
+      const path = redirectPath.value || "/";
+      router.push(path);
+    }
+  }, 1000);
+};
 
 // --- 组件挂载 ---
 onMounted(async () => {
   const redirectStatus = route.query.redirect_status as string | undefined;
 
   if (redirectStatus === "succeeded") {
-    router.push({
-      path:"/order-success",
-      query:{
-        orderId:orderId,
-        returnPath:redirectPath.value,
-      },
-    });
-  } else if (redirectStatus === "processing") {
+    // 状态明确成功，直接处理
+    handleSuccess();
+    return; // 不启动轮询
+  }
+
+  // 处理其他明确状态或未知状态
+  if (redirectStatus === "processing") {
     status.value = "processing";
     statusMessage.value =
-      "Transaction is pending verification. Please check order history later.";
+      "Transaction is pending verification. Starting status check...";
   } else if (
     redirectStatus === "requires_payment_method" ||
     redirectStatus === "canceled"
@@ -95,9 +163,22 @@ onMounted(async () => {
     status.value = "failed";
     statusMessage.value =
       "Payment was declined or cancelled. Please try again.";
+    return; // 不启动轮询
   } else {
-    status.value = "processing"; // 默认未知状态
-    statusMessage.value = "Unknown status. Please check your order history.";
+    // 默认未知状态，需要轮询
+    status.value = "processing";
+    statusMessage.value = "Unknown status. Starting status check...";
+  }
+
+  // 启动轮询：立即检查一次，然后每 5 秒检查一次
+  await checkOrderStatus(); // 立即执行第一次
+  pollingTimer = setInterval(checkOrderStatus, 5000); // 每 5 秒轮询一次
+});
+
+// 组件卸载时清除计时器，防止内存泄漏
+onUnmounted(() => {
+  if (pollingTimer) {
+    clearInterval(pollingTimer);
   }
 });
 </script>

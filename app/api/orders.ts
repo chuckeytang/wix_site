@@ -4,6 +4,11 @@ import request from "./http";
 import type { OrderDetails, PaginationResult } from "~/types/orders";
 import type { AjaxResult } from "~/types/ajax";
 
+interface OrderStatusResult {
+  status: "PAID" | "PENDING" | "FAILED" | "CANCELLED"; // 假设的状态枚举
+  // 可以在这里增加其他需要的信息，例如 totalAmount, currency 等
+}
+
 /**
  * 订单相关的 API 接口 (路径从 /site/details 统一为 /site/orders)
  */
@@ -38,6 +43,52 @@ export const ordersApi = {
     return request.get(`/site/orders/${orderId}`);
   },
 
-  // ... (addOrder, updateOrder, deleteOrders, exportOrders 接口的路径也应相应修改)
-  // 如果这些接口在前台不使用，可以暂时忽略。这里仅列出前台需要的部分。
+  /**
+   * 查询特定订单的当前状态
+   * 对应后端 GET /site/orders/{orderId}/status (假设新增此接口)
+   * @param orderId 订单ID
+   * @returns 包含订单状态的 Promise
+   */
+  getOrderStatus(orderId: string): Promise<AjaxResult<OrderStatusResult>> {
+    // 注意：这里 orderId 接收 string 类型，以匹配前端 URL query 参数
+    return request.get(`/site/orders/${orderId}/status`);
+  },
+
+  /**
+   * 新增订单详情
+   * @param data 订单详情数据
+   * @returns 新增结果的 Promise
+   */
+  addOrder(data: OrderDetails): Promise<AjaxResult<any>> {
+    return request.post("/site/details", data);
+  },
+
+  /**
+   * 修改订单详情
+   * @param data 订单详情数据
+   * @returns 修改结果的 Promise
+   */
+  updateOrder(data: OrderDetails): Promise<AjaxResult<any>> {
+    return request.put("/site/details", data);
+  },
+
+  /**
+   * 删除订单详情
+   * @param orderIds 订单详情ID数组
+   * @returns 删除结果的 Promise
+   */
+  deleteOrders(orderIds: number[]): Promise<AjaxResult<any>> {
+    return request.delete(`/site/details/${orderIds.join(",")}`);
+  },
+
+  /**
+   * 导出订单详情列表
+   * @param query 查询参数
+   * @returns 无返回值，直接触发文件下载
+   */
+  exportOrders(query: any): Promise<void> {
+    return request.post("/site/details/export", query, {
+      responseType: "blob", // 响应类型为 Blob，用于下载
+    });
+  },
 };

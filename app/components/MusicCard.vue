@@ -154,7 +154,7 @@
                 <span>Add to cart</span>
               </div>
 
-              <div class="menu-item" @click.stop="handleMenuAction('preview')">
+              <!-- <div class="menu-item" @click.stop="handleMenuAction('preview')">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="18"
@@ -172,7 +172,7 @@
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
                 <span>Download preview</span>
-              </div>
+              </div> -->
             </div>
           </transition>
         </div>
@@ -188,7 +188,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps, watch } from "vue";
+import { ref, watch } from "vue";
 import { useMusicPlayerStore } from "~/stores/musicPlayer";
 import WaveformPlayer from "./WaveformPlayer.vue";
 import type { Tracks } from "~/types/tracks";

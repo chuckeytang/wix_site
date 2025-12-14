@@ -3,7 +3,6 @@
     <div class="modal-card">
       <div class="modal-header">
         <h2 class="modal-title">Order Payment</h2>
-        <button class="close-button" @click="handleClose">&times;</button>
       </div>
 
       <div class="modal-body">
@@ -35,10 +34,17 @@
         <button
           @click="handleSubmit"
           :disabled="!isStripeReady || loading || !isAgreementChecked"
-          class="submit-button"
+          class="submit-button primary-action"
         >
           <span v-if="loading">Processing...</span>
           <span v-else>Pay {{ formattedAmount }}</span>
+        </button>
+        <button
+          @click="handleClose"
+          class="submit-button secondary-action"
+          :disabled="loading"
+        >
+          Cancel & Back
         </button>
       </div>
     </div>
@@ -187,7 +193,7 @@ const handleSubmit = async () => {
   // 提交支付
   const { error: stripeError, paymentIntent } =
     await stripeInstance.confirmPayment({
-      // 🚀 传递 elementsRef.value
+      // 传递 elementsRef.value
       elements: elementsRef.value,
       confirmParams: {
         return_url: returnUrl,
@@ -289,7 +295,7 @@ onUnmounted(() => {
 
 .modal-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center; /* 标题居中 */
   align-items: center;
   border-bottom: 1px solid #333;
   padding-bottom: 15px;
@@ -324,20 +330,6 @@ onUnmounted(() => {
   font-size: 1.4rem;
 }
 
-.close-button {
-  background: none;
-  border: none;
-  color: #ccc;
-  font-size: 2rem;
-  cursor: pointer;
-  line-height: 1;
-  transition: color 0.3s;
-}
-
-.close-button:hover {
-  color: #ff8c62;
-}
-
 .modal-body {
   /* 关键：让 body 区域可以滚动 */
   flex-grow: 1; /* 允许 body 占据可用空间 */
@@ -355,9 +347,26 @@ onUnmounted(() => {
 }
 
 .modal-footer {
+  /* 调整为 Flex 布局，使按钮垂直排列 */
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* 按钮之间的间距 */
   padding-top: 20px;
   text-align: center;
-  border-top: 1px solid #333;
+  border-top: none; /* 移除原来的 border */
+}
+
+.submit-button {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition:
+    background-color 0.3s,
+    opacity 0.3s;
+  width: 100%; /* 按钮占满宽度 */
 }
 
 .submit-button {
@@ -445,5 +454,39 @@ onUnmounted(() => {
   opacity: 0.5;
   cursor: not-allowed;
   background-color: #555;
+}
+
+/* 主要行动按钮 (Pay) */
+.primary-action {
+  background-color: #ff8c62;
+  color: #0d0d1a; /* 使用深色文字，对比度更高 */
+}
+
+.primary-action:hover:not(:disabled) {
+  background-color: #e67a54;
+}
+
+.primary-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #555;
+}
+
+/* 次要行动按钮 (Cancel & Back) */
+.secondary-action {
+  background-color: transparent; /* 透明或深灰色背景 */
+  color: #ccc;
+  border: 1px solid #444;
+}
+
+.secondary-action:hover:not(:disabled) {
+  background-color: #333;
+  color: #ff8c62;
+}
+
+.secondary-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: #888;
 }
 </style>

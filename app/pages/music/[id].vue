@@ -143,7 +143,7 @@
             </svg>
             Add to Cart
           </button>
-          <button
+          <!-- <button
             class="action-btn"
             @click="handleShowLicenseModal('view_terms')"
           >
@@ -164,7 +164,7 @@
               <polyline points="14 2 14 8 20 8"></polyline>
             </svg>
             View License Terms
-          </button>
+          </button> -->
         </div>
       </section>
     </div>
