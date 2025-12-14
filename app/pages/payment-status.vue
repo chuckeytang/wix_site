@@ -158,13 +158,15 @@ const handleSuccess = () => {
 onMounted(async () => {
   // 简单的等待策略：如果 token 为空，稍微等一下（给 Pinia 插件一点时间 hydration）
   if (!authStore.accessToken) {
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    console.log("Token missing, attempting to load from storage...");
+    await authStore.loadToken(); // 强制等待 Token 加载完成
   }
 
   // 再次检查，如果还是没 Token，可能是真没登录，或者是跳转逻辑丢失了状态
   if (!authStore.accessToken) {
-    console.error("No token found after reload.");
+    console.error("No token found after reload. Authentication Failed.");
     status.value = "failed";
+    // 匹配截图中的错误信息
     statusMessage.value =
       "Authentication check failed. Please view order history.";
     return;
@@ -198,8 +200,8 @@ onMounted(async () => {
   }
 
   // 启动轮询：立即检查一次，然后每 5 秒检查一次
-  await checkOrderStatus(); // 立即执行第一次
-  pollingTimer = setInterval(checkOrderStatus, 5000); // 每 5 秒轮询一次
+  await checkOrderStatus();
+  pollingTimer = setInterval(checkOrderStatus, 3000);
 });
 
 // 组件卸载时清除计时器，防止内存泄漏
