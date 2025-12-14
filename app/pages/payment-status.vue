@@ -57,6 +57,7 @@
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ordersApi } from "~/api/orders";
+import { useAuthStore } from "~/stores/auth";
 
 // 1. 使用 blank 布局
 definePageMeta({
@@ -65,6 +66,7 @@ definePageMeta({
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
 const orderId = route.query.orderId as string | undefined;
 const redirectPath = ref(
   route.query.returnPath
@@ -99,7 +101,13 @@ const checkOrderStatus = async () => {
     return;
   }
 
-  // 假设您有一个 API 来查询订单状态
+  if (!authStore.accessToken) {
+    console.warn("Token not ready yet, skipping poll...");
+    // 尝试重新从 Cookie/Storage 加载一次（视您的 authStore 实现而定）
+    // await authStore.loadToken();
+    return;
+  }
+
   try {
     // 假设后端 API 结构为：GET /api/orders/{id}/status 返回 { status: 'PAID' | 'PENDING' | 'FAILED' }
     const response = await ordersApi.getOrderStatus(orderId);
@@ -116,9 +124,14 @@ const checkOrderStatus = async () => {
         "The order has failed or been cancelled by the system.";
       if (pollingTimer) clearInterval(pollingTimer);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Polling failed:", error);
-    statusMessage.value = `Network error during status check. Last checked: ${new Date().toLocaleTimeString()}`;
+    if (error.response && error.response.status === 401) {
+      if (pollingTimer) clearInterval(pollingTimer);
+      statusMessage.value = "Authentication expired. Please log in again.";
+      // 可选：跳转去登录页
+      authStore.logout();
+    }
   }
 };
 
@@ -143,6 +156,20 @@ const handleSuccess = () => {
 
 // --- 组件挂载 ---
 onMounted(async () => {
+  // 简单的等待策略：如果 token 为空，稍微等一下（给 Pinia 插件一点时间 hydration）
+  if (!authStore.accessToken) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  // 再次检查，如果还是没 Token，可能是真没登录，或者是跳转逻辑丢失了状态
+  if (!authStore.accessToken) {
+    console.error("No token found after reload.");
+    status.value = "failed";
+    statusMessage.value =
+      "Authentication check failed. Please view order history.";
+    return;
+  }
+
   const redirectStatus = route.query.redirect_status as string | undefined;
 
   if (redirectStatus === "succeeded") {
