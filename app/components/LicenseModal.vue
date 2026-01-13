@@ -20,7 +20,7 @@
               <h3 class="tier-name">Creator</h3>
               <span class="tier-sub">(Personal)</span>
               <div class="price">
-                $1.99 <span class="per-track">/ track</span>
+                $0.01 <span class="per-track">/ track</span>
               </div>
             </div>
             <ul class="features-list">
@@ -43,7 +43,7 @@
             </ul>
             <button
               class="select-btn primary"
-              @click="handleLicenseAddToCart('creator', 1.99)"
+              @click="handleLicenseAddToCart('creator', 0.01)"
             >
               Add to Cart
             </button>
