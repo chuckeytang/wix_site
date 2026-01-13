@@ -36,7 +36,7 @@ export const cartsApi = {
   },
 
   /**
-   * [前台] 提交购物车，创建订单
+   * 提交购物车，创建订单
    * @returns 包含新创建订单详情的 Promise
    */
   submitCartToOrder(): Promise<AjaxResult<any>> {

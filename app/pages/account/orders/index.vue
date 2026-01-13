@@ -63,6 +63,8 @@ definePageMeta({
   middleware: "auth",
 });
 
+const { showToast } = useToast();
+
 const orders = ref<OrderDetails[]>([]);
 const isLoading = ref(true);
 const payingOrderId = ref<number | null>(null);
@@ -106,7 +108,6 @@ const handleSearch = () => {
 const handlePay = async (order: OrderDetails) => {
   payingOrderId.value = order.orderId;
 
-  // 🚀 设置弹窗所需的金额和货币
   checkoutAmount.value = order.totalAmount;
   checkoutCurrency.value = order.currency || "usd";
 
@@ -117,7 +118,7 @@ const handlePay = async (order: OrderDetails) => {
       checkoutOrderId.value = order.orderId;
       showCheckoutModal.value = true;
     } else {
-      alert("Failed to initiate payment: " + res.msg);
+      showToast(res.msg || "Failed to initiate payment.");
     }
   } catch (error) {
     console.error("Payment error", error);
