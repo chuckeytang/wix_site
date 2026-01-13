@@ -113,6 +113,7 @@ const handlePay = async (order: OrderDetails) => {
 
   try {
     const res = await cartsApi.createPaymentIntent(order.orderId);
+    console.log("Payment Intent Response:", res);
     if (res.code === 200 && res.data?.clientSecret) {
       checkoutClientSecret.value = res.data.clientSecret;
       checkoutOrderId.value = order.orderId;

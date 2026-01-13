@@ -96,7 +96,6 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits } from "vue";
 import type { OrderDetails } from "~/types/orders";
 
 const props = defineProps({
