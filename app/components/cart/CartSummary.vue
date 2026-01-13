@@ -121,13 +121,10 @@ const handleCheckout = async () => {
       newOrder.orderId
     );
 
-    if (
-      paymentIntentResult.code !== 200 ||
-      !paymentIntentResult.data?.clientSecret
-    ) {
-      showToast(
-        `Payment failed: ${paymentIntentResult.msg || "Failed to create payment intent."}`
-      );
+    if (paymentIntentResult.code !== 200) {
+      // 这里会捕获并显示你提供的那个错误信息：
+      // "创建支付失败: Amount must convert to at least 50 cents..."
+      showToast(paymentIntentResult.msg || "Payment service error.");
       return;
     }
     const clientSecret = paymentIntentResult.data.clientSecret;
@@ -143,7 +140,6 @@ const handleCheckout = async () => {
     await nextTick();
 
     await cartStore.clearCart();
-    console.log("handleCheckout");
   } catch (error) {
     console.error("Checkout process failed:", error);
     showToast(`Checkout process failed. Please check network and login state.`);
