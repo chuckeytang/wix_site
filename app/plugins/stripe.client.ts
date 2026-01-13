@@ -12,7 +12,8 @@ export default defineNuxtPlugin({
   async setup(nuxtApp) {
     const config = useRuntimeConfig();
     const publishableKey =
-      "pk_test_51PaKwyRrZLjTtQNHCtY8DJrOo0TYPZ1FFKEFcVTGy4qohNVEu8d8hp4qAHzpAwVpjEXLO9FBK7AblDxRAAUWiJqc006wK3R7gG";
+      "pk_live_51PaKwyRrZLjTtQNHSu6Wk9Gmv59FGcsv46aiykRE3syz8oRO5cp8xtWLR8N0iN1xNdeoScEGKELfQQdAL2RZ4Ico00vs4oWCsc";
+    // "pk_test_51PaKwyRrZLjTtQNHCtY8DJrOo0TYPZ1FFKEFcVTGy4qohNVEu8d8hp4qAHzpAwVpjEXLO9FBK7AblDxRAAUWiJqc006wK3R7gG";
 
     if (!publishableKey) {
       console.error("Stripe Publishable Key 未配置！");

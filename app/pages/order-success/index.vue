@@ -1,7 +1,6 @@
 <template>
   <div class="order-success-page">
     <div class="success-card">
-      
       <template v-if="loading">
         <h1 class="title">⏳ Loading Order...</h1>
         <p class="status-message">Fetching your purchase details...</p>
@@ -18,7 +17,7 @@
 
       <template v-else-if="order">
         <h1 class="title success-title">Order successful!</h1>
-        
+
         <p class="order-id">Order-ID: {{ order.orderId }}</p>
 
         <div class="items-list">
@@ -41,11 +40,11 @@
 </template>
 
 <script setup lang="ts">
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute, useRouter } from "vue-router";
 import { ref, onMounted, computed } from "vue";
-import { ordersApi } from '~/api/orders'; // [保留] 导入真实 API
-import type { OrderDetails } from '~/types/orders'; // [保留] 导入真实类型
-import { useAuthStore } from '~/stores/auth';
+import { ordersApi } from "~/api/orders"; // [保留] 导入真实 API
+import type { OrderDetails } from "~/types/orders"; // [保留] 导入真实类型
+import { useAuthStore } from "~/stores/auth";
 
 const route = useRoute();
 const router = useRouter();
@@ -58,7 +57,7 @@ definePageMeta({
   layout: "blank",
 });
 
-const returnPath = ref(route.query.returnPath as any|| "/");
+const returnPath = ref((route.query.returnPath as any) || "/");
 
 const handleReturn = () => {
   router.push(returnPath.value);
@@ -80,7 +79,7 @@ onMounted(async () => {
   }
 
   try {
-    // [关键] 我们调用了你 api/orders.ts 中的 getOrderDetail 函数
+    // 我们调用了你 api/orders.ts 中的 getOrderDetail 函数
     const response = await ordersApi.getOrderDetail(Number(orderId));
 
     if (response.code === 200 && response.data) {
