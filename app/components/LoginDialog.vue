@@ -202,8 +202,22 @@ const togglePasswordVisibility = () => {
 const handleSubmit = async () => {
   if (loading.value) return;
 
-  loading.value = true;
   errorMessage.value = ""; // 清空之前的错误信息
+
+  if (!isLoginMode.value && !acceptTerms.value) {
+    errorMessage.value =
+      "Please agree to receive email notifications to continue.";
+    acceptTerms.value = true; // 自动帮用户勾选
+    return;
+  }
+
+  if (!isLoginMode.value && !nickname.value) {
+    errorMessage.value = "Nickname is required for registration.";
+    return;
+  }
+
+  // --- 请求阶段：通过校验，正式开始加载 ---
+  loading.value = true;
 
   try {
     let response;
@@ -724,5 +738,27 @@ onUnmounted(() => {
 }
 .link:hover {
   color: var(--text-color);
+}
+
+.error-message-box {
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* 强调勾选框的样式（当出错时） */
+.accept-terms input:invalid {
+  outline: 2px solid var(--error-color);
 }
 </style>

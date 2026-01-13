@@ -74,41 +74,45 @@ export default defineNuxtPlugin((nuxtApp) => {
   // 响应拦截器 (集成您 http.ts 中的逻辑，但调整返回完整响应)
   service.interceptors.response.use(
     (response: AxiosResponse) => {
-      const res = response.data; // 获取响应的 data 部分
-      // 进行应用层错误码检查 (例如您的 res.code !== 200)
+      const res = response.data;
+      const config = response.config;
+
       if (res && typeof res === "object" && "code" in res && res.code !== 200) {
-        // 额外的认证/权限检查 (针对非 HTTP 状态码的后端应用层错误码)
-        // 假设后端在应用层返回 401 或类似错误码表示认证问题
         const authStore = useAuthStore();
-        if (res.code === 401 || res.msg.includes("认证失败")) {
-          // 统一处理认证失败，防止业务代码继续执行
-          console.error("API 响应错误: 认证失败，全局处理中...");
-          // 提示用户
-          // 假设我们有一个全局的 $toast 或 $alert 服务
-          if (app.$toast) {
-            app.$toast.error("登录已过期，请重新登录。");
-          } else {
-            showToast("登录已过期，请重新登录。");
-          }
 
-          authStore.logout();
-          authStore.openLoginDialog();
+        // 1. 获取请求路径（去掉 baseURL 部分）
+        const url = config.url || "";
 
-          // 阻止 Promise 链继续执行
+        // 2. 更加严谨的白名单校验
+        const authWhiteList = [
+          "/site/auth/login",
+          "/site/auth/register",
+          "/site/auth/verifyEmail",
+          "/site/auth/resendVerification", // 确保这里和后端匹配
+        ];
+
+        // 检查当前 URL 是否包含在白名单中
+        const isAuthApi = authWhiteList.some((path) => url.includes(path));
+
+        // 3. 只有【非白名单】且【确认为401】时，才强制弹窗登出
+        if (
+          !isAuthApi &&
+          (res.code === 401 || (res.msg && res.msg.includes("认证失败")))
+        ) {
+          console.error("API 响应错误: 认证失败，强制登出...");
+          // ... 原有的 Toast 和 logout 逻辑 ...
           return Promise.reject(
             new Error(res.msg || "Authentication required.")
           );
         }
 
-        console.error("API 响应错误:", res.msg);
+        // 4. 如果是白名单接口返回的 401（说明后端没配置好）或其他错误，
+        // 我们只抛出普通错误，让组件(LoginDialog)内部去显示错误消息，而不是全局弹窗 B。
         const customError = new Error(res.msg || "Error");
         (customError as any).responseCode = res.code;
-        console.log(customError);
-
         return Promise.reject(customError);
-      } else {
-        return response;
       }
+      return response;
     },
     (error: any) => {
       console.error("响应拦截器错误:", error.message);
@@ -124,9 +128,9 @@ export default defineNuxtPlugin((nuxtApp) => {
         // 提示用户
         // 假设我们有一个全局的 $toast 或 $alert 服务
         if (app.$toast) {
-          app.$toast.error("登录已过期，请重新登录。");
+          app.$toast.error("Your login has expired. Please log in again.");
         } else {
-          showToast("登录已过期，请重新登录。");
+          showToast("Your login has expired. Please log in again.");
         }
 
         authStore.logout();
