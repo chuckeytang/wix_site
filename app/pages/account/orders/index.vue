@@ -121,7 +121,14 @@ const handlePay = async (order: OrderDetails) => {
     } else {
       showToast(res.msg || "Failed to initiate payment.");
     }
-  } catch (error) {
+  } catch (error: any) {
+    const toastMessage =
+      error.message ||
+      (error.response && error.response.data && error.response.data.msg) ||
+      "An unexpected error occurred during payment.";
+
+    // 调用 showToast 将错误显示给用户
+    showToast(toastMessage);
     console.error("Payment error", error);
   } finally {
     payingOrderId.value = null;
