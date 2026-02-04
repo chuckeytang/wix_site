@@ -265,7 +265,7 @@ onMounted(async () => {
     try {
       const res = await favoritesApi.checkFavoriteStatus(
         props.track.trackId,
-        "track"
+        "track",
       );
       isFavorited.value = res.data!;
     } catch (e) {
@@ -355,7 +355,7 @@ const handleToggleFavorite = async () => {
   try {
     const res = await favoritesApi.toggleFavorite(
       props.track.trackId!,
-      "track"
+      "track",
     );
     // 后端返回 data 为 true(已收藏) 或 false(未收藏)
     if (res.data !== undefined) {
@@ -384,7 +384,7 @@ const handleAddToPlaylistClick = () => {
   playlistModalStore.openModal(
     props.track.trackId!,
     "track",
-    props.track.title
+    props.track.title,
   );
 };
 
@@ -398,7 +398,7 @@ watch(
         waveformPlayerRef.value.pause();
       }
     }
-  }
+  },
 );
 
 // 监听全局进度变化，更新 musicCard 的波形图
@@ -411,7 +411,7 @@ watch(
         waveformPlayerRef.value.seekTo(newProgress / 100);
       }
     }
-  }
+  },
 );
 
 // Utility function to format duration from seconds to MM:SS

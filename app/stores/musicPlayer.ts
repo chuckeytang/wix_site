@@ -86,7 +86,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
     setTrack(track: Tracks) {
       // 检查新歌曲是否在当前列表中，并更新索引
       const index = this.currentPlaylist.findIndex(
-        (t) => t.trackId === track.trackId
+        (t) => t.trackId === track.trackId,
       );
       if (index !== -1) {
         this.currentTrackIndex = index;
@@ -99,6 +99,8 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
         this.currentPlayingId !== track.trackId ||
         this.mediaType !== "track"
       ) {
+        // 第一次播放
+        this.isPlaying = true;
         this.currentTrack = track;
         this.currentPlayingId = track.trackId!;
         this.mediaType = "track"; // 设置媒体类型
@@ -106,7 +108,6 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
         this.duration = track.duration;
         this.currentSegment = "full";
       }
-      this.isPlaying = true;
     },
 
     /**
@@ -213,7 +214,7 @@ export const useMusicPlayerStore = defineStore("musicPlayer", {
       this.currentSegment = segment;
     },
 
-    stopAndHidePlayer(){
+    stopAndHidePlayer() {
       this.isPlaying = false;
       this.currentTrack = null;
       this.currentPlayingId = undefined;

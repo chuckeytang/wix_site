@@ -15,6 +15,9 @@ export interface Users {
   lastLoginAt?: string; // 最后登录时间 (格式: yyyy-MM-dd HH:mm:ss)
   createdAt?: string; // 记录创建时间
   updatedAt?: string; // 记录更新时间
+  stripeCustomerId?: string; //
+  countryCode?: string; // ：用于计税的国家代码
+  postalCode?: string; // ：用于计税的邮编
 }
 
 /**

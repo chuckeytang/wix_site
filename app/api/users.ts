@@ -82,4 +82,15 @@ export const usersApi = {
       responseType: "blob", // 响应类型为 Blob，用于下载
     });
   },
+
+  /**
+   * 修改当前登录用户的计税信息 (国家和邮编)
+   * 对应后端 PUT /site/users/updateTaxInfo
+   */
+  updateTaxInfo(data: {
+    countryCode: string;
+    postalCode: string;
+  }): Promise<AjaxResult<any>> {
+    return request.put("/site/users/updateTaxInfo", data);
+  },
 };
