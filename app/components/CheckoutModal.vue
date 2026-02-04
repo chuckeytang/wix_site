@@ -185,12 +185,13 @@ const checkUserAndInitialize = async () => {
     const res = await usersApi.getMe();
     const user = res.data;
 
-    // 如果用户没有计税地址，显示地址表单
-    if (!user!.countryCode || !user!.postalCode) {
+    // 判定是否存在且不为空字符串
+    const hasAddress = user?.countryCode?.trim() && user?.postalCode?.trim();
+
+    if (!hasAddress) {
       showAddressStep.value = true;
       loading.value = false;
     } else {
-      // 已经有地址，直接进入获取密钥步骤
       await fetchPaymentIntent();
     }
   } catch (e) {
@@ -206,10 +207,8 @@ const handleApplyTax = async () => {
   loading.value = true;
   error.value = null;
   try {
-    // 1. 更新数据库
     await usersApi.updateTaxInfo(addressForm.value);
     showAddressStep.value = false;
-    // 2. 数据库更新成功后，再去拿密钥（后端此时能通过库拿到地址算税）
     await fetchPaymentIntent();
   } catch (e: any) {
     error.value = e.message || "Failed to update location information.";
@@ -227,9 +226,12 @@ const fetchPaymentIntent = async () => {
     const res = await stripeApi.createPaymentIntent(props.orderId);
     if (res.code === 200) {
       localClientSecret.value = res.data!.clientSecret;
-      // 接下来的初始化由 watch(localClientSecret) 处理
     } else {
+      // 如果后端返回 400 (通常是因为地址缺失)，强制开启地址步骤
       error.value = res.msg || "Failed to initialize payment.";
+      if (res.code === 400) {
+        showAddressStep.value = true;
+      }
       loading.value = false;
     }
   } catch (e) {
@@ -273,7 +275,7 @@ const initializeStripe = async (secret: string) => {
       },
     };
 
-    // [*] 重点：使用 (elementsRef.value as any) 绕过复杂的重载推断
+    // 使用 (elementsRef.value as any) 绕过复杂的重载推断
     // 或者使用 (elementsRef.value!).create("payment", paymentElementOptions);
     const paymentElement = (elementsRef.value as any).create(
       "payment",
