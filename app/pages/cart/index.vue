@@ -49,19 +49,30 @@ onMounted(async () => {
 
 // 处理 CartFilledState 发出的结算请求
 const handleOpenCheckout = (data) => {
-  // 设置模态框所需的数据
-  checkoutClientSecret.value = data.clientSecret;
-  checkoutOrderId.value = data.orderId;
-  checkoutAmount.value = data.amount; // 接收 CartFilledState 传递的金额
-  checkoutCurrency.value = data.currency;
+  console.log(
+    "[Cart Parent] Received checkout request for order:",
+    data.orderId,
+  );
 
-  // 显示模态框
+  // 1. 设置模态框所需的基础订单数据
+  checkoutOrderId.value = data.orderId;
+  checkoutAmount.value = data.amount;
+  checkoutCurrency.value = data.currency || "usd";
+
+  // 2. 关键：强制设为 null
+  // 这样 CheckoutModal 内部 watch(isVisible) 触发后发现没有 secret，
+  // 就会启动自驱动逻辑：checkUser -> (若无地址)显示表单 -> (若有地址)fetchSecret
+  checkoutClientSecret.value = null;
+
+  // 3. 显示模态框
   showCheckoutModal.value = true;
 };
 
 // 处理模态框关闭事件
 const handleCloseCheckout = () => {
   showCheckoutModal.value = false;
+  // 支付关闭后通常需要刷新购物车状态
+  cartStore.loadCart();
 };
 </script>
 

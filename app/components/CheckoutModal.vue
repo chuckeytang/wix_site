@@ -1,6 +1,8 @@
 <template>
-  <div class="modal-overlay" v-if="isVisible">
+  <div class="modal-overlay" v-if="isVisible" @click.self="handleClose">
     <div class="modal-card">
+      <button class="close-x" @click="handleClose">×</button>
+
       <div class="modal-header">
         <h2 class="modal-title">Order Payment</h2>
       </div>
@@ -31,7 +33,7 @@
               <option value="JP">Japan</option>
             </select>
           </div>
-          <div class="form-group">
+          <div class="form-group mt-15">
             <label>Postal Code / Zip</label>
             <input
               type="text"
@@ -49,6 +51,23 @@
           </button>
         </div>
 
+        <div v-if="localClientSecret && !showAddressStep" class="order-summary">
+          <div class="summary-item">
+            <span>Subtotal</span>
+            <span>{{
+              formatCurrency(serverOriginAmount || props.amount)
+            }}</span>
+          </div>
+          <div class="summary-item tax-line">
+            <span>Estimated Tax</span>
+            <span>{{ formatCurrency(serverTaxAmount || 0) }}</span>
+          </div>
+          <div class="summary-item total-line">
+            <span>Total</span>
+            <span>{{ formatCurrency(serverFinalAmount || props.amount) }}</span>
+          </div>
+        </div>
+
         <div
           v-show="localClientSecret && !showAddressStep"
           id="payment-element"
@@ -56,39 +75,46 @@
         ></div>
       </div>
 
-      <div class="terms-container" v-if="localClientSecret && !showAddressStep">
-        <label class="checkbox-label">
-          <input
-            type="checkbox"
-            v-model="isAgreementChecked"
-            class="terms-checkbox"
-          />
-          <span class="checkbox-text">
-            I have read and agree to the terms of the
-            <span class="link-text" @click.stop="openAgreement"
-              >Verscape License Agreement</span
-            >.
-          </span>
-        </label>
+      <div v-if="localClientSecret && !showAddressStep">
+        <div class="terms-container">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              v-model="isAgreementChecked"
+              class="terms-checkbox"
+            />
+            <span class="checkbox-text">
+              I have read and agree to the terms of the
+              <span class="link-text" @click.stop="openAgreement"
+                >Verscape License Agreement</span
+              >.
+            </span>
+          </label>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            @click="handleSubmit"
+            :disabled="!isStripeReady || loading || !isAgreementChecked"
+            class="submit-button primary-action"
+          >
+            <span v-if="loading" class="spinner small"></span>
+            <span v-else>Pay {{ displayAmount }}</span>
+          </button>
+
+          <button
+            @click="handleClose"
+            class="submit-button secondary-action"
+            :disabled="loading"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
 
-      <div class="modal-footer">
-        <button
-          v-if="localClientSecret && !showAddressStep"
-          @click="handleSubmit"
-          :disabled="!isStripeReady || loading || !isAgreementChecked"
-          class="submit-button primary-action"
-        >
-          <span v-if="loading">Processing...</span>
-          <span v-else>Pay {{ formattedAmount }}</span>
-        </button>
-
-        <button
-          @click="handleClose"
-          class="submit-button secondary-action"
-          :disabled="loading"
-        >
-          {{ localClientSecret ? "Cancel & Back" : "Close" }}
+      <div v-else-if="!loading" class="modal-footer">
+        <button @click="handleClose" class="submit-button secondary-action">
+          Close
         </button>
       </div>
     </div>
@@ -103,17 +129,16 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, onUnmounted, nextTick } from "vue";
-import type { Stripe, StripeElements } from "@stripe/stripe-js";
-import { useRoute, useRouter } from "vue-router";
+import type {
+  Stripe,
+  StripeElements,
+  StripePaymentElementOptions,
+} from "@stripe/stripe-js";
 import { useCartStore } from "~/stores/cart";
-import { usersApi } from "~/api/users"; // [+] 引入用户接口
-import { stripeApi } from "~/api/stripe"; // [+] 引入支付接口
+import { usersApi } from "~/api/users";
+import { stripeApi } from "~/api/stripe";
 import LicenseAgreementModal from "~/components/LicenseAgreementModal.vue";
-import type { StripePaymentElementOptions } from "@stripe/stripe-js";
 
-const router = useRouter();
-
-// 1. Props: 移除了 clientSecret，由内部获取
 const props = defineProps<{
   isVisible: boolean;
   orderId: number | null;
@@ -122,10 +147,8 @@ const props = defineProps<{
   currency: string;
 }>();
 
-// 2. Emits
 const emit = defineEmits(["close", "success"]);
 
-// 3. 注入和内部状态
 const nuxtApp = useNuxtApp();
 const stripeInstance = nuxtApp.$stripe as Stripe | null;
 
@@ -136,24 +159,32 @@ const cartStore = useCartStore();
 const paymentElementRef = ref<any | null>(null);
 const elementsRef = ref<StripeElements | null>(null);
 
-const localClientSecret = ref<string | null>(null); // [*] 内部维护密钥
-const showAddressStep = ref(false); // [*] 控制是否需要补全地址
+const localClientSecret = ref<string | null>(null);
+const serverFinalAmount = ref<number | null>(null);
+const serverTaxAmount = ref<number | null>(null);
+const serverOriginAmount = ref<number | null>(null);
+const showAddressStep = ref(false);
 const isAgreementChecked = ref(false);
 const showAgreementModal = ref(false);
-
 const addressForm = ref({ countryCode: "", postalCode: "" });
 
-const formattedAmount = computed(() => {
-  if (!props.amount || !props.currency) return "";
+// 格式化货币的辅助函数（抽出来复用）
+const formatCurrency = (val: number) => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: props.currency.toUpperCase(),
-  }).format(props.amount);
+  }).format(val);
+};
+
+const displayAmount = computed(() => {
+  const targetAmount = serverFinalAmount.value || props.amount;
+  if (!targetAmount || !props.currency) return "";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: props.currency.toUpperCase(),
+  }).format(targetAmount);
 });
 
-/**
- * [*] 核心流程控制：打开模态框时触发
- */
 watch(
   () => props.isVisible,
   async (newVal) => {
@@ -168,7 +199,6 @@ watch(
   },
 );
 
-// 监听密钥变化后初始化 Stripe
 watch(localClientSecret, async (newSecret) => {
   if (newSecret) {
     await nextTick();
@@ -176,18 +206,12 @@ watch(localClientSecret, async (newSecret) => {
   }
 });
 
-/**
- * [*] 步骤 A: 检查用户信息并决定下一步
- */
 const checkUserAndInitialize = async () => {
   loading.value = true;
   try {
     const res = await usersApi.getMe();
     const user = res.data;
-
-    // 判定是否存在且不为空字符串
     const hasAddress = user?.countryCode?.trim() && user?.postalCode?.trim();
-
     if (!hasAddress) {
       showAddressStep.value = true;
       loading.value = false;
@@ -195,14 +219,11 @@ const checkUserAndInitialize = async () => {
       await fetchPaymentIntent();
     }
   } catch (e) {
-    error.value = "Unable to load user profile. Please try again.";
+    error.value = "Unable to load profile.";
     loading.value = false;
   }
 };
 
-/**
- * [*] 步骤 B: 用户提交地址表单
- */
 const handleApplyTax = async () => {
   loading.value = true;
   error.value = null;
@@ -211,31 +232,28 @@ const handleApplyTax = async () => {
     showAddressStep.value = false;
     await fetchPaymentIntent();
   } catch (e: any) {
-    error.value = e.message || "Failed to update location information.";
+    error.value = e.message || "Update failed.";
     loading.value = false;
   }
 };
 
-/**
- * [*] 步骤 C: 获取 Stripe Client Secret
- */
 const fetchPaymentIntent = async () => {
   if (!props.orderId) return;
   loading.value = true;
   try {
     const res = await stripeApi.createPaymentIntent(props.orderId);
-    if (res.code === 200) {
-      localClientSecret.value = res.data!.clientSecret;
-    } else {
-      // 如果后端返回 400 (通常是因为地址缺失)，强制开启地址步骤
-      error.value = res.msg || "Failed to initialize payment.";
-      if (res.code === 400) {
-        showAddressStep.value = true;
-      }
-      loading.value = false;
+    localClientSecret.value = res.data!.clientSecret;
+
+    if (res.data!.finalAmount) {
+      serverFinalAmount.value = parseFloat(res.data!.finalAmount);
+      serverTaxAmount.value = parseFloat(res.data!.taxAmount || "0");
+      serverOriginAmount.value = parseFloat(res.data!.originAmount || "0");
     }
-  } catch (e) {
-    error.value = "Stripe service unavailable.";
+  } catch (e: any) {
+    if (e.responseCode === 400) {
+      showAddressStep.value = true;
+    }
+    error.value = e.message || "Failed to start payment.";
     loading.value = false;
   }
 };
@@ -243,52 +261,17 @@ const fetchPaymentIntent = async () => {
 const initializeStripe = async (secret: string) => {
   if (!stripeInstance) return;
   loading.value = true;
-  cleanupElements();
-
   try {
     elementsRef.value = stripeInstance.elements({
       clientSecret: secret,
-      appearance: {
-        theme: "night",
-        variables: {
-          colorPrimary: "#ff8c62",
-          borderRadius: "4px",
-          fontSizeBase: "15px",
-        },
-      },
+      appearance: { theme: "night", variables: { colorPrimary: "#ff8c62" } },
     });
-
-    // 定义符合 StripePaymentElementOptions 规范的配置对象
-    const paymentElementOptions: StripePaymentElementOptions = {
-      layout: {
-        type: "tabs",
-        defaultCollapsed: false,
-      },
-      fields: {
-        billingDetails: {
-          // 'auto' 表示 Stripe 自动决定，'never' 表示隐藏
-          // 如果你希望强制显示，某些版本支持 'always'，但根据你提供的 FieldOption 类型，
-          // 这里建议使用符合定义的配置：
-          address: "auto",
-          email: "auto",
-        },
-      },
-    };
-
-    // 使用 (elementsRef.value as any) 绕过复杂的重载推断
-    // 或者使用 (elementsRef.value!).create("payment", paymentElementOptions);
-    const paymentElement = (elementsRef.value as any).create(
-      "payment",
-      paymentElementOptions,
-    );
-
+    const paymentElement = (elementsRef.value as any).create("payment", {
+      layout: "tabs",
+    });
     paymentElementRef.value = paymentElement;
     paymentElement.mount("#payment-element");
-
     isStripeReady.value = true;
-  } catch (e) {
-    error.value = "Failed to initialize payment form.";
-    console.error(e);
   } finally {
     loading.value = false;
   }
@@ -298,49 +281,40 @@ const handleSubmit = async () => {
   if (!isAgreementChecked.value || !stripeInstance || !elementsRef.value)
     return;
   loading.value = true;
-  error.value = null;
-
-  const returnUrl = `${window.location.origin}/payment-status?orderId=${props.orderId}&returnPath=${encodeURIComponent(props.returnPath || "/")}`;
-
-  const { error: stripeError, paymentIntent } =
-    await stripeInstance.confirmPayment({
-      elements: elementsRef.value,
-      confirmParams: { return_url: returnUrl },
-      redirect: "if_required",
-    });
-
+  const returnUrl = `${window.location.origin}/payment-status?orderId=${props.orderId}`;
+  const { error: stripeError } = await stripeInstance.confirmPayment({
+    elements: elementsRef.value,
+    confirmParams: { return_url: returnUrl },
+    redirect: "if_required",
+  });
   if (stripeError) {
     error.value = stripeError.message || "Payment failed.";
     loading.value = false;
-  } else if (paymentIntent && paymentIntent.status === "succeeded") {
-    try {
-      await cartStore.clearCart();
-    } catch (e) {}
+  } else {
+    await cartStore.clearCart();
     window.location.href = returnUrl;
   }
 };
 
 const resetInternalState = () => {
   localClientSecret.value = null;
+  serverFinalAmount.value = null;
+  serverTaxAmount.value = null;
+  serverOriginAmount.value = null;
   showAddressStep.value = false;
   isStripeReady.value = false;
   loading.value = false;
-  addressForm.value = { countryCode: "", postalCode: "" };
 };
 
 const cleanupElements = () => {
-  if (paymentElementRef.value) {
-    paymentElementRef.value.destroy();
-    paymentElementRef.value = null;
-  }
+  if (paymentElementRef.value) paymentElementRef.value.destroy();
+  paymentElementRef.value = null;
   elementsRef.value = null;
 };
 
 const handleClose = () => {
-  cleanupElements();
   emit("close");
 };
-
 const openAgreement = () => {
   showAgreementModal.value = true;
 };
@@ -348,22 +322,140 @@ const handleAgreementConfirmed = () => {
   isAgreementChecked.value = true;
   showAgreementModal.value = false;
 };
-
-onUnmounted(() => cleanupElements());
 </script>
 
 <style scoped>
-/* 保持原有样式，并确保 spinner 效果 */
+/* [+] 核心弹出框样式修复 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85); /* 深色半透明遮罩 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000; /* 确保在最上层 */
+  backdrop-filter: blur(4px);
+}
+
+.modal-card {
+  background: #1a1a2e;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 12px;
+  padding: 30px;
+  position: relative;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  border: 1px solid #333;
+}
+
+.close-x {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.modal-title {
+  margin: 0 0 20px 0;
+  color: #fff;
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+.order-summary {
+  background: #111122;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px dashed #444;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #ccc;
+}
+
+.tax-line {
+  border-bottom: 1px solid #333;
+  padding-bottom: 8px;
+  color: #ff8c62; /* 让税费稍微显眼一点 */
+}
+
+.total-line {
+  margin-top: 10px;
+  margin-bottom: 0;
+  font-weight: bold;
+  font-size: 16px;
+  color: #fff;
+}
+
+/* 之前已有的支付容器微调 */
+.payment-element-container {
+  margin: 10px 0 20px 0; /* 减少间距，因为上方有了 summary */
+}
+
+.custom-input {
+  background: #0d0d1a;
+  border: 1px solid #444;
+  color: #fff;
+  padding: 12px;
+  border-radius: 6px;
+  width: 100%;
+  margin-top: 5px;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+}
+
+.primary-action {
+  background: #ff8c62;
+  color: #fff;
+}
+
+.primary-action:disabled {
+  background: #555;
+  cursor: not-allowed;
+}
+
+.secondary-action {
+  background: transparent;
+  color: #aaa;
+  margin-top: 10px;
+}
+
+.error-message {
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
 .spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid rgba(255, 140, 98, 0.3);
+  border: 2px solid rgba(255, 140, 98, 0.2);
   border-top-color: #ff8c62;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-  display: inline-block;
-  margin-right: 10px;
-  vertical-align: middle;
 }
 
 @keyframes spin {
@@ -371,38 +463,10 @@ onUnmounted(() => cleanupElements());
     transform: rotate(360deg);
   }
 }
-
-/* 地址表单样式补充 */
-.address-step {
-  padding: 10px 0 20px 0;
-  animation: fadeIn 0.3s ease;
+.mt-15 {
+  margin-top: 15px;
 }
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* 其余原有样式保持... */
-.modal-overlay {
-  /* ... */
-}
-.modal-card {
-  /* ... */
-}
-.custom-input {
-  background-color: #0d0d1a;
-  border: 1px solid #444;
-  color: #fff;
-  padding: 12px;
-  border-radius: 6px;
-  width: 100%;
-  box-sizing: border-box;
+.mt-20 {
+  margin-top: 20px;
 }
 </style>

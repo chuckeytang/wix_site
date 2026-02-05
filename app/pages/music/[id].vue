@@ -178,7 +178,7 @@
       :returnPath="checkoutReturnPath"
       :amount="checkoutAmount"
       :currency="checkoutCurrency"
-      @close="showCheckoutModal = false"
+      @close="handleCloseCheckout"
     />
   </div>
 </template>
@@ -242,7 +242,7 @@ const handleShowLicenseModal = (action: "add_to_cart" | "view_terms") => {
     authStore.openLicenseModal(
       track.value.trackId!,
       track.value.title,
-      "track"
+      "track",
     );
   }
 };
@@ -338,6 +338,35 @@ const selectSegmentOption = (segment: string) => {
 
   // 2. 更新全局播放器的分段状态
   musicPlayerStore.setSegment(segment);
+};
+
+/**
+ * [+] 处理支付唤起逻辑
+ * 假设你以后在详情页增加“立即购买”功能
+ */
+const handleDirectPay = async (orderId: number, amount: number) => {
+  console.log("[Detail Parent] Triggering payment for order:", orderId);
+
+  // 1. 设置基础订单数据
+  checkoutOrderId.value = orderId;
+  checkoutAmount.value = amount;
+  checkoutCurrency.value = "usd";
+
+  // 2. 关键：强制设为 null 以触发模态框的“自驱动”流程
+  // 模态框打开后会执行：getMe -> (无地址)显表单 -> (有地址)fetchSecret
+  checkoutClientSecret.value = null;
+
+  // 3. 显示模态框
+  showCheckoutModal.value = true;
+};
+
+/**
+ * [+] 处理模态框关闭
+ */
+const handleCloseCheckout = () => {
+  showCheckoutModal.value = false;
+  // 重置内部状态防止下次打开干扰
+  checkoutClientSecret.value = null;
 };
 
 onMounted(() => {

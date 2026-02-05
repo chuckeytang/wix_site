@@ -138,7 +138,7 @@
       :returnPath="checkoutReturnPath"
       :amount="checkoutAmount"
       :currency="checkoutCurrency"
-      @close="showCheckoutModal = false"
+      @close="handleCloseCheckout"
     />
   </div>
 </template>
@@ -246,6 +246,33 @@ const togglePlayAndSetSfx = () => {
   } else {
     musicPlayerStore.setSfx(sfx.value);
   }
+};
+
+/**
+ * [+] 处理直接支付逻辑 (供未来或特殊入口使用)
+ */
+const handleDirectPay = (orderId: number, amount: number) => {
+  console.log("[SFX Detail] Initiating self-driven payment flow.");
+
+  checkoutOrderId.value = orderId;
+  checkoutAmount.value = amount;
+  checkoutCurrency.value = "usd";
+
+  // [*] 关键：重置为 null。模态框内部 watch(isVisible) 会检测到并自动执行：
+  // 1. checkUserAndInitialize (验证地址)
+  // 2. fetchPaymentIntent (获取 Secret)
+  checkoutClientSecret.value = null;
+
+  showCheckoutModal.value = true;
+};
+
+/**
+ * [+] 统一处理模态框关闭
+ */
+const handleCloseCheckout = () => {
+  showCheckoutModal.value = false;
+  // 清理状态，确保下次打开时流程重新触发
+  checkoutClientSecret.value = null;
 };
 
 onMounted(() => {

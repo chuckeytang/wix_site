@@ -98,7 +98,7 @@ const handleCheckout = async () => {
   // 1. 订阅/单次购买逻辑分支
   if (selectedPurchaseType.value === "subscription") {
     showToast(
-      "Subscription checkout is not yet implemented. Please choose One-time purchase."
+      "Subscription checkout is not yet implemented. Please choose One-time purchase.",
     );
     return;
   }
@@ -116,7 +116,7 @@ const handleCheckout = async () => {
 
     // 3. 创建 Payment Intent
     const paymentIntentResult = await cartsApi.createPaymentIntent(
-      newOrder.orderId
+      newOrder.orderId,
     );
 
     // [修改点] 显式处理业务 code 错误（如 500 且 code 为 500 的情况）

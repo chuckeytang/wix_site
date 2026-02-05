@@ -106,33 +106,18 @@ const handleSearch = () => {
 
 // 处理点击支付按钮
 const handlePay = async (order: OrderDetails) => {
-  payingOrderId.value = order.orderId;
-
+  // 1. 设置基础信息
+  checkoutOrderId.value = order.orderId;
   checkoutAmount.value = order.totalAmount;
   checkoutCurrency.value = order.currency || "usd";
 
-  try {
-    const res = await cartsApi.createPaymentIntent(order.orderId);
-    console.log("Payment Intent Response:", res);
-    if (res.code === 200 && res.data?.clientSecret) {
-      checkoutClientSecret.value = res.data.clientSecret;
-      checkoutOrderId.value = order.orderId;
-      showCheckoutModal.value = true;
-    } else {
-      showToast(res.msg || "Failed to initiate payment.");
-    }
-  } catch (error: any) {
-    const toastMessage =
-      error.message ||
-      (error.response && error.response.data && error.response.data.msg) ||
-      "An unexpected error occurred during payment.";
+  // 2. 清空之前的 secret（确保模态框触发内部的 checkUserAndInitialize 逻辑）
+  checkoutClientSecret.value = null;
 
-    // 调用 showToast 将错误显示给用户
-    showToast(toastMessage);
-    console.error("Payment error", error);
-  } finally {
-    payingOrderId.value = null;
-  }
+  // 3. 直接打开模态框
+  // 模态框内部 watch(isVisible) 会触发 checkUserAndInitialize()
+  // 从而实现：检查地址 -> (若无)显示地址表单 -> (若有)获取 PaymentIntent
+  showCheckoutModal.value = true;
 };
 
 const closeCheckoutModal = () => {
