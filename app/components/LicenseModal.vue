@@ -20,7 +20,7 @@
               <h3 class="tier-name">Creator</h3>
               <span class="tier-sub">(Personal)</span>
               <div class="price">
-                $0.01 <span class="per-track">/ track</span>
+                $0.50 <span class="per-track">/ track</span>
               </div>
             </div>
             <ul class="features-list">

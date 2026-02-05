@@ -6,7 +6,7 @@
 
     <div class="content-wrapper">
       <section class="pricing-info-section">
-        <span class="price-value-highlight">$0.01</span>
+        <span class="price-value-highlight">$0.50</span>
         <span class="mode-description">per track or sound effect</span>
       </section>
 
