@@ -22,6 +22,7 @@ export interface Sfx {
   createdAt?: string; // 记录创建时间
   updatedAt?: string; // 记录更新时间
   tags?: Tags[]; // 音效标签
+  hasLicense?: boolean; // 当前用户是否已购买
 }
 
 /**

@@ -33,9 +33,12 @@
         </svg>
       </button>
       <div class="sfx-info">
-        <NuxtLink :to="`/sfx/${sfx.sfxId}`" class="sfx-title">
-          {{ sfx.title }}
-        </NuxtLink>
+        <div class="title-row">
+          <NuxtLink :to="`/sfx/${sfx.sfxId}`" class="sfx-title">
+            {{ sfx.title }}
+          </NuxtLink>
+          <span v-if="sfx.hasLicense" class="owned-badge">Purchased</span>
+        </div>
         <span class="sfx-artist">{{ sfx.artist }}</span>
       </div>
     </div>
@@ -122,7 +125,11 @@
 
           <transition name="fade">
             <div v-if="isMenuOpen" class="dropdown-menu">
-              <div class="menu-item" @click.stop="handleMenuAction('cart')">
+              <div
+                v-if="!sfx.hasLicense"
+                class="menu-item"
+                @click.stop="handleMenuAction('cart')"
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="18"
@@ -142,6 +149,9 @@
                   ></path>
                 </svg>
                 <span>Add to cart</span>
+              </div>
+              <div v-else class="menu-item disabled">
+                <span>Purchased</span>
               </div>
             </div>
           </transition>
@@ -392,6 +402,12 @@ const handleDownload = async () => {
   flex-direction: column;
 }
 
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .sfx-title {
   font-weight: bold;
   font-size: 1.1em;
@@ -402,6 +418,16 @@ const handleDownload = async () => {
 
 .sfx-title:hover {
   color: #ff8c62;
+}
+
+.owned-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(109, 213, 156, 0.15);
+  color: #6dd59c;
+  border: 1px solid rgba(109, 213, 156, 0.4);
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 
 .sfx-artist {
@@ -553,6 +579,15 @@ const handleDownload = async () => {
 
 .menu-item:hover {
   background-color: #333;
+}
+
+.menu-item.disabled {
+  cursor: default;
+  color: #6dd59c;
+}
+
+.menu-item.disabled:hover {
+  background-color: transparent;
 }
 
 .menu-icon {

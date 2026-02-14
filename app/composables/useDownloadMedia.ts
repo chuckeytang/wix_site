@@ -76,6 +76,11 @@ export function useDownloadMedia() {
       return;
     }
 
+    if ((media as any).hasLicense === true) {
+      await executeDownload(media, type);
+      return;
+    }
+
     // 1. 检查是否登录
     if (!isAuthenticated.value) {
       authStore.openLoginDialog();

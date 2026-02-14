@@ -3,6 +3,8 @@
 import request from "./http";
 import type { Users, PaginationResult } from "~/types/users";
 import type { AjaxResult } from "~/types/ajax";
+import type { Tracks } from "~/types/tracks";
+import type { Sfx } from "~/types/sfx";
 
 /**
  * 用户相关的 API 接口
@@ -39,6 +41,19 @@ export const usersApi = {
     // 这是一个常见的 RESTful 补充接口，用于获取当前登录用户自身信息
     // 假设它存在，如果不存在，请使用 `getUserDetail(authStore.userId)`
     return request.get("/site/users/me");
+  },
+
+  /**
+   * 获取当前登录用户已购买的音乐与音效
+   * 对应后端 GET /site/users/me/purchases
+   */
+  getMyPurchases(): Promise<
+    AjaxResult<{
+      tracks: Tracks[];
+      sfx: Sfx[];
+    }>
+  > {
+    return request.get("/site/users/me/purchases");
   },
 
   /**

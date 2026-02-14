@@ -27,6 +27,7 @@ export interface Tracks {
   previewUrl15s?: string; // 15秒试听样板URL
   previewUrl30s?: string; // 30秒试听样板URL
   previewUrl60s?: string; // 60秒试听样板URL
+  hasLicense?: boolean; // 当前用户是否已购买
 }
 
 /**

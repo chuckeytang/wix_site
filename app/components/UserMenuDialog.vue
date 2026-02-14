@@ -22,6 +22,12 @@
             <span class="chevron">></span>
           </NuxtLink>
         </li>
+        <li @click="close">
+          <NuxtLink to="/account/purchases" class="menu-item">
+            Purchased
+            <span class="chevron">></span>
+          </NuxtLink>
+        </li>
         <!-- TODO: 未来功能
           <li @click="close">
             <NuxtLink to="/account/contact" class="menu-item">

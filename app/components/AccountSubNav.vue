@@ -21,6 +21,7 @@ const route = useRoute(); // 获取当前的路由对象
 const navItems = [
   // { label: "Membership program", path: "/account/plan" },
   { label: "Order", path: "/account/orders" },
+  { label: "Purchased", path: "/account/purchases" },
   // { label: "Contact Information", path: "/account/contact" },
   // { label: "Setting", path: "/account/settings" },
   // { label: "Activity History", path: "/account/history" },
@@ -31,9 +32,7 @@ const navItems = [
  * @param path 要检查的导航路径
  */
 const isLinkActive = (path: string): boolean => {
-  // 使用 route.path 来判断当前路径是否与导航项的路径一致
-  // 例如：当前在 /account/orders，则 /account/orders 链接会被激活
-  return route.path === path;
+  return route.path === path || route.path.startsWith(`${path}/`);
 };
 </script>
 
