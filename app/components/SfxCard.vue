@@ -33,12 +33,9 @@
         </svg>
       </button>
       <div class="sfx-info">
-        <div class="title-row">
-          <NuxtLink :to="`/sfx/${sfx.sfxId}`" class="sfx-title">
-            {{ sfx.title }}
-          </NuxtLink>
-          <span v-if="sfx.hasLicense" class="owned-badge">Purchased</span>
-        </div>
+        <NuxtLink :to="`/sfx/${sfx.sfxId}`" class="sfx-title">
+          {{ sfx.title }}
+        </NuxtLink>
         <span class="sfx-artist">{{ sfx.artist }}</span>
       </div>
     </div>
@@ -159,8 +156,12 @@
       </div>
 
       <div class="download-group">
-        <button class="download-button" @click.stop="handleDownload">
-          download
+        <button
+          class="download-button"
+          :class="{ 'download-button--locked': !sfx.hasLicense }"
+          @click.stop="handleDownload"
+        >
+          {{ sfx.hasLicense ? "Download" : "Download" }}
         </button>
       </div>
     </div>
@@ -206,7 +207,7 @@ onMounted(async () => {
     try {
       const res = await favoritesApi.checkFavoriteStatus(
         props.sfx.sfxId,
-        "sfx"
+        "sfx",
       );
       isFavoritedSfx.value = res.data!;
     } catch (e) {
@@ -308,7 +309,7 @@ watch(
         waveformPlayerRef.value.pause();
       }
     }
-  }
+  },
 );
 
 const formatDuration = (seconds: number): string => {
@@ -402,12 +403,6 @@ const handleDownload = async () => {
   flex-direction: column;
 }
 
-.title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .sfx-title {
   font-weight: bold;
   font-size: 1.1em;
@@ -418,16 +413,6 @@ const handleDownload = async () => {
 
 .sfx-title:hover {
   color: #ff8c62;
-}
-
-.owned-badge {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(109, 213, 156, 0.15);
-  color: #6dd59c;
-  border: 1px solid rgba(109, 213, 156, 0.4);
-  font-size: 0.72rem;
-  font-weight: 600;
 }
 
 .sfx-artist {
@@ -506,6 +491,18 @@ const handleDownload = async () => {
 
 .download-button:hover {
   background-color: #e67a54;
+}
+
+.download-button--locked {
+  background-color: transparent;
+  border: 1px solid #e67a54;
+  color: #e67a54;
+}
+
+.download-button--locked:hover {
+  background-color: #24120c;
+  border-color: #e67a54;
+  color: #e67a54;
 }
 
 .play-button {

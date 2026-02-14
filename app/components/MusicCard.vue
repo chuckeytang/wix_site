@@ -44,12 +44,9 @@
         </svg>
       </button>
       <div class="track-info">
-        <div class="title-row">
-          <NuxtLink :to="`/music/${track.trackId}`" class="track-title">
-            {{ track.title }}
-          </NuxtLink>
-          <span v-if="track.hasLicense" class="owned-badge">Purchased</span>
-        </div>
+        <NuxtLink :to="`/music/${track.trackId}`" class="track-title">
+          {{ track.title }}
+        </NuxtLink>
         <span class="track-artist">{{ track.artist }}</span>
       </div>
     </div>
@@ -189,8 +186,12 @@
       </div>
 
       <div class="right-column-group">
-        <button class="download-button" @click="handleDownload">
-          Download
+        <button
+          class="download-button"
+          :class="{ 'download-button--locked': !track.hasLicense }"
+          @click="handleDownload"
+        >
+          {{ track.hasLicense ? "Download" : "Download" }}
         </button>
       </div>
     </div>
@@ -521,26 +522,10 @@ const handleReady = () => {
   flex-direction: column;
 }
 
-.title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .track-title {
   font-weight: bold;
   font-size: 1.1em;
   color: #edebeb;
-}
-
-.owned-badge {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(109, 213, 156, 0.15);
-  color: #6dd59c;
-  border: 1px solid rgba(109, 213, 156, 0.4);
-  font-size: 0.72rem;
-  font-weight: 600;
 }
 
 .track-artist {
@@ -748,6 +733,18 @@ const handleReady = () => {
 
 .download-button:hover {
   background-color: #e67a54;
+}
+
+.download-button--locked {
+  background-color: transparent;
+  border: 1px solid #e67a54;
+  color: #e67a54;
+}
+
+.download-button--locked:hover {
+  background-color: #24120c;
+  border-color: #e67a54;
+  color: #e67a54;
 }
 
 /* 播放按钮 */

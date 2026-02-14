@@ -1,12 +1,9 @@
 <template>
   <div class="music-grid-card">
     <div class="card-header">
-      <div class="title-row">
-        <NuxtLink :to="`/music/${track.trackId}`">
-          <h3 class="track-title">{{ track.title }}</h3>
-        </NuxtLink>
-        <span v-if="track.hasLicense" class="owned-badge">Purchased</span>
-      </div>
+      <NuxtLink :to="`/music/${track.trackId}`">
+        <h3 class="track-title">{{ track.title }}</h3>
+      </NuxtLink>
       <p class="track-artist">{{ track.artist }}</p>
     </div>
 
@@ -140,7 +137,13 @@
           </div>
         </transition>
       </div>
-      <button class="download-button" @click="handleDownload">Download</button>
+      <button
+        class="download-button"
+        :class="{ 'download-button--locked': !track.hasLicense }"
+        @click="handleDownload"
+      >
+        {{ track.hasLicense ? "Download" : "Download" }}
+      </button>
     </div>
   </div>
 </template>
@@ -196,7 +199,7 @@ onMounted(async () => {
     try {
       const res = await favoritesApi.checkFavoriteStatus(
         props.track.trackId,
-        "track"
+        "track",
       );
       isFavorited.value = res.data!;
     } catch (e) {
@@ -277,7 +280,7 @@ watch(
         waveformPlayerRef.value.pause();
       }
     }
-  }
+  },
 );
 
 // 监听全局进度变化，更新 musicCard 的波形图
@@ -290,7 +293,7 @@ watch(
         waveformPlayerRef.value.seekTo(newProgress / 100);
       }
     }
-  }
+  },
 );
 
 // 统一处理播放按钮点击事件
@@ -387,7 +390,7 @@ const handleToggleFavorite = async () => {
   try {
     const res = await favoritesApi.toggleFavorite(
       props.track.trackId!,
-      "track"
+      "track",
     );
     if (res.data !== undefined) {
       isFavorited.value = res.data;
@@ -427,27 +430,11 @@ const handleToggleFavorite = async () => {
   text-align: left;
 }
 
-.title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .track-title {
   font-size: 1.5em;
   font-weight: bold;
   color: #ffc93c; /* 示例高亮颜色 */
   margin: 0 0 5px 0;
-}
-
-.owned-badge {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(109, 213, 156, 0.15);
-  color: #6dd59c;
-  border: 1px solid rgba(109, 213, 156, 0.4);
-  font-size: 0.72rem;
-  font-weight: 600;
 }
 
 .track-artist {
@@ -537,6 +524,18 @@ const handleToggleFavorite = async () => {
   background-color: #fff;
   border-color: #fff;
   color: #0d0d1a;
+}
+
+.download-button--locked {
+  background-color: transparent;
+  border: 1px solid #e67a54;
+  color: #e67a54;
+}
+
+.download-button--locked:hover {
+  background-color: #24120c;
+  border-color: #e67a54;
+  color: #e67a54;
 }
 
 .waveform-wrapper {
