@@ -28,8 +28,8 @@
         <h1 class="title fail-title">❌ Payment Failed</h1>
         <p class="status-message">{{ statusMessage }}</p>
         <p class="detail-text">The transaction could not be completed.</p>
-        <button class="action-button primary-button" @click="goToOrderHistory">
-          View Order History
+        <button class="action-button primary-button" @click="goToOrderDetail">
+          View Order Detail
         </button>
       </template>
 
@@ -45,8 +45,8 @@
 
         <p class="status-message">{{ statusMessage }}</p>
         <p class="detail-text">Please check your order history later.</p>
-        <button class="action-button primary-button" @click="goToOrderHistory">
-          View Order History
+        <button class="action-button primary-button" @click="goToOrderDetail">
+          View Order Detail
         </button>
       </template>
     </div>
@@ -85,10 +85,24 @@ const status = ref<
 const statusMessage = ref("Verifying transaction status...");
 const countdown = ref(3);
 let pollingTimer: NodeJS.Timeout | null = null;
+let failedRedirectTimer: NodeJS.Timeout | null = null;
 
 // --- 路由方法 ---
 const goToHome = () => router.push("/");
 const goToOrderHistory = () => router.push("/account/orders");
+const goToOrderDetail = () => {
+  if (!orderId) {
+    goToOrderHistory();
+    return;
+  }
+  router.push(`/account/orders/${orderId}`);
+};
+const redirectToOrderDetailWithDelay = (delay = 1200) => {
+  if (failedRedirectTimer) clearTimeout(failedRedirectTimer);
+  failedRedirectTimer = setTimeout(() => {
+    goToOrderDetail();
+  }, delay);
+};
 
 /**
  * 查询后端订单状态的 API 模拟/占位符
@@ -115,7 +129,10 @@ const checkOrderStatus = async () => {
 
     if (backendStatus === "PAID") {
       handleSuccess();
-    } else if (backendStatus === "PENDING") {
+    } else if (
+      backendStatus === "PENDING" ||
+      backendStatus === "PENDING_PAYMENT"
+    ) {
       status.value = "processing";
       statusMessage.value = `Payment is still being verified. Last checked: ${new Date().toLocaleTimeString()}`;
     } else if (backendStatus === "FAILED" || backendStatus === "CANCELLED") {
@@ -123,6 +140,7 @@ const checkOrderStatus = async () => {
       statusMessage.value =
         "The order has failed or been cancelled by the system.";
       if (pollingTimer) clearInterval(pollingTimer);
+      redirectToOrderDetailWithDelay();
     }
   } catch (error: any) {
     console.error("Polling failed:", error);
@@ -192,6 +210,7 @@ onMounted(async () => {
     status.value = "failed";
     statusMessage.value =
       "Payment was declined or cancelled. Please try again.";
+    redirectToOrderDetailWithDelay();
     return; // 不启动轮询
   } else {
     // 默认未知状态，需要轮询
@@ -208,6 +227,9 @@ onMounted(async () => {
 onUnmounted(() => {
   if (pollingTimer) {
     clearInterval(pollingTimer);
+  }
+  if (failedRedirectTimer) {
+    clearTimeout(failedRedirectTimer);
   }
 });
 </script>

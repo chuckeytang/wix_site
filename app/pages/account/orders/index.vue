@@ -34,6 +34,7 @@
           :orders="orders"
           :loading-id="payingOrderId"
           @pay="handlePay"
+          @view="handleViewOrder"
         />
       </div>
     </div>
@@ -51,8 +52,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import { ordersApi } from "~/api/orders";
-import { cartsApi } from "~/api/carts"; // 用于创建 payment intent
 import type { OrderDetails } from "~/types/orders";
 import OrderEmptyState from "~/components/account/orders/OrderEmptyState.vue";
 import OrderList from "~/components/account/orders/OrderList.vue";
@@ -63,7 +64,7 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { showToast } = useToast();
+const router = useRouter();
 
 const orders = ref<OrderDetails[]>([]);
 const isLoading = ref(true);
@@ -124,6 +125,10 @@ const closeCheckoutModal = () => {
   showCheckoutModal.value = false;
   // 支付关闭后刷新列表，查看状态是否变更 (如果支付成功)
   fetchOrders();
+};
+
+const handleViewOrder = (orderId: number) => {
+  router.push(`/account/orders/${orderId}`);
 };
 
 onMounted(() => {

@@ -53,9 +53,7 @@
 
 <script setup>
 import { ref, defineProps } from "vue";
-import { useRouter } from "vue-router";
 import { cartsApi } from "~/api/carts";
-import { useCartStore } from "~/stores/cart";
 import { useToast } from "~/composables/useToast";
 import LicenseComparisonModal from "~/components/LicenseComparisonModal.vue";
 
@@ -76,9 +74,6 @@ const props = defineProps({
     default: 0,
   },
 });
-
-const router = useRouter();
-const cartStore = useCartStore();
 
 // 状态：用于控制用户选择了哪种购买方式（一次性或订阅）
 const selectedPurchaseType = ref("one-time");
@@ -114,35 +109,13 @@ const handleCheckout = async () => {
     }
     const newOrder = orderResult.data;
 
-    // 3. 创建 Payment Intent
-    const paymentIntentResult = await cartsApi.createPaymentIntent(
-      newOrder.orderId,
-    );
-
-    // [修改点] 显式处理业务 code 错误（如 500 且 code 为 500 的情况）
-    if (
-      paymentIntentResult.code !== 200 ||
-      !paymentIntentResult.data?.clientSecret
-    ) {
-      showToast(paymentIntentResult.msg || "Payment service error.");
-      return;
-    }
-
-    const clientSecret = paymentIntentResult.data.clientSecret;
-
-    // 4. 通知父组件并传递数据
+    // 3. 通知父组件并传递数据
     emit("startCheckout", {
       orderId: newOrder.orderId,
-      clientSecret: clientSecret,
-      // 确保传递给 CheckoutModal 的金额是以“分”为单位的整数
-      amount: Math.round(props.subtotal * 100),
+      clientSecret: null,
+      amount: props.subtotal,
       currency: "usd",
     });
-
-    // 只有在成功启动支付流程后才执行后续清理逻辑
-    await nextTick();
-    // 注意：通常建议支付成功后再清空购物车，这里根据你的业务需求保留
-    await cartStore.clearCart();
   } catch (error) {
     // [关键修复] 捕获拦截器抛出的错误或网络错误
     console.error("Checkout process failed:", error);

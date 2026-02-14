@@ -50,9 +50,15 @@ export const cartsApi = {
    */
   createPaymentIntent(
     orderId: number
-  ): Promise<AjaxResult<{ clientSecret: string }>> {
-    // 假设后端接口接收 JSON Body { orderId: 123 }
-    return request.post("/site/payment/create-intent", { orderId });
+  ): Promise<
+    AjaxResult<{
+      clientSecret: string;
+      finalAmount?: string;
+      taxAmount?: string;
+      originAmount?: string;
+    }>
+  > {
+    return request.post(`/site/stripe/createPaymentIntent/${orderId}`);
   },
 
   /**

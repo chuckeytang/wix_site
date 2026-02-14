@@ -3,12 +3,16 @@
 // 简化的 Track/Sfx 类型，仅用于订单显示
 export interface OrderItemProduct {
   title: string;
+  artist?: string;
+  type?: string;
+  genres?: string;
 }
 
 export interface OrderItems {
   orderItemId: number;
   productType: "track" | "sfx" | "plan";
   purchasePrice: number;
+  licenseOption?: string;
   // 对应后端关联查询出来的对象
   track?: OrderItemProduct;
   sfx?: OrderItemProduct;

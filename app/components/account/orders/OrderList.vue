@@ -22,7 +22,12 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="order in orders" :key="order.orderId" class="order-row">
+          <tr
+            v-for="order in orders"
+            :key="order.orderId"
+            class="order-row clickable-row"
+            @click="$emit('view', order.orderId)"
+          >
             <td class="col-content">
               <div class="content-wrapper">
                 <div class="icon-placeholder">
@@ -45,6 +50,9 @@
                 <span :title="getOrderContentFull(order)" class="content-text">
                   {{ getOrderContentDisplay(order) }}
                 </span>
+                <button class="detail-link" @click.stop="$emit('view', order.orderId)">
+                  View
+                </button>
               </div>
             </td>
 
@@ -62,20 +70,20 @@
 
             <td class="col-status">
               <div
-                v-if="order.status === 'PENDING_PAYMENT'"
+                v-if="canPay(order.status)"
                 class="action-cell"
               >
-                <span class="status-text pending">Unpaid</span>
+                <span class="status-text pending">{{ formatStatus(order.status) }}</span>
                 <button
                   class="pay-btn"
-                  @click="$emit('pay', order)"
+                  @click.stop="$emit('pay', order)"
                   :disabled="loadingId === order.orderId"
                 >
                   <span
                     v-if="loadingId === order.orderId"
                     class="spinner"
                   ></span>
-                  <span v-else>Pay Now</span>
+                  <span v-else>{{ payButtonText(order.status) }}</span>
                 </button>
               </div>
               <div v-else class="status-badge-wrapper">
@@ -110,7 +118,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["pay"]);
+const emit = defineEmits(["pay", "view"]);
 
 const getOrderContentFull = (order: OrderDetails) => {
   if (!order.items || order.items.length === 0) return "Unknown Items";
@@ -152,11 +160,21 @@ const formatStatus = (status: string | undefined): string => {
       return "Completed";
     case "PENDING_PAYMENT":
       return "Pending";
+    case "FAILED":
+      return "Failed";
     case "CANCELLED":
       return "Cancelled";
     default:
       return status;
   }
+};
+
+const canPay = (status: string | undefined) => {
+  return status === "PENDING_PAYMENT" || status === "FAILED" || status === "CANCELLED";
+};
+
+const payButtonText = (status: string | undefined) => {
+  return status === "PENDING_PAYMENT" ? "Pay Now" : "Retry Pay";
 };
 
 const getStatusClass = (status: string | undefined) => {
@@ -221,6 +239,10 @@ const getStatusClass = (status: string | undefined) => {
     box-shadow 0.2s;
 }
 
+.clickable-row {
+  cursor: pointer;
+}
+
 /* 斑马纹：偶数行颜色稍微不同 */
 .order-row:nth-child(even) {
   background-color: #15151e;
@@ -272,6 +294,14 @@ const getStatusClass = (status: string | undefined) => {
   font-weight: 500;
   color: #eee;
   cursor: help;
+}
+
+.detail-link {
+  border: none;
+  background: transparent;
+  color: #ff8c62;
+  cursor: pointer;
+  font-size: 0.82rem;
 }
 
 /* 第二列：日期 */

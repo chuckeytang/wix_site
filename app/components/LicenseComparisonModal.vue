@@ -22,7 +22,7 @@
                     <th>
                       Creator<br />
                       <span class="sub-text">(Personal)</span>
-                      <div class="price-tag">$0.01</div>
+                      <div class="price-tag">$0.50</div>
                     </th>
                     <th>
                       Standard<br />

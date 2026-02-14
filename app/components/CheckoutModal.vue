@@ -129,11 +129,8 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, onUnmounted, nextTick } from "vue";
-import type {
-  Stripe,
-  StripeElements,
-  StripePaymentElementOptions,
-} from "@stripe/stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import type { Stripe, StripeElements } from "@stripe/stripe-js";
 import { useCartStore } from "~/stores/cart";
 import { usersApi } from "~/api/users";
 import { stripeApi } from "~/api/stripe";
@@ -151,6 +148,8 @@ const emit = defineEmits(["close", "success"]);
 
 const nuxtApp = useNuxtApp();
 const stripeInstance = nuxtApp.$stripe as Stripe | null;
+const runtimeConfig = useRuntimeConfig();
+const router = useRouter();
 
 const loading = ref(false);
 const error = ref<string | null>(null);
@@ -167,6 +166,9 @@ const showAddressStep = ref(false);
 const isAgreementChecked = ref(false);
 const showAgreementModal = ref(false);
 const addressForm = ref({ countryCode: "", postalCode: "" });
+const isFetching = ref(false);
+const fallbackStripeInstance = ref<Stripe | null>(null);
+const stripeReadyTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 
 // 格式化货币的辅助函数（抽出来复用）
 const formatCurrency = (val: number) => {
@@ -189,8 +191,8 @@ watch(
   () => props.isVisible,
   async (newVal) => {
     if (newVal) {
-      isAgreementChecked.value = false;
-      error.value = null;
+      cleanupElements();
+      resetInternalState();
       await checkUserAndInitialize();
     } else {
       cleanupElements();
@@ -199,15 +201,35 @@ watch(
   },
 );
 
-watch(localClientSecret, async (newSecret) => {
-  if (newSecret) {
-    await nextTick();
-    await initializeStripe(newSecret);
+const clearStripeReadyTimer = () => {
+  if (stripeReadyTimer.value !== null) {
+    clearTimeout(stripeReadyTimer.value);
+    stripeReadyTimer.value = null;
   }
-});
+};
+
+const resolveStripeInstance = async (): Promise<Stripe | null> => {
+  if (stripeInstance) {
+    return stripeInstance;
+  }
+  if (fallbackStripeInstance.value) {
+    return fallbackStripeInstance.value;
+  }
+  const publishableKey = (runtimeConfig.public.stripePk as string | undefined)
+    ?.trim();
+  if (!publishableKey) {
+    return null;
+  }
+  fallbackStripeInstance.value = await loadStripe(publishableKey);
+  return fallbackStripeInstance.value;
+};
 
 const checkUserAndInitialize = async () => {
+  if (isFetching.value) {
+    return;
+  }
   loading.value = true;
+  error.value = null;
   try {
     const res = await usersApi.getMe();
     const user = res.data;
@@ -225,6 +247,9 @@ const checkUserAndInitialize = async () => {
 };
 
 const handleApplyTax = async () => {
+  if (isFetching.value) {
+    return;
+  }
   loading.value = true;
   error.value = null;
   try {
@@ -238,31 +263,55 @@ const handleApplyTax = async () => {
 };
 
 const fetchPaymentIntent = async () => {
-  if (!props.orderId) return;
+  if (!props.orderId || isFetching.value) return;
+
+  isFetching.value = true;
   loading.value = true;
+  error.value = null;
+
   try {
     const res = await stripeApi.createPaymentIntent(props.orderId);
-    localClientSecret.value = res.data!.clientSecret;
-
-    if (res.data!.finalAmount) {
-      serverFinalAmount.value = parseFloat(res.data!.finalAmount);
-      serverTaxAmount.value = parseFloat(res.data!.taxAmount || "0");
-      serverOriginAmount.value = parseFloat(res.data!.originAmount || "0");
+    const clientSecret = res.data?.clientSecret;
+    if (!clientSecret) {
+      throw new Error("Missing payment token from server.");
     }
+
+    localClientSecret.value = clientSecret;
+
+    if (res.data?.finalAmount) {
+      serverFinalAmount.value = parseFloat(res.data.finalAmount);
+      serverTaxAmount.value = parseFloat(res.data.taxAmount || "0");
+      serverOriginAmount.value = parseFloat(res.data.originAmount || "0");
+    }
+
+    await nextTick();
+    await initializeStripe(clientSecret);
   } catch (e: any) {
     if (e.responseCode === 400) {
       showAddressStep.value = true;
     }
     error.value = e.message || "Failed to start payment.";
     loading.value = false;
+  } finally {
+    isFetching.value = false;
   }
 };
 
 const initializeStripe = async (secret: string) => {
-  if (!stripeInstance) return;
-  loading.value = true;
+  clearStripeReadyTimer();
+
   try {
-    elementsRef.value = stripeInstance.elements({
+    const activeStripe = await resolveStripeInstance();
+    if (!activeStripe) {
+      error.value =
+        "Stripe is unavailable now. Please refresh and try again.";
+      isStripeReady.value = false;
+      loading.value = false;
+      return;
+    }
+
+    cleanupElements();
+    elementsRef.value = activeStripe.elements({
       clientSecret: secret,
       appearance: { theme: "night", variables: { colorPrimary: "#ff8c62" } },
     });
@@ -271,18 +320,49 @@ const initializeStripe = async (secret: string) => {
     });
     paymentElementRef.value = paymentElement;
     paymentElement.mount("#payment-element");
-    isStripeReady.value = true;
-  } finally {
+
+    isStripeReady.value = false;
+    paymentElement.on("ready", () => {
+      isStripeReady.value = true;
+      loading.value = false;
+      clearStripeReadyTimer();
+    });
+
+    paymentElement.on("loaderror", () => {
+      error.value = "Failed to load payment form.";
+      isStripeReady.value = false;
+      loading.value = false;
+      clearStripeReadyTimer();
+    });
+
+    stripeReadyTimer.value = setTimeout(() => {
+      if (!isStripeReady.value && loading.value) {
+        error.value =
+          "Payment form loading timed out. Please refresh and try again.";
+        loading.value = false;
+      }
+    }, 10000);
+  } catch (e) {
+    error.value = "Failed to load payment form.";
+    isStripeReady.value = false;
     loading.value = false;
+    clearStripeReadyTimer();
   }
 };
 
 const handleSubmit = async () => {
-  if (!isAgreementChecked.value || !stripeInstance || !elementsRef.value)
+  if (!isAgreementChecked.value || !elementsRef.value)
     return;
+
+  const activeStripe = await resolveStripeInstance();
+  if (!activeStripe) {
+    error.value = "Stripe is unavailable now. Please refresh and try again.";
+    return;
+  }
+
   loading.value = true;
   const returnUrl = `${window.location.origin}/payment-status?orderId=${props.orderId}`;
-  const { error: stripeError } = await stripeInstance.confirmPayment({
+  const { error: stripeError } = await activeStripe.confirmPayment({
     elements: elementsRef.value,
     confirmParams: { return_url: returnUrl },
     redirect: "if_required",
@@ -290,6 +370,7 @@ const handleSubmit = async () => {
   if (stripeError) {
     error.value = stripeError.message || "Payment failed.";
     loading.value = false;
+    await redirectToOrderDetail("failed");
   } else {
     await cartStore.clearCart();
     window.location.href = returnUrl;
@@ -303,6 +384,10 @@ const resetInternalState = () => {
   serverOriginAmount.value = null;
   showAddressStep.value = false;
   isStripeReady.value = false;
+  isAgreementChecked.value = false;
+  isFetching.value = false;
+  error.value = null;
+  clearStripeReadyTimer();
   loading.value = false;
 };
 
@@ -310,10 +395,35 @@ const cleanupElements = () => {
   if (paymentElementRef.value) paymentElementRef.value.destroy();
   paymentElementRef.value = null;
   elementsRef.value = null;
+  clearStripeReadyTimer();
 };
 
-const handleClose = () => {
+const redirectToOrderDetail = async (reason: "failed" | "cancelled") => {
   emit("close");
+  if (!props.orderId) return;
+
+  const target = {
+    path: `/account/orders/${props.orderId}`,
+    query: {
+      checkout: reason,
+      at: Date.now().toString(),
+    },
+  };
+
+  if (router.currentRoute.value.path === target.path) {
+    await router.replace(target);
+    return;
+  }
+  await router.push(target);
+};
+
+onUnmounted(() => {
+  cleanupElements();
+  clearStripeReadyTimer();
+});
+
+const handleClose = async () => {
+  await redirectToOrderDetail("cancelled");
 };
 const openAgreement = () => {
   showAgreementModal.value = true;
