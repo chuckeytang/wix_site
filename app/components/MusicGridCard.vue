@@ -180,7 +180,7 @@ const handleClickOutside = (event: MouseEvent) => {
 };
 
 onMounted(async () => {
-  document.addEventListener("click", handleClickOutside);
+  document.addEventListener("click", handleClickOutside, true);
   // 初始化检查收藏状态
   if (authStore.isAuthenticated && props.track.trackId) {
     try {
@@ -196,7 +196,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  document.removeEventListener("click", handleClickOutside);
+  document.removeEventListener("click", handleClickOutside, true);
 });
 
 // 菜单动作处理

@@ -445,7 +445,9 @@ const handleAgreementConfirmed = () => {
   background: rgba(0, 0, 0, 0.85); /* 深色半透明遮罩 */
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  overflow-y: auto;
+  padding: 24px 12px;
   z-index: 2000; /* 确保在最上层 */
   backdrop-filter: blur(4px);
 }
@@ -459,6 +461,9 @@ const handleAgreementConfirmed = () => {
   position: relative;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
   border: 1px solid #333;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  margin: 0 auto;
 }
 
 .close-x {

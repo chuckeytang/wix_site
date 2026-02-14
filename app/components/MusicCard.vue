@@ -272,11 +272,11 @@ onMounted(async () => {
       console.error("Failed to check favorite status", e);
     }
   }
-  document.addEventListener("click", handleClickOutside);
+  document.addEventListener("click", handleClickOutside, true);
 });
 
 onUnmounted(() => {
-  document.removeEventListener("click", handleClickOutside);
+  document.removeEventListener("click", handleClickOutside, true);
 });
 
 // 菜单动作处理

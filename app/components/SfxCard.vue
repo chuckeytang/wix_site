@@ -191,7 +191,7 @@ const QUICK_LICENSE_OPTION = "standard";
 
 // 初始化时检查 SFX 收藏状态 (假设 favoritesApi 提供了 checkFavoriteSfxStatus)
 onMounted(async () => {
-  document.addEventListener("click", handleClickOutside);
+  document.addEventListener("click", handleClickOutside, true);
   if (authStore.isAuthenticated && props.sfx.sfxId) {
     try {
       const res = await favoritesApi.checkFavoriteStatus(
@@ -207,7 +207,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  document.removeEventListener("click", handleClickOutside);
+  document.removeEventListener("click", handleClickOutside, true);
 });
 
 // --- 更多选项菜单逻辑 ---
